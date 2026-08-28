@@ -1,0 +1,146 @@
+# GAF Doc Health Check thresholds — single source of truth
+# Spec-41 §5
+
+d1_overlap:
+  summary_jaccard_p2: 0.6
+  summary_jaccard_p1: 0.8
+  whitelist:
+    - "docs/standards/*.md vs backend/*/README.md"
+    - ".ai-memory/lessons/*.md"
+
+d2_bloat:
+  per_file_thresholds:
+    ".ai-memory/summaries/architecture-mistakes.md": 1500
+    ".ai-memory/meta/yn-matrices/_workflow.md": 1200
+    ".skills/rules/project_rules.md": 1500
+    # Spec-51: fnmatch does not treat `**` as recursive glob (it behaves as `*`,
+    # not matching `/`). Use `docs/**/*.md` (matches single + multi layer) instead
+    # of `docs/business/**/*.md` + `docs/architecture/**/*.md` (matched nothing).
+    "docs/**/*.md": 2000
+    "docs/archive/fixed-tech-debt-details.md": 15000
+    "default": 1000
+  severity_multipliers:
+    p2: 1.5
+    p1: 2.0
+    p0: 3.0
+
+d3_count_drift:
+  patterns:
+    - regex: "(\\d+)\\s+(?:条\\s+)?Active\\s+N##"
+      counter: "count_active_n_in_failure_modes"
+    - regex: "(\\d+)\\s+docs"
+      counter: "count_docs_in_directory"
+    - regex: "(\\d+)\\s+个\\s+sub-file"
+      counter: "count_yn_matrices_subfiles"
+  allow_dynamic_marker: "动态计数"
+
+d4_path_drift:
+  severity: "P0"
+  # Spec-46: evidence/ is a historical snapshot, not a contract.
+  # related_files records what was changed at the time; subsequent code
+  # refactoring should not require retroactive updates to evidence frontmatter.
+  evidence_severity: "P2"
+  # Spec-53: Skip frontmatter related_files check for evidence/ files entirely.
+  # Revises spec-46: evidence/ related_files is historical record (what was
+  # changed at the time), not current contract (what should exist now).
+  # Path drift in evidence/ is expected behavior, not a defect.
+  skip_evidence_frontmatter: true
+
+d5_frontmatter:
+  modes:
+    auto:
+      required: [maintainer, source, generated, auto_updated]
+    derived-manual:
+      required: [maintainer, source, load_when, priority, symptom, solution, related_files, last_manual_edit]
+    manual:
+      required: [maintainer, source, load_when, priority, symptom, solution, related_files, created_by]
+  missing_field_severity: "P1"
+  wrong_type_severity: "P2"
+
+d6_staleness:
+  stale_days_p2: 60
+  stale_days_p1: 90
+  stale_days_p0: 180
+  commit_lookback: true
+  applies_to_dir_mapping:
+    backend: "backend/"
+    frontend: "frontend/src/"
+    agent: "agent/src/"
+    scripts: "scripts/"
+    docs: null
+    project: "*"
+
+d7_index_consistency:
+  a_minus_b_severity: "P1"
+  b_minus_a_severity: "P2"
+  a_minus_c_severity: "P2"
+  # Spec-53: L1-小/中 N## don't require yn-matrices (project_rules §6.2).
+  # Whitelist to avoid false positive a_minus_c P2 for these N##.
+  # New L1-小/中 N## should be added here when sedimented.
+  a_minus_c_whitelist:
+    - N121  # bypass weekly review (L1-中)
+    - N123  # ai-memory restructure (L1-中)
+    - N132  # 文档职责分离 (L1-中)
+    - N133  # 模拟器设备控制 (L1-中)
+    - N136  # URL 路由前缀重复 (L1-中)
+    - N137  # TS 6.0 erasableSyntaxOnly (L1-中)
+    - N139  # Vite dev proxy localhost (L1-中)
+    - N144  # antd 5.x Card bodyStyle (L1-中)
+    - N145  # WebSocket consumer 上行消息 (L1-中)
+    - N149  # task.dispatch device_info (L1-中)
+    - N158  # LangGraph agent 实现 (L1-中)
+    - N159  # 长任务子 agent 分发 (L1-中)
+    - N176  # 单对话批量 spec 单 commit (L1-中)
+    - N177  # 分级测试策略 (L1-中, tech-stack §9.2 基线)
+    - N181  # 规则退役机制 (L1-中, failure-modes §退役流程)
+    - N188  # conda gaf 环境 (L0 硬约束, env-hardrules.md)
+    - N190  # PowerShell shell 硬约束 (L0, env-hardrules.md §Shell)
+    - N192  # 双调试视角 (L0, env-hardrules.md 检查清单)
+    - N193  # 任务归属硬约束 (L0, env-hardrules.md 检查清单)
+    - N194  # 测试运行硬约束 (L0, env-hardrules.md 检查清单)
+    - N197  # URL 拼接归一化 (L0, env-hardrules.md 检查清单)
+    - N198  # 调度协调硬约束 (L0, env-hardrules.md 检查清单)
+    - N199  # 环境归一化 (L0, env-hardrules.md 检查清单)
+    - N200  # 文档归属判定 (L0, project_rules §2.1.1 检查清单)
+    - N201  # M2 激活率复盘 (L1-中, ai-operating-handbook Part 2 M2 段)
+    - N202  # 大文件拆分踩坑家族 (L1-中, 16 项检查清单型, lessons/N202)
+    - N203  # pre-commit evidence/session 跨天失败 (L1-中, lessons/N203)
+    - N204  # 诊断触发硬约束 (L0, env-hardrules.md §L0 常驻提醒)
+    - N206  # AskUserQuestion 过度使用 (L1-中, lessons/N206)
+    - N208  # commit message 不写 N## (L0, env-hardrules.md §L0 常驻提醒)
+
+d8_yaml_frontmatter:
+  severity: "P1"
+  scan_dirs:
+    - ".ai-memory"
+    - "docs"
+    - ".skills"
+  skip_dirs:
+    - ".ai-memory/evidence/"
+
+# Spec-45 monthly checks (project hygiene)
+# Run manually: python scripts/governance/monthly_health_check.py
+# NOT integrated into gaf_init.sh (monthly check != per-session check)
+monthly_checks:
+  c1_active_td:
+    warning_threshold: 5
+    critical_threshold: 10
+  h1_git_status:
+    uncommitted_warning: 20
+    sensitive_patterns: [".env", "*.key", "*.pem", "*credentials*", "*.pfx"]
+  i1_large_files:
+    default_lines: 1000
+    per_dir:
+      "backend": 2000
+      "frontend/src": 1500
+      "agent/src": 1500
+      "scripts": 1000
+    # Deliberately kept large (TD-365 exclusion, merged by design 2026-08-04
+    # a3e65c08, evidence: .ai-memory/evidence/active/2026-08-04-test-file-merge/):
+    exclude_files:
+      - "backend/gaf_ai/tests/test_agent.py"
+      - "backend/scheduler/tests/test_scheduler.py"
+  n1_empty:
+    skip_dirs: [".git", ".cache", "node_modules", "__pycache__", ".venv", "venv", ".trash", "MagicMock", "debug"]
+    skip_empty_files: [".gitkeep", ".keep", "__init__.py"]
+    skip_empty_patterns: [".lock"]

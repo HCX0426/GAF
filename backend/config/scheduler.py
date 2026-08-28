@@ -1,0 +1,186 @@
+"""
+APScheduler-based scheduler for eager mode (replaces Celery Worker + Beat).
+
+In eager mode (GAF_CELERY_MODE=eager):
+  - Celery tasks run synchronously (CELERY_TASK_ALWAYS_EAGER=True)
+  - APScheduler runs in a background thread inside the daphne process
+  - No need for separate Celery Worker + Beat processes (~26s faster startup)
+
+In celery mode (GAF_CELERY_MODE=celery):
+  - This module is a no-op when start_scheduler() detects non-eager mode
+  - Worker + Beat run as separate processes as before
+
+Design: reads the same beat_schedule from config.celery, so schedule changes
+in celery.py automatically apply to the APScheduler — no drift.
+"""
+
+import logging
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
+
+logger = logging.getLogger(__name__)
+
+_scheduler: BackgroundScheduler | None = None
+
+
+def _celery_crontab_to_apscheduler(celery_crontab) -> CronTrigger:
+    """Convert a celery.schedules.crontab to an APScheduler CronTrigger.
+
+    Celery crontab stores values as sets of ints. This helper extracts
+    single values (common case) or joins ranges for APScheduler's
+    cron-style string syntax.
+
+    Important: Celery uses 0=Sunday for day_of_week, while APScheduler
+    (and standard cron) uses 0=Sunday as well — they are compatible.
+    """
+    kwargs = {}
+
+    # minute: set of ints, e.g. {0} or {0, 30}
+    minute = celery_crontab.minute
+    if minute and minute != {'*'}:
+        kwargs['minute'] = ','.join(str(v) for v in sorted(minute))
+    else:
+        kwargs['minute'] = '*'
+
+    # hour: set of ints
+    hour = celery_crontab.hour
+    if hour and hour != {'*'}:
+        kwargs['hour'] = ','.join(str(v) for v in sorted(hour))
+    else:
+        kwargs['hour'] = '*'
+
+    # day_of_week: 0=Sunday (compatible between Celery and APScheduler/cron)
+    dow = celery_crontab.day_of_week
+    if dow and dow != {'*'}:
+        kwargs['day_of_week'] = ','.join(str(v) for v in sorted(dow))
+    else:
+        kwargs['day_of_week'] = '*'
+
+    # day_of_month: set of ints
+    dom = celery_crontab.day_of_month
+    if dom and dom != {'*'}:
+        kwargs['day'] = ','.join(str(v) for v in sorted(dom))
+    else:
+        kwargs['day'] = '*'
+
+    # month_of_year: set of ints
+    month = celery_crontab.month_of_year
+    if month and month != {'*'}:
+        kwargs['month'] = ','.join(str(v) for v in sorted(month))
+    else:
+        kwargs['month'] = '*'
+
+    return CronTrigger(**kwargs)
+
+
+def _build_trigger(schedule):
+    """Convert a Celery schedule value (int/float/crontab) to APScheduler trigger."""
+    from celery.schedules import crontab as _celery_crontab
+
+    if isinstance(schedule, (int, float)):
+        return IntervalTrigger(seconds=int(schedule))
+    if isinstance(schedule, _celery_crontab):
+        return _celery_crontab_to_apscheduler(schedule)
+    raise TypeError(f"Unsupported schedule type: {type(schedule)}")
+
+
+def _import_task(task_path: str):
+    """Import a Celery task function by its dotted path.
+
+    Uses Django's import_string which handles both regular functions
+    and Celery @shared_task decorated functions. For bind=True tasks,
+    wraps the call to pass self=None since we're not going through Celery.
+    """
+    from django.utils.module_loading import import_string
+
+    func = import_string(task_path)
+    # Check if it's a Celery Task (bind=True) — needs self=None
+    if hasattr(func, '__wrapped__') or (hasattr(func, 'run') and hasattr(func, 'delay')):
+        # It's a Celery task object; use .run() to get the underlying function
+        return func.run
+    return func
+
+
+def _job_wrapper(task_path: str):
+    """Wrap a Celery task call with error handling (avoid crashing scheduler)."""
+    try:
+        # Import the task function directly (bypass Celery task name resolution)
+        # With CELERY_TASK_ALWAYS_EAGER=True, calling the function directly
+        # is equivalent to task.delay() — synchronous execution.
+        func = _import_task(task_path)
+        # For bind=True tasks, the Celery Task.run() expects self as first arg.
+        # We pass None since we're not going through the Celery worker.
+        import inspect
+
+        sig = inspect.signature(func)
+        if 'self' in sig.parameters:
+            func(None)
+        else:
+            func()
+    except Exception:
+        logger.exception("APScheduler job failed: %s", task_path)
+
+
+def start_scheduler() -> BackgroundScheduler | None:
+    """Start the APScheduler background scheduler.
+
+    Reads the same beat_schedule from config.celery and registers
+    each entry as an APScheduler job. Skips silently if not in eager mode.
+
+    Returns the scheduler instance, or None if:
+      - Not in eager mode (CELERY_TASK_ALWAYS_EAGER is False)
+      - Scheduler is already running
+      - No beat_schedule configured
+    """
+    from django.conf import settings
+
+    # Only run in eager mode
+    if not settings.CELERY_TASK_ALWAYS_EAGER:
+        logger.info("APScheduler skipped (CELERY_TASK_ALWAYS_EAGER=False, celery mode)")
+        return None
+
+    global _scheduler
+
+    if _scheduler is not None:
+        return _scheduler
+
+    # Import Celery app to read beat_schedule — this is just config reading,
+    # not starting any Celery worker/beat processes.
+    from config.celery import app as celery_app
+
+    beat_schedule = getattr(celery_app.conf, 'beat_schedule', {})
+    if not beat_schedule:
+        logger.warning("APScheduler: no beat_schedule found, nothing to schedule")
+        return None
+
+    _scheduler = BackgroundScheduler()
+    _scheduler._logger = logging.getLogger('apscheduler')
+
+    for name, entry in beat_schedule.items():
+        task_path = entry['task']
+        schedule = entry['schedule']
+        trigger = _build_trigger(schedule)
+        _scheduler.add_job(
+            _job_wrapper,
+            trigger=trigger,
+            args=[task_path],
+            id=name,
+            name=name,
+            replace_existing=True,
+        )
+        logger.info("APScheduler registered: %s (%s, every %s)", name, task_path, schedule)
+
+    _scheduler.start()
+    logger.info("APScheduler started (%d jobs)", len(beat_schedule))
+    return _scheduler
+
+
+def stop_scheduler() -> None:
+    """Shut down the APScheduler gracefully."""
+    global _scheduler
+    if _scheduler is not None:
+        _scheduler.shutdown(wait=False)
+        _scheduler = None
+        logger.info("APScheduler stopped")

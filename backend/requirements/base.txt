@@ -1,0 +1,28 @@
+django>=5.2,<5.3
+djangorestframework>=3.15,<4.0
+djangorestframework-simplejwt>=5.3,<6.0
+django-cors-headers>=4.4,<5.0
+django-filter>=24.0,<25.0
+django-celery-beat>=2.6,<3.0
+channels>=4.1,<5.0
+channels-redis>=4.2,<5.0
+daphne>=4.1,<5.0
+celery>=5.4,<6.0
+redis>=5.0,<6.0
+python-dotenv>=1.0,<2.0
+Pillow>=10.4,<11.0
+drf-spectacular>=0.27,<1.0
+cryptography>=43.0,<44.0
+rapidocr-onnxruntime>=1.3
+opencv-python-headless>=4.10
+chromadb>=0.4.0
+# fastembed — RAG embedding (backend/gaf_ai/rag.py 实际使用),
+# 此前仅 pyproject.toml 声明, base.txt 缺失导致用 base.txt 安装缺依赖.
+fastembed>=0.7
+pyotp>=2.9,<3.0
+requests>=2.31,<3.0
+apscheduler>=3.10,<4.0
+langchain>=1.0,<2.0
+langgraph>=1.0,<2.0
+langchain-openai>=1.0,<2.0
+langchain-core>=1.0,<2.0

@@ -1,0 +1,590 @@
+{
+  "name": "pass_rewards",
+  "description": "BD2 pass (battle pass) reward claim — ported from BD2-AUTO src/auto_tasks/Default/tasks/pass_rewards.py. Open pass UI, click 6 reward positions linearly (loop with array index not supported by engine loop node — unrolled as 6 direct_hit sequences), then return to main. ROIs at 1920x1080 base resolution. TODO: original Python used a for-loop with ROI list; engine loop node only supports fixed-iteration body, so unrolled to 6 linear sequences. (pending e2e verification — R37-P2 C2 PoC covers login only)",
+  "version": "1.0.0",
+  "metadata": {
+    "original_base_res": [
+      1920,
+      1080
+    ]
+  },
+  "entry_node": "open_pass_ui",
+  "nodes": [
+    {
+      "id": "open_pass_ui",
+      "config": {
+        "threshold": 0.8,
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/pass_rewards/通行证标识.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_basic_rewards",
+      "config": {
+        "mode": "ocr",
+        "text": "基础",
+        "roi": [
+          1235,
+          300,
+          69,
+          37
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_reward_1",
+      "config": {
+        "x": 420,
+        "y": 330,
+        "button": "left",
+        "clicks": 1,
+        "activate_window": true
+      },
+      "node_type": "direct_hit"
+    },
+    {
+      "id": "wait_after_reward_1",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.5
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_claim_button_1",
+      "config": {
+        "x": 1590,
+        "y": 680,
+        "button": "left",
+        "clicks": 1,
+        "activate_window": true
+      },
+      "node_type": "direct_hit"
+    },
+    {
+      "id": "wait_after_claim_btn_1",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.5
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_claim_all_1",
+      "config": {
+        "text": "全部获得",
+        "roi": [
+          1390,
+          750,
+          100,
+          30
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_after_claim_all_1",
+      "config": {
+        "mode": "fixed",
+        "seconds": 2.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_reward_2",
+      "config": {
+        "x": 420,
+        "y": 450,
+        "button": "left",
+        "clicks": 1,
+        "activate_window": true
+      },
+      "node_type": "direct_hit"
+    },
+    {
+      "id": "wait_after_reward_2",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.5
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_claim_button_2",
+      "config": {
+        "x": 1590,
+        "y": 680,
+        "button": "left",
+        "clicks": 1,
+        "activate_window": true
+      },
+      "node_type": "direct_hit"
+    },
+    {
+      "id": "wait_after_claim_btn_2",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.5
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_claim_all_2",
+      "config": {
+        "text": "全部获得",
+        "roi": [
+          1390,
+          750,
+          100,
+          30
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_after_claim_all_2",
+      "config": {
+        "mode": "fixed",
+        "seconds": 2.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_reward_3",
+      "config": {
+        "x": 420,
+        "y": 570,
+        "button": "left",
+        "clicks": 1,
+        "activate_window": true
+      },
+      "node_type": "direct_hit"
+    },
+    {
+      "id": "wait_after_reward_3",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.5
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_claim_button_3",
+      "config": {
+        "x": 1590,
+        "y": 680,
+        "button": "left",
+        "clicks": 1,
+        "activate_window": true
+      },
+      "node_type": "direct_hit"
+    },
+    {
+      "id": "wait_after_claim_btn_3",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.5
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_claim_all_3",
+      "config": {
+        "text": "全部获得",
+        "roi": [
+          1390,
+          750,
+          100,
+          30
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_after_claim_all_3",
+      "config": {
+        "mode": "fixed",
+        "seconds": 2.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_reward_4",
+      "config": {
+        "x": 420,
+        "y": 690,
+        "button": "left",
+        "clicks": 1,
+        "activate_window": true
+      },
+      "node_type": "direct_hit"
+    },
+    {
+      "id": "wait_after_reward_4",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.5
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_claim_button_4",
+      "config": {
+        "x": 1590,
+        "y": 680,
+        "button": "left",
+        "clicks": 1,
+        "activate_window": true
+      },
+      "node_type": "direct_hit"
+    },
+    {
+      "id": "wait_after_claim_btn_4",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.5
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_claim_all_4",
+      "config": {
+        "text": "全部获得",
+        "roi": [
+          1390,
+          750,
+          100,
+          30
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_after_claim_all_4",
+      "config": {
+        "mode": "fixed",
+        "seconds": 2.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_reward_5",
+      "config": {
+        "x": 420,
+        "y": 810,
+        "button": "left",
+        "clicks": 1,
+        "activate_window": true
+      },
+      "node_type": "direct_hit"
+    },
+    {
+      "id": "wait_after_reward_5",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.5
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_claim_button_5",
+      "config": {
+        "x": 1590,
+        "y": 680,
+        "button": "left",
+        "clicks": 1,
+        "activate_window": true
+      },
+      "node_type": "direct_hit"
+    },
+    {
+      "id": "wait_after_claim_btn_5",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.5
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_claim_all_5",
+      "config": {
+        "text": "全部获得",
+        "roi": [
+          1390,
+          750,
+          100,
+          30
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_after_claim_all_5",
+      "config": {
+        "mode": "fixed",
+        "seconds": 2.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_reward_6",
+      "config": {
+        "x": 420,
+        "y": 930,
+        "button": "left",
+        "clicks": 1,
+        "activate_window": true
+      },
+      "node_type": "direct_hit"
+    },
+    {
+      "id": "wait_after_reward_6",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.5
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_claim_button_6",
+      "config": {
+        "x": 1590,
+        "y": 680,
+        "button": "left",
+        "clicks": 1,
+        "activate_window": true
+      },
+      "node_type": "direct_hit"
+    },
+    {
+      "id": "wait_after_claim_btn_6",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.5
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_claim_all_6",
+      "config": {
+        "text": "全部获得",
+        "roi": [
+          1390,
+          750,
+          100,
+          30
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_after_claim_all_6",
+      "config": {
+        "mode": "fixed",
+        "seconds": 2.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "back_to_main_esc",
+      "config": {
+        "key": "esc"
+      },
+      "node_type": "key_press"
+    },
+    {
+      "id": "wait_main_menu",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/public/主界面.png",
+        "threshold": 0.8,
+        "roi": [
+          1720,
+          20,
+          120,
+          70
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    }
+  ],
+  "edges": [
+    {
+      "source": "open_pass_ui",
+      "target": "wait_basic_rewards"
+    },
+    {
+      "source": "wait_basic_rewards",
+      "target": "click_reward_1"
+    },
+    {
+      "source": "click_reward_1",
+      "target": "wait_after_reward_1"
+    },
+    {
+      "source": "wait_after_reward_1",
+      "target": "click_claim_button_1"
+    },
+    {
+      "source": "click_claim_button_1",
+      "target": "wait_after_claim_btn_1"
+    },
+    {
+      "source": "wait_after_claim_btn_1",
+      "target": "click_claim_all_1"
+    },
+    {
+      "source": "click_claim_all_1",
+      "target": "wait_after_claim_all_1"
+    },
+    {
+      "source": "wait_after_claim_all_1",
+      "target": "click_reward_2"
+    },
+    {
+      "source": "click_reward_2",
+      "target": "wait_after_reward_2"
+    },
+    {
+      "source": "wait_after_reward_2",
+      "target": "click_claim_button_2"
+    },
+    {
+      "source": "click_claim_button_2",
+      "target": "wait_after_claim_btn_2"
+    },
+    {
+      "source": "wait_after_claim_btn_2",
+      "target": "click_claim_all_2"
+    },
+    {
+      "source": "click_claim_all_2",
+      "target": "wait_after_claim_all_2"
+    },
+    {
+      "source": "wait_after_claim_all_2",
+      "target": "click_reward_3"
+    },
+    {
+      "source": "click_reward_3",
+      "target": "wait_after_reward_3"
+    },
+    {
+      "source": "wait_after_reward_3",
+      "target": "click_claim_button_3"
+    },
+    {
+      "source": "click_claim_button_3",
+      "target": "wait_after_claim_btn_3"
+    },
+    {
+      "source": "wait_after_claim_btn_3",
+      "target": "click_claim_all_3"
+    },
+    {
+      "source": "click_claim_all_3",
+      "target": "wait_after_claim_all_3"
+    },
+    {
+      "source": "wait_after_claim_all_3",
+      "target": "click_reward_4"
+    },
+    {
+      "source": "click_reward_4",
+      "target": "wait_after_reward_4"
+    },
+    {
+      "source": "wait_after_reward_4",
+      "target": "click_claim_button_4"
+    },
+    {
+      "source": "click_claim_button_4",
+      "target": "wait_after_claim_btn_4"
+    },
+    {
+      "source": "wait_after_claim_btn_4",
+      "target": "click_claim_all_4"
+    },
+    {
+      "source": "click_claim_all_4",
+      "target": "wait_after_claim_all_4"
+    },
+    {
+      "source": "wait_after_claim_all_4",
+      "target": "click_reward_5"
+    },
+    {
+      "source": "click_reward_5",
+      "target": "wait_after_reward_5"
+    },
+    {
+      "source": "wait_after_reward_5",
+      "target": "click_claim_button_5"
+    },
+    {
+      "source": "click_claim_button_5",
+      "target": "wait_after_claim_btn_5"
+    },
+    {
+      "source": "wait_after_claim_btn_5",
+      "target": "click_claim_all_5"
+    },
+    {
+      "source": "click_claim_all_5",
+      "target": "wait_after_claim_all_5"
+    },
+    {
+      "source": "wait_after_claim_all_5",
+      "target": "click_reward_6"
+    },
+    {
+      "source": "click_reward_6",
+      "target": "wait_after_reward_6"
+    },
+    {
+      "source": "wait_after_reward_6",
+      "target": "click_claim_button_6"
+    },
+    {
+      "source": "click_claim_button_6",
+      "target": "wait_after_claim_btn_6"
+    },
+    {
+      "source": "wait_after_claim_btn_6",
+      "target": "click_claim_all_6"
+    },
+    {
+      "source": "click_claim_all_6",
+      "target": "wait_after_claim_all_6"
+    },
+    {
+      "source": "wait_after_claim_all_6",
+      "target": "back_to_main_esc"
+    },
+    {
+      "source": "back_to_main_esc",
+      "target": "wait_main_menu"
+    }
+  ]
+}
+

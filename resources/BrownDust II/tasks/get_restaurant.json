@@ -1,0 +1,216 @@
+{
+  "name": "get_restaurant",
+  "description": "BD2 restaurant reward claim — ported from BD2-AUTO src/auto_tasks/Default/tasks/get_restaurant.py. Click restaurant icon, claim reward, dismiss popup, navigate to 'regular customer' view, then return to main via H key. is_upgrade branch skipped (parameter-controlled, not runtime detection). ROIs at 1920x1080 base resolution. (pending e2e verification — R37-P2 C2 PoC covers login only)",
+  "version": "1.0.0",
+  "metadata": {
+    "original_base_res": [
+      1920,
+      1080
+    ]
+  },
+  "entry_node": "click_restaurant_icon",
+  "nodes": [
+    {
+      "id": "click_restaurant_icon",
+      "config": {
+        "x": 163,
+        "y": 257,
+        "button": "left",
+        "clicks": 1,
+        "activate_window": true
+      },
+      "node_type": "direct_hit"
+    },
+    {
+      "id": "wait_restaurant_identifier",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/get_restaurant/餐馆标识.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 15.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_obtain_text",
+      "config": {
+        "text": "获得",
+        "roi": [
+          997,
+          704,
+          198,
+          71
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_settlement_visible",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/get_restaurant/结算X.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 15.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_back_after_obtain",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          120,
+          20,
+          100,
+          66
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/public/返回键1.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_back_after_obtain",
+      "config": {
+        "mode": "disappear",
+        "template": "BrownDust II/templates/get_restaurant/结算X.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 10.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_immediate_go",
+      "config": {
+        "text": "立刻前往",
+        "roi": [
+          1036,
+          335,
+          232,
+          82
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_frequent_visitor",
+      "config": {
+        "mode": "ocr",
+        "text": "常客",
+        "roi": [
+          68,
+          241,
+          318,
+          161
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 1.0,
+        "timeout": 120.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_frequent_visitor",
+      "config": {
+        "text": "常客",
+        "roi": [
+          68,
+          241,
+          318,
+          161
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_2s",
+      "config": {
+        "mode": "fixed",
+        "seconds": 2.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "press_h_to_main",
+      "config": {
+        "key": "h"
+      },
+      "node_type": "key_press"
+    },
+    {
+      "id": "wait_main_menu",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/public/主界面.png",
+        "threshold": 0.8,
+        "roi": [
+          1720,
+          20,
+          120,
+          70
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    }
+  ],
+  "edges": [
+    {
+      "source": "click_restaurant_icon",
+      "target": "wait_restaurant_identifier"
+    },
+    {
+      "source": "wait_restaurant_identifier",
+      "target": "click_obtain_text"
+    },
+    {
+      "source": "click_obtain_text",
+      "target": "wait_settlement_visible"
+    },
+    {
+      "source": "wait_settlement_visible",
+      "target": "click_back_after_obtain"
+    },
+    {
+      "source": "click_back_after_obtain",
+      "target": "wait_back_after_obtain"
+    },
+    {
+      "source": "wait_back_after_obtain",
+      "target": "click_immediate_go"
+    },
+    {
+      "source": "click_immediate_go",
+      "target": "wait_frequent_visitor"
+    },
+    {
+      "source": "wait_frequent_visitor",
+      "target": "click_frequent_visitor"
+    },
+    {
+      "source": "click_frequent_visitor",
+      "target": "wait_2s"
+    },
+    {
+      "source": "wait_2s",
+      "target": "press_h_to_main"
+    },
+    {
+      "source": "press_h_to_main",
+      "target": "wait_main_menu"
+    }
+  ]
+}
+

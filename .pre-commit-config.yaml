@@ -1,0 +1,198 @@
+default_install_hook_types: [pre-commit, pre-push, post-commit]
+default_stages: [pre-commit]
+fail_fast: false
+
+repos:
+  - repo: local
+    hooks:
+      # === M2.D stages 分层 (2026-06-17):
+      #   pre-commit stage: 2 GAF hooks (governance batch + git-status guard)
+      #   manual stage: 4 lint hooks (eslint/prettier/ruff/mypy)
+      #   pre-push stage: 1 bypass rate hook
+      #   → local commit 不阻塞, CI 跑 manual stage
+      #   → 详见 docs/architecture/cross-cutting/pre-commit-stages.md
+      #
+      # === Performance optimization (2026-07-18):
+      #   Collapsed 10 governance hooks into 1 batch hook to avoid
+      #   pre-commit's ~5-6s venv activation overhead per hook.
+      #   Commit time: 71s → ~22s (3.2x speedup).
+      #   See scripts/hooks/gaf_governance_batch.py for details.
+
+      - id: eslint
+        name: ESLint (frontend, staged only — N110 fix, manual stage — M2.D)
+        entry: npx --prefix frontend eslint --no-warn-ignored
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js|jsx)$
+        pass_filenames: true
+        types: [file]
+        stages: [manual]
+
+      - id: prettier
+        name: Prettier (frontend, staged only — N110 fix, manual stage — M2.D)
+        entry: npx --prefix frontend prettier --check --config frontend/.prettierrc
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js|jsx|json|css|html)$
+        pass_filenames: true
+        types: [file]
+        stages: [manual]
+
+      - id: ruff
+        name: Ruff (backend + agent, staged only — N110 root-cause fix, manual stage — M2.D)
+        entry: ruff check
+        language: system
+        files: ^(backend|agent)/.*\.py$
+        exclude: (^|/)migrations/
+        pass_filenames: true
+        types: [file]
+        stages: [manual]
+
+      - id: mypy
+        name: mypy (backend, staged only — N110 fix, manual stage — M2.D)
+        entry: mypy
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: true
+        types: [file]
+        stages: [manual]
+
+      # === GAF knowledge system hooks (v8.3.1, optimized 2026-07-18) ===
+      # Collapsed 10 governance hooks into 1 batch hook to avoid pre-commit's
+      # ~5-6s venv activation overhead per hook (N150 language: python cost).
+      # Commit time: 71s → ~22s (3.2x speedup).
+      #
+      # The batch hook runs these 10 checks in one Python process:
+      #   1. check_session_active.py --check
+      #   2. sync_ai_memory.py (regenerates auto-files)
+      #   3. check_3step_evidence.py
+      #   4. check_lessons_updated.py
+      #   5. check_spec_consistency.py
+      #   6. sync_skills.py --check
+      #   7. promote_lessons.py --dry-run
+      #   8. sync_docs_index.py --check
+      #   9. check_path_consistency.py
+      #  10. check_yn_matrices_index.py
+      #
+      # N150 root-cause fix (2026-07-08): `language: python` (NOT `language: system`)
+      # so pre-commit creates a managed virtualenv. Previously `language: system`
+      # caused `python` to resolve to Windows Store stub (exit 9009).
+
+      - id: gaf-governance-batch
+        name: GAF governance batch (commit hot-path, 17 checks — TD-377 split)
+        entry: python scripts/hooks/gaf_governance_batch.py
+        language: python
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+        # TD-377 (option B, 2026-08-23): heavy pure-verify checks are split off
+        # the commit hot-path to keep `git commit` under 5s. Tree-modifying
+        # regen (sync_ai_memory, auto_archive_specs) stays on commit; the 6
+        # modules below are verify-only and run at pre-push (see
+        # gaf-governance-batch-push). NOTE: lessons.promote_lessons matches both
+        # its CHECKS entries (--dry-run + --check-cap), so one pattern covers both.
+        args:
+          - --skip
+          - bootstrap.sync_skills
+          - hooks.check_deps_sync
+          - bootstrap.sync_docs_index
+          - bootstrap.scan_scripts_vs_readme
+          - lessons.promote_lessons
+          - governance.sync_spec_index
+          # Gate-4 钩子分级 (2026-08-26): 形式合规类降级为 warn (失败不阻塞 commit)
+          - --warn
+          - bootstrap.check_session_active
+          - hooks.check_3step_evidence
+          - hooks.check_claimed_rules
+          - hooks.check_doc_path_drift
+
+      # (TD-377 2026-08-23) The following 7 pre-commit Python hooks were
+      # folded into gaf-governance-batch to reuse one interpreter process:
+      #   gaf-code-rules, gaf-tier-alignment, gaf-auto-archive-specs,
+      #   gaf-b2-evidence, gaf-spec-context, gaf-spec-id-collision,
+      #   gaf-evidence-completeness
+      # They now run inside the single `gaf-governance-batch` hook below.
+
+      # 🆕 v8.4 N105: hook-induced rollback guard.
+      # Must run LAST so all other hooks have had a chance to
+      # (mis)modify the working tree. Catches MM/MD/AM/AD state
+      # caused by hooks touching files that the user had already
+      # staged, and blocks the commit with a clear remediation hint.
+      - id: gaf-git-status-check
+        name: GAF git status post-hook check (N105 — MM state guard)
+        entry: python scripts/hooks/check_git_status_after_hook.py
+        language: python
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+
+      # === M2.C: pre-push bypass rate guard (滚动 30 commit + 30% 阈值) ===
+      - id: gaf-skip-rate
+        name: GAF bypass rate check (v8.3 滚动 30 + 30% 阈值)
+        entry: python scripts/hooks/check_skip_rate.py
+        language: python
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+
+      # === TD-377 (option B, 2026-08-23): heavy pure-verify checks split off the
+      # commit hot-path to keep `git commit` under 5s. These are verify-only
+      # (no working-tree modification), so safe to run at pre-push — if any fail,
+      # the push is blocked and the user re-commits the fix. Tree-modifying regen
+      # (sync_ai_memory, auto_archive_specs) is intentionally NOT here because it
+      # must run on commit (modifying post-commit would create unpushed drift).
+      - id: gaf-governance-batch-push
+        name: GAF governance batch (pre-push heavy verify — TD-377 split)
+        entry: python scripts/hooks/gaf_governance_batch.py
+        language: python
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+        args:
+          - --select
+          - bootstrap.sync_skills
+          - hooks.check_deps_sync
+          - bootstrap.sync_docs_index
+          - bootstrap.scan_scripts_vs_readme
+          - lessons.promote_lessons
+          - governance.sync_spec_index
+
+      # === N134 post-commit reflection batch (optimized 2026-07-18, N171) ===
+      # Collapsed 2 post-commit hooks into 1 batch hook to avoid pre-commit's
+      # ~1s venv activation overhead per hook. Post-commit time: 2.37s → ~1.2s.
+      #
+      # Runs AFTER the commit is created. Cannot block (git limitation) —
+      # only prints WARNINGS to stderr when a 50+ line commit lacks
+      # reflection evidence with A/B/C classification (project_rules.md §4.6).
+      # Also runs P4 auto-select Y/N reflection checklist (select_reflection_checks.py).
+      # Both checks are advisory (always exit 0).
+      - id: gaf-post-commit-batch
+        name: GAF post-commit batch (reflection + P4 checklist, single venv)
+        entry: python scripts/hooks/gaf_post_commit_batch.py
+        language: python
+        pass_filenames: false
+        always_run: true
+        stages: [post-commit]
+
+      # 🆕 M3 (2026-08-15): diff→lesson 触发式检索.
+      # post-commit 只提示不阻断: 按刚提交的 diff (路径 + 新增行) 匹配
+      # lessons front-matter diff_keywords, 输出相关教训清单.
+      # 让教训在"下一次踩坑"时自动出现 (TEST_SFCAPI 借鉴).
+      - id: gaf-lesson-diff-trigger
+        name: GAF lesson diff trigger (M3 — related lessons for this commit)
+        entry: python scripts/lessons/match_lessons_by_diff.py --base HEAD~1 --head HEAD
+        language: python
+        pass_filenames: false
+        always_run: true
+        stages: [post-commit]
+
+      # 🆕 P2 季度审计 (2026-07-16): audit_scripts.py manual stage
+      # 检测 90 天未修改 + 无 README 引用的脚本. 季度审计手动触发:
+      #   pre-commit run --hook-stage manual gaf-audit-scripts
+      # 不带 --check: informational only, exit 0 (不阻塞 manual stage)
+      # always_run: true — manual stage 需要显式 always_run, 否则无 staged 文件时 skip
+      - id: gaf-audit-scripts
+        name: GAF scripts quarterly audit (90 days stale + README ref)
+        entry: python scripts/bootstrap/audit_scripts.py
+        language: python
+        pass_filenames: false
+        always_run: true
+        stages: [manual]

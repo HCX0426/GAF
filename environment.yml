@@ -1,0 +1,9 @@
+name: gaf
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - -r backend/requirements/dev.txt

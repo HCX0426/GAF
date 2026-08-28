@@ -1,0 +1,43 @@
+{
+  "name": "stage_battle",
+  "description": "关卡战斗示例任务 — 演示 template_match 节点链式组合",
+  "version": "1.0.0",
+  "metadata": {
+    "original_base_res": [1280, 720]
+  },
+  "entry_node": "click_battle_button",
+  "nodes": [
+    {
+      "id": "click_battle_button",
+      "node_type": "template_match",
+      "config": {
+        "template": "GAF Default/templates/public/地图标识.png",
+        "roi": [1740, 20, 175, 88],
+        "roi_coord_type": "base",
+        "threshold": 0.8,
+        "click_on_match": true,
+        "continue_on_error": true
+      },
+      "retry": {
+        "max_retries": 3,
+        "base_delay": 1000
+      }
+    },
+    {
+      "id": "wait_for_battle",
+      "node_type": "wait",
+      "config": {
+        "mode": "template",
+        "template": "GAF Default/templates/public/自动战斗开关.png",
+        "roi": [1600, 833, 170, 140],
+        "roi_coord_type": "base",
+        "threshold": 0.8,
+        "check_interval": 1.0,
+        "timeout": 10.0
+      }
+    }
+  ],
+  "edges": [
+    {"source": "click_battle_button", "target": "wait_for_battle"}
+  ]
+}

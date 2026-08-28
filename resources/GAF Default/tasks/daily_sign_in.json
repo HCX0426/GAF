@@ -1,0 +1,44 @@
+{
+  "name": "daily_sign_in",
+  "description": "每日签到示例任务 — 演示 template_match + wait 节点组合",
+  "version": "1.0.0",
+  "metadata": {
+    "original_base_res": [1280, 720]
+  },
+  "entry_node": "detect_main_menu",
+  "nodes": [
+    {
+      "id": "detect_main_menu",
+      "node_type": "template_match",
+      "config": {
+        "template": "GAF Default/templates/public/主界面.png",
+        "roi": [1720, 20, 120, 70],
+        "roi_coord_type": "base",
+        "threshold": 0.8,
+        "click_on_match": false,
+        "continue_on_error": true
+      },
+      "retry": {
+        "max_retries": 3,
+        "base_delay": 1000
+      }
+    },
+    {
+      "id": "wait_for_sign_in",
+      "node_type": "wait",
+      "config": {
+        "mode": "template",
+        "template": "GAF Default/templates/public/主界面.png",
+        "roi": [1720, 20, 120, 70],
+        "roi_coord_type": "base",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 5.0,
+        "continue_on_error": true
+      }
+    }
+  ],
+  "edges": [
+    {"source": "detect_main_menu", "target": "wait_for_sign_in"}
+  ]
+}

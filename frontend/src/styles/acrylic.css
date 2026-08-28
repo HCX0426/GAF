@@ -1,0 +1,243 @@
+/**
+ * Win11 亚克力 / Mica 视觉效果 + 主题系统样式
+ * theme-light / theme-dark class 由 ThemeSwitcher 自动添加到 body
+ */
+
+:root {
+  --acrylic-blur: 24px;
+  --acrylic-saturation: 1.8;
+  --acrylic-opacity: 0.72;
+  --acrylic-bg-light: rgba(240, 242, 245, 0.72);
+  --acrylic-bg-dark: rgba(20, 20, 20, 0.78);
+  --acrylic-border-light: rgba(0, 0, 0, 0.06);
+  --acrylic-border-dark: rgba(255, 255, 255, 0.08);
+  --mica-bg-light: rgba(235, 237, 240, 0.78);
+  --mica-bg-dark: rgba(24, 24, 24, 0.82);
+  --body-bg-light: #f0f2f5;
+  --body-bg-dark: #0a0a0a;
+  --text-primary-light: rgba(0, 0, 0, 0.88);
+  --text-primary-dark: rgba(255, 255, 255, 0.88);
+  --text-secondary-light: rgba(0, 0, 0, 0.65);
+  --text-secondary-dark: rgba(255, 255, 255, 0.65);
+
+  /* 主题感知的灰色系文字颜色变量 */
+  --text-muted: rgba(0, 0, 0, 0.45);
+  --text-tertiary: rgba(0, 0, 0, 0.45);
+  --text-faint: rgba(0, 0, 0, 0.25);
+  --code-bg: #f5f5f5;
+  --code-text: rgba(0, 0, 0, 0.88);
+  --code-border: rgba(0, 0, 0, 0.08);
+  --editor-bg: #1e1e1e;
+  --editor-text: #d4d4d4;
+  --editor-border: #434343;
+}
+
+/* ========== 亮色主题 ========== */
+body.theme-light,
+body:not(.theme-dark) {
+  background: var(--body-bg-light);
+  color: var(--text-primary-light);
+  transition:
+    background 0.3s ease,
+    color 0.3s ease;
+  --text-muted: rgba(0, 0, 0, 0.45);
+  --text-tertiary: rgba(0, 0, 0, 0.45);
+  --text-faint: rgba(0, 0, 0, 0.25);
+  --code-bg: #f5f5f5;
+  --code-text: rgba(0, 0, 0, 0.88);
+  --code-border: rgba(0, 0, 0, 0.08);
+  --editor-bg: #f0f0f0;
+  --editor-text: rgba(0, 0, 0, 0.88);
+  --editor-border: rgba(0, 0, 0, 0.1);
+  --card-shadow: var(--shadow-sm);
+  --card-hover-shadow: var(--shadow-md);
+  --border-radius-card: var(--radius-md);
+}
+
+/* ========== 暗色主题 ========== */
+body.theme-dark {
+  background: var(--body-bg-dark);
+  color: var(--text-primary-dark);
+  --text-muted: rgba(255, 255, 255, 0.45);
+  --text-tertiary: rgba(255, 255, 255, 0.45);
+  --text-faint: rgba(255, 255, 255, 0.25);
+  --code-bg: #1e1e1e;
+  --code-text: #d4d4d4;
+  --code-border: #434343;
+  --editor-bg: #1e1e1e;
+  --editor-text: #d4d4d4;
+  --editor-border: #434343;
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --card-hover-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --border-radius-card: var(--radius-md);
+}
+
+/* 暗色主题滚动条 */
+body.theme-dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+body.theme-dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* ========== 亚克力面板 ========== */
+.acrylic-panel {
+  background: var(--acrylic-bg-light);
+  backdrop-filter: blur(var(--acrylic-blur)) saturate(var(--acrylic-saturation));
+  -webkit-backdrop-filter: blur(var(--acrylic-blur)) saturate(var(--acrylic-saturation));
+  border: 1px solid var(--acrylic-border-light);
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease;
+}
+
+/* ========== Mica 面板 ========== */
+.mica-panel {
+  background: var(--mica-bg-light);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border: 1px solid var(--acrylic-border-light);
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease;
+}
+
+/* ========== Win11 卡片 ========== */
+.win11-card {
+  background: var(--acrylic-bg-light);
+  backdrop-filter: blur(var(--acrylic-blur)) saturate(var(--acrylic-saturation));
+  -webkit-backdrop-filter: blur(var(--acrylic-blur)) saturate(var(--acrylic-saturation));
+  border: 1px solid var(--acrylic-border-light);
+  border-radius: 8px;
+  transition:
+    background 0.3s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.3s ease;
+}
+.win11-card:hover {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+/* ========== Win11 侧边栏 ========== */
+.win11-sidebar {
+  background: var(--mica-bg-light);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border-right: 1px solid var(--acrylic-border-light);
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease;
+}
+
+/* ========== Win11 头部 ========== */
+.win11-header {
+  background: var(--acrylic-bg-light);
+  backdrop-filter: blur(var(--acrylic-blur)) saturate(var(--acrylic-saturation));
+  -webkit-backdrop-filter: blur(var(--acrylic-blur)) saturate(var(--acrylic-saturation));
+  border-bottom: 1px solid var(--acrylic-border-light);
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease;
+}
+
+/* ========== 暗色主题覆盖 ========== */
+body.theme-dark .acrylic-panel {
+  background: var(--acrylic-bg-dark);
+  border-color: var(--acrylic-border-dark);
+}
+
+body.theme-dark .mica-panel {
+  background: var(--mica-bg-dark);
+  border-color: var(--acrylic-border-dark);
+}
+
+body.theme-dark .win11-card {
+  background: var(--acrylic-bg-dark);
+  border-color: var(--acrylic-border-dark);
+}
+body.theme-dark .win11-card:hover {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+body.theme-dark .win11-sidebar {
+  background: var(--mica-bg-dark);
+  border-color: var(--acrylic-border-dark);
+}
+
+body.theme-dark .win11-header {
+  background: var(--acrylic-bg-dark);
+  border-color: var(--acrylic-border-dark);
+}
+
+/* ========== 拖拽状态 ========== */
+.drag-over {
+  box-shadow: 0 0 0 2px #1890ff;
+  transform: scale(1.02);
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+.dragging {
+  opacity: 0.4;
+  transform: scale(0.96);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+.widget-drag-handle {
+  cursor: grab;
+  opacity: 0.4;
+  transition: opacity 0.15s ease;
+}
+.widget-drag-handle:hover {
+  opacity: 0.8;
+}
+.widget-drag-handle:active {
+  cursor: grabbing;
+  opacity: 1;
+}
+
+/* ========== DPI 缩放 ========== */
+.dpi-scaled {
+  transform-origin: top left;
+  transition: transform 0.2s ease;
+}
+
+/* ========== 设计令牌系统 ========== */
+:root {
+  /* 间距系统 - 8px 基准 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  --spacing-2xl: 32px;
+  --spacing-3xl: 48px;
+
+  /* 阴影系统 */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.15);
+  --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.2);
+
+  /* 圆角系统 */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* 过渡动画 */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* 层级 */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-tooltip: 500;
+}

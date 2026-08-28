@@ -1,0 +1,80 @@
+name: error_diagnosis
+version: "1.0.0"
+description: "分析任务执行错误，提供诊断和修复建议"
+model: deepseek-chat
+is_builtin: true
+author: GAF
+applicable_scenarios:
+  - error
+  - exception
+  - traceback
+  - crash
+  - fail
+
+system_prompt: |
+  你是一个专业的自动化脚本错误诊断助手。
+  你需要分析任务执行过程中的错误信息，包括：
+  1. 错误类型和原因
+  2. 可能的修复方案
+  3. 预防措施
+
+  请用中文回答，格式清晰。
+
+user_prompt_template: |
+  请诊断以下任务执行错误：
+
+  任务名称：{{task_name}}
+  错误信息：{{error_message}}
+  错误堆栈：{{error_traceback}}
+  执行步骤：{{step_name}} (步骤 {{step_index}}/{{total_steps}})
+  截图描述：{{screenshot_description}}
+
+  任务配置：
+  {{task_config}}
+
+context:
+  collect_screenshot: true
+  collect_log: true
+  collect_task_config: true
+  collect_device_info: true
+  max_log_lines: 100
+  max_screenshot_count: 3
+
+parameters:
+  temperature:
+    type: float
+    default: 0.5
+    min: 0.0
+    max: 1.0
+    description: "生成温度"
+  max_tokens:
+    type: integer
+    default: 2000
+    min: 100
+    max: 8000
+    description: "最大生成 Token 数"
+
+output:
+  format: json
+  schema:
+    type: object
+    properties:
+      error_type:
+        type: string
+      root_cause:
+        type: string
+      fix_suggestions:
+        type: array
+        items:
+          type: string
+      prevention:
+        type: array
+        items:
+          type: string
+      confidence:
+        type: number
+
+cost_control:
+  max_tokens_per_call: 4000
+  max_calls_per_day: 30
+  max_cost_per_day: 0.5

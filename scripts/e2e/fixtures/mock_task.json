@@ -1,0 +1,12 @@
+{
+  "task_id": "MOCK-001",
+  "name": "add user 2FA",
+  "type": "new_feature",
+  "priority": "P1",
+  "module": "auth",
+  "payload": {
+    "depends_on": ["P-024 告警升级"],
+    "estimated_hours": 1.0,
+    "files": ["backend/auth/views.py", "backend/auth/serializers.py"]
+  }
+}

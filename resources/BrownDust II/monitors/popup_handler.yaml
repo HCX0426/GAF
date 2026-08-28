@@ -1,0 +1,9 @@
+name: popup_handler
+description: 通用弹窗处理器
+rules:
+  - template: public/返回键1.png
+    action: click
+    description: 关闭弹窗（返回键 1）
+  - template: public/返回键2.png
+    action: click
+    description: 关闭弹窗（返回键 2，备用）

@@ -1,0 +1,862 @@
+/**
+ * GAF 组件样式增强
+ * 统一卡片、表格、表单的视觉样式
+ */
+
+/* ========== 卡片增强 ========== */
+.ant-card {
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--card-shadow, 0 1px 2px rgba(0, 0, 0, 0.06)) !important;
+  transition:
+    box-shadow var(--transition-base),
+    transform var(--transition-fast) !important;
+}
+
+.ant-card:hover {
+  box-shadow: var(--card-hover-shadow, 0 2px 8px rgba(0, 0, 0, 0.1)) !important;
+}
+
+.ant-card-head {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+  padding: var(--spacing-md) var(--spacing-lg) !important;
+}
+
+body.theme-dark .ant-card-head {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.ant-card-body {
+  padding: var(--spacing-lg) !important;
+}
+
+/* ========== 表格增强 ========== */
+.ant-table {
+  border-radius: var(--radius-md) !important;
+}
+
+.ant-table-thead > tr > th {
+  background: var(--colorBgLayout, #fafafa) !important;
+  font-weight: 600 !important;
+  border-bottom: 2px solid var(--colorBorder, #f0f0f0) !important;
+  white-space: nowrap;
+}
+
+body.theme-dark .ant-table-thead > tr > th {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: var(--colorBgLayout, #fafafa) !important;
+}
+
+/** Global table cell ellipsis — prevents long text from breaking layout */
+.ant-table-cell {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/** Allow multi-line cells to wrap when explicitly set */
+.ant-table-cell.wrap-cell {
+  white-space: normal !important;
+  word-break: break-word !important;
+}
+
+/** Table responsive: force horizontal scroll when content overflows */
+.ant-table-wrapper {
+  overflow-x: auto !important;
+}
+
+.ant-table-container {
+  width: 100% !important;
+}
+
+/* ========== 按钮增强 ========== */
+.ant-btn {
+  border-radius: var(--radius-sm) !important;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast) !important;
+}
+
+.ant-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.ant-btn:active {
+  transform: translateY(0);
+}
+
+/* ========== 输入框增强 ========== */
+.ant-input,
+.ant-input-password {
+  border-radius: var(--radius-sm) !important;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast) !important;
+}
+
+.ant-input:focus,
+.ant-input-password:focus {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1) !important;
+}
+
+/* ========== Statistic 增强 ========== */
+.ant-statistic {
+  padding: var(--spacing-sm) 0;
+}
+
+.ant-statistic-content {
+  font-weight: 600;
+}
+
+/* ========== Tag 增强 ========== */
+.ant-tag {
+  border-radius: var(--radius-sm) !important;
+  padding: 2px 8px !important;
+  font-weight: 500;
+}
+
+/* ========== 分隔线增强 ========== */
+.ant-divider {
+  margin: var(--spacing-md) 0 !important;
+}
+
+/* ========== Badge 增强 ========== */
+.ant-badge-count {
+  font-weight: 600;
+}
+
+/* ========== 滚动条美化 ========== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--colorBorder, #d9d9d9);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--colorTextTertiary, #888);
+}
+
+/* ========== 动画系统 ========== */
+
+/* 内容加载动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 卡片淡入效果 */
+.ant-card {
+  animation: fadeIn var(--transition-slow, 0.3s) ease forwards;
+}
+
+/* 列表项交错动画 */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.ant-table-tbody > tr {
+  animation: slideIn var(--transition-base, 0.2s) ease forwards;
+}
+
+/* 为每行添加延迟 */
+.ant-table-tbody > tr:nth-child(1) {
+  animation-delay: 0ms;
+}
+.ant-table-tbody > tr:nth-child(2) {
+  animation-delay: 50ms;
+}
+.ant-table-tbody > tr:nth-child(3) {
+  animation-delay: 100ms;
+}
+.ant-table-tbody > tr:nth-child(4) {
+  animation-delay: 150ms;
+}
+.ant-table-tbody > tr:nth-child(5) {
+  animation-delay: 200ms;
+}
+.ant-table-tbody > tr:nth-child(n + 6) {
+  animation-delay: 250ms;
+}
+
+/* 加载状态动画 */
+.ant-skeleton {
+  padding: var(--spacing-lg, 16px);
+}
+
+/* 页面切换过渡 */
+.page-content {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+/* Modal 打开动画增强 */
+.ant-modal {
+  animation: fadeIn 0.2s ease forwards;
+}
+
+/* Drawer 打开动画增强 */
+.ant-drawer {
+  animation: slideIn 0.3s ease forwards;
+}
+
+/* Tooltip 淡入 */
+.ant-tooltip {
+  animation: fadeIn 0.15s ease forwards;
+}
+
+/* Dropdown 淡入 */
+.ant-dropdown {
+  animation: fadeIn 0.15s ease forwards;
+}
+
+/* 通知卡片加载动画 */
+.ant-list-item {
+  animation: fadeIn 0.2s ease forwards;
+}
+
+/* ========== 页面容器（PageWrapper） ========== */
+.gaf-page {
+  padding: var(--spacing-lg, 16px);
+  height: 100%;
+  overflow: auto;
+  animation: fadeIn 0.25s ease forwards;
+}
+
+.gaf-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md, 16px);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gaf-page-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--colorText, rgba(0, 0, 0, 0.88));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+body.theme-dark .gaf-page-title {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.gaf-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ========== 工具栏分组（Pipeline 编辑器等） ========== */
+.gaf-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  min-height: 40px;
+}
+
+.gaf-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+}
+
+.gaf-toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--colorBorderSecondary, #e5e5e5);
+  flex-shrink: 0;
+}
+
+body.theme-dark .gaf-toolbar-divider {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.gaf-toolbar-spacer {
+  flex: 1 1 100%;
+  min-width: 8px;
+}
+
+/* ========== 响应式断点增强 ========== */
+@media (max-width: 1200px) {
+  .gaf-toolbar {
+    gap: 2px;
+    padding: 6px 8px;
+  }
+  .gaf-toolbar-group {
+    padding: 0 4px;
+  }
+}
+
+@media (max-width: 992px) {
+  .gaf-page {
+    padding: var(--spacing-md, 12px);
+  }
+}
+
+/* ========== Utility classes (replace common inline styles) ========== */
+.gaf-flex {
+  display: flex;
+}
+.gaf-flex-col {
+  display: flex;
+  flex-direction: column;
+}
+.gaf-flex-center {
+  display: flex;
+  align-items: center;
+}
+.gaf-flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.gaf-flex-wrap {
+  flex-wrap: wrap;
+}
+.gaf-flex-1 {
+  flex: 1;
+}
+
+.gaf-gap-xs {
+  gap: 4px;
+}
+.gaf-gap-sm {
+  gap: 8px;
+}
+.gaf-gap-md {
+  gap: 12px;
+}
+.gaf-gap-lg {
+  gap: 16px;
+}
+.gaf-gap-xl {
+  gap: 24px;
+}
+
+.gaf-mb-xs {
+  margin-bottom: 4px;
+}
+.gaf-mb-sm {
+  margin-bottom: 8px;
+}
+.gaf-mb-md {
+  margin-bottom: 12px;
+}
+.gaf-mb-lg {
+  margin-bottom: 16px;
+}
+.gaf-mb-xl {
+  margin-bottom: 24px;
+}
+
+.gaf-mt-xs {
+  margin-top: 4px;
+}
+.gaf-mt-sm {
+  margin-top: 8px;
+}
+.gaf-mt-md {
+  margin-top: 12px;
+}
+.gaf-mt-lg {
+  margin-top: 16px;
+}
+.gaf-mt-xl {
+  margin-top: 24px;
+}
+
+.gaf-w-sm {
+  width: 120px;
+}
+.gaf-w-md {
+  width: 220px;
+}
+.gaf-w-lg {
+  width: 320px;
+}
+.gaf-w-full {
+  width: 100%;
+}
+
+.gaf-hidden {
+  display: none;
+}
+.gaf-text-sm {
+  font-size: 14px;
+}
+.gaf-text-md {
+  font-size: 16px;
+}
+.gaf-text-lg {
+  font-size: 18px;
+}
+.gaf-font-medium {
+  font-weight: 500;
+}
+.gaf-font-semibold {
+  font-weight: 600;
+}
+.gaf-font-bold {
+  font-weight: 700;
+}
+.gaf-m-0 {
+  margin: 0;
+}
+
+/* Combined utility: flex center + gap (most common pattern) */
+.gaf-flex-center.gaf-gap-xs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.gaf-flex-center.gaf-gap-sm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gaf-flex-center.gaf-gap-md {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.gaf-flex-center.gaf-gap-lg {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Combined utility: flex between + gap + wrap (page header pattern) */
+.gaf-flex-between.gaf-gap-sm {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.gaf-flex-between.gaf-gap-md {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.gaf-flex-between.gaf-gap-lg {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+/* ========== Form row layout (label left, controls right, always left-aligned) ========== */
+.gaf-form-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+.gaf-form-label {
+  flex: 0 0 84px;
+  padding-top: 5px;
+  text-align: left;
+  font-weight: 500;
+  color: var(--colorText, rgba(0, 0, 0, 0.88));
+}
+
+.gaf-form-controls {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.gaf-form-controls .ant-input-number,
+.gaf-form-controls .ant-select,
+.gaf-form-controls .ant-input {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 576px) {
+  .gaf-form-row {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .gaf-form-label {
+    flex: 0 0 auto;
+    padding-top: 0;
+  }
+
+  .gaf-form-controls {
+    width: 100%;
+  }
+}
+
+/* ========== Extended utility classes ========== */
+.gaf-text-xs {
+  font-size: 12px;
+}
+.gaf-text-xxs {
+  font-size: 11px;
+}
+.gaf-text-xl {
+  font-size: 20px;
+}
+.gaf-text-2xl {
+  font-size: 24px;
+}
+
+.gaf-p-0 {
+  padding: 0;
+}
+.gaf-p-xs {
+  padding: 4px;
+}
+.gaf-p-sm {
+  padding: 8px;
+}
+.gaf-p-md {
+  padding: 12px;
+}
+.gaf-p-lg {
+  padding: 16px;
+}
+.gaf-p-xl {
+  padding: 24px;
+}
+
+.gaf-px-xs {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+.gaf-px-sm {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.gaf-px-md {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.gaf-px-lg {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+.gaf-py-xs {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.gaf-py-sm {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.gaf-py-md {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+.gaf-py-lg {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+.gaf-ml-auto {
+  margin-left: auto;
+}
+.gaf-ml-xs {
+  margin-left: 4px;
+}
+.gaf-ml-sm {
+  margin-left: 8px;
+}
+.gaf-ml-md {
+  margin-left: 12px;
+}
+.gaf-mr-xs {
+  margin-right: 4px;
+}
+.gaf-mr-sm {
+  margin-right: 8px;
+}
+.gaf-mr-md {
+  margin-right: 12px;
+}
+.gaf-mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.gaf-w-xs {
+  width: 100px;
+}
+.gaf-w-200 {
+  width: 200px;
+}
+.gaf-w-auto {
+  width: auto;
+}
+.gaf-inline-flex {
+  display: inline-flex;
+}
+.gaf-text-center {
+  text-align: center;
+}
+.gaf-text-left {
+  text-align: left;
+}
+.gaf-text-right {
+  text-align: right;
+}
+.gaf-overflow-auto {
+  overflow: auto;
+}
+.gaf-overflow-hidden {
+  overflow: hidden;
+}
+
+/* ========== Phase 3a: extended utility classes for inline-style migration ==========
+   Added by spec-75 (TD-294 Phase 3a) to support migrating high-density inline
+   styles to className in LogAnalysisPanel / PipelineEditorPage / LiveAnnotationTab /
+   QAPanel. Each class corresponds to a recurring inline-style pattern found in
+   those 4 files (B-class migrations, see spec-75 evaluation). */
+.gaf-h-full {
+  height: 100%;
+}
+.gaf-flex-shrink-0 {
+  flex-shrink: 0;
+}
+.gaf-overflow-y-auto {
+  overflow-y: auto;
+}
+.gaf-whitespace-pre-wrap {
+  white-space: pre-wrap;
+}
+.gaf-text-13 {
+  font-size: 13px;
+}
+.gaf-cursor-pointer {
+  cursor: pointer;
+}
+.gaf-position-relative {
+  position: relative;
+}
+.gaf-position-absolute {
+  position: absolute;
+}
+.gaf-w-360 {
+  width: 360px;
+}
+.gaf-radius-sm {
+  border-radius: 4px;
+}
+.gaf-radius-md {
+  border-radius: 6px;
+}
+.gaf-radius-lg {
+  border-radius: 8px;
+}
+.gaf-text-28 {
+  font-size: 28px;
+}
+.gaf-min-h-screen {
+  min-height: 100vh;
+}
+.gaf-justify-center {
+  justify-content: center;
+}
+.gaf-display-block {
+  display: block;
+}
+.gaf-pr-sm {
+  padding-right: 8px;
+}
+.gaf-font-mono {
+  font-family: Consolas, Monaco, 'Courier New', monospace;
+}
+.gaf-word-break {
+  word-break: break-word;
+}
+
+/* ========== AntD Tabs: multi-line tab bar wrapping ========== */
+/* Allow operation tabs (click/key/text/swipe/...) to wrap to a second line
+   instead of being hidden behind a "more" dropdown. */
+.gaf-tabs-wrap .ant-tabs-nav-list {
+  flex-wrap: wrap !important;
+  white-space: normal !important;
+}
+
+/* Let wrapped rows be visible instead of being clipped by the scroll wrap */
+.gaf-tabs-wrap .ant-tabs-nav-wrap {
+  overflow: visible !important;
+}
+
+/* Hide the "more" operations dropdown — all tabs are visible when wrapped */
+.gaf-tabs-wrap .ant-tabs-nav-operations {
+  display: none !important;
+}
+
+/* Keep the nav itself from overflowing */
+.gaf-tabs-wrap .ant-tabs-nav {
+  overflow: visible !important;
+}
+
+/* AntD Tabs' ink bar is absolutely positioned for a single row; when tabs wrap
+   it lands on the wrong visual row. Hide it and indicate the active tab via
+   background color + text color instead. */
+.gaf-tabs-wrap .ant-tabs-ink-bar {
+  display: none !important;
+}
+
+.gaf-tabs-wrap .ant-tabs-tab {
+  border-radius: var(--radius-sm, 4px);
+  transition:
+    background-color var(--transition-fast, 0.1s),
+    color var(--transition-fast, 0.1s);
+}
+
+.gaf-tabs-wrap .ant-tabs-tab-active {
+  background-color: var(--ant-color-primary-bg, rgba(22, 119, 255, 0.12));
+}
+
+.gaf-tabs-wrap .ant-tabs-tab-active .ant-tabs-tab-btn,
+.gaf-tabs-wrap .ant-tabs-tab-active {
+  color: var(--ant-color-primary, #1677ff) !important;
+}
+
+/* Section title spacing: AntD Typography.Title default margin is too tight
+   against the Descriptions block below it. */
+.gaf-section-title {
+  margin-bottom: var(--spacing-sm, 8px) !important;
+}
+
+/* ========== Reduced Motion: respect user's motion preference =========== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ========== Terminal sub-theme (VS Code-style dark log panel) ==========
+   Added by spec-93 (TD-330 sub-spec 1) to extract the dark terminal
+   inline styles from ExecutionMonitorPanel into reusable classes. The
+   terminal is intentionally dark in both light and dark app themes — it
+   mimics a VS Code editor background, so body.theme-dark overrides are
+   no-ops (same colors). Reusable by other log/terminal panels. */
+
+.gaf-terminal {
+  display: flex;
+  flex-direction: column;
+  background: #1e1e1e;
+}
+
+.gaf-terminal-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border-bottom: 1px solid #333;
+  background: #252526;
+}
+
+.gaf-terminal-toolbar-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #ccc;
+}
+
+.gaf-terminal-input {
+  width: 160px;
+  background: #3c3c3c;
+  border-color: #555;
+  color: #ddd;
+}
+
+.gaf-terminal-input::placeholder {
+  color: #888;
+}
+
+.gaf-terminal-btn-quiet {
+  background: #3c3c3c;
+  border-color: #555;
+  color: #ccc;
+}
+
+.gaf-terminal-log {
+  flex: 1;
+  padding: 6px 10px;
+  font-family: Consolas, 'Courier New', monospace;
+  line-height: 20px;
+  font-size: 12px;
+  color: #d4d4d4;
+  overflow: auto;
+}
+
+.gaf-terminal-log-entry {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.gaf-terminal-log-empty {
+  text-align: center;
+  color: #666;
+  padding: 40px 0;
+}
+
+.gaf-terminal-log-time {
+  margin-right: 8px;
+  color: #888;
+}
+
+.gaf-terminal-log-level {
+  margin-right: 8px;
+}
+
+.gaf-terminal-log-level-error {
+  font-weight: 600;
+}
+
+/* Dark app theme: terminal stays dark (no-op override, kept for clarity) */
+body.theme-dark .gaf-terminal,
+body.theme-dark .gaf-terminal-toolbar,
+body.theme-dark .gaf-terminal-input,
+body.theme-dark .gaf-terminal-log {
+  /* same as light-app-theme terminal — intentionally dark */
+}

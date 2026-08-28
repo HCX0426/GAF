@@ -1,0 +1,78 @@
+name: task_optimization
+version: "1.0.0"
+description: "分析任务执行效率，提供优化建议"
+model: deepseek-chat
+is_builtin: true
+author: GAF
+applicable_scenarios:
+  - task
+  - optimize
+  - flow
+  - chain
+
+system_prompt: |
+  你是一个自动化脚本优化专家。
+  分析任务执行数据，提供以下优化建议：
+  1. 执行时间优化
+  2. 重试策略优化
+  3. 步骤合并/精简
+  4. 资源使用优化
+
+user_prompt_template: |
+  请分析以下任务的执行效率并提供优化建议：
+
+  任务名称：{{task_name}}
+  总执行时间：{{total_duration}}秒
+  步骤执行详情：
+  {{step_details}}
+
+  重试统计：
+  {{retry_stats}}
+
+context:
+  collect_screenshot: false
+  collect_log: true
+  collect_task_config: true
+  collect_device_info: false
+  max_log_lines: 50
+  max_screenshot_count: 0
+
+parameters:
+  temperature:
+    type: float
+    default: 0.4
+    min: 0.0
+    max: 1.0
+    description: "生成温度（偏低以保证建议稳定）"
+  max_tokens:
+    type: integer
+    default: 2000
+    min: 100
+    max: 8000
+    description: "最大生成 Token 数"
+
+output:
+  format: json
+  schema:
+    type: object
+    properties:
+      current_efficiency:
+        type: string
+      optimization_suggestions:
+        type: array
+        items:
+          type: object
+          properties:
+            category:
+              type: string
+            suggestion:
+              type: string
+            expected_improvement:
+              type: string
+            priority:
+              type: string
+
+cost_control:
+  max_tokens_per_call: 3000
+  max_calls_per_day: 20
+  max_cost_per_day: 0.3

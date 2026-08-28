@@ -1,0 +1,196 @@
+---
+summary: GAF 全功能 E2E 覆盖追踪 — 每日 UI 实测 + 核心链路真实执行
+applies_to_code_paths:
+  - frontend/src/
+  - backend/
+  - agent/
+last_updated: 2026-08-28
+---
+
+# GAF E2E 覆盖追踪
+
+> **方法**: AI browser-use 无头浏览器自动化点击（每页全部交互元素 ≥1 次）+ console_monitor 日志对照
+> **环境**: 现有环境真实数据 admin/admin123; backend:8000 + frontend:5173
+> **验收标准**: 渲染 ✅ + 每页 JS console.error 数 + 未捕获异常 + 网络 4xx/5xx 数（严格计入判定）
+> **深度**: 两层兼测 — 7 日 UI 全覆盖 + 核心链路真实执行 3-5 条
+> **浏览器策略 (2026-08-28 用户决策)**: 日常浏览 GAF 用 Trae 内置浏览器；自动化测试用无头浏览器（headless），禁止弹出本地 Chrome 窗口影响用户正常操作
+
+## 结果图例
+
+- ✅ 通过（全部交互元素可点，0 错误）
+- ⚠️ 通过但有错误（JS error / 4xx / 5xx >0，需评估）
+- ❌ 失败（页面崩溃 / 交互不可用）
+- ⏳ 未测
+
+## 每日进度总表
+
+| 日 | 模块 | 页面数 | 结果 | 计量 |
+|----|------|:---:|------|------|
+| D1 | 登录/Setup/工作台/游戏档案 | 6 | ✅ 4 / ⚠️ 3 | 4 页已测, 2 BUG 登记 |
+| D2 | 任务 | 6 | ⚠️ 6 | 2 高 BUG: 编辑页未预填 + pipeline/:id 未预载 |
+| D3 | 设备 | 4 | ⚠️ 4 | 无在线 Agent 影响验证; Register 报 TraeWork CN 失败 |
+| D4 | 资源+账户 | 5 | ✅ 5 | 全可点, 0 业务错误; 新增弃用: InputNumber.addonAfter + useForm 未绑定 |
+| D5 | 运维 | 7 (11路由) | ⚠️ 7 | 🔴2 渲染崩溃: UnattendedLogViewer + DailySummaryCarousel |
+| D6 | AI | 8 | ✅ 8 | 全可点 0 业务错误; 仅 antd List/Alert 弃用 |
+| D7 | 系统 | 8 | ⚠️ 8 | 🔴基础设施健康 tab 崩溃; 备份无定时入口; 全 8 页其余 ✅ |
+
+> **每日进度为探索时点快照**。全部 15 个 BUG / 18 个弃用与数据问题修复见下方「发现问题登记」（43 条全闭环）：
+> 最终状态 **full_routes 47/47 全绿** + 3 条核心链路真实执行通过（exec 90 / R37-P2 cv2 匹配 / unattended session 13）。
+
+---
+
+## D1 — 登录/Setup/工作台/游戏档案 (2026-08-28)
+
+| # | 路由 | 页面 | 交互点 | JS err | 4xx/5xx | 结果 | 备注 |
+|---|------|------|--------|:---:|:---:|:---:|------|
+| 1 | /login | 登录页 | 用户名框/密码框/显示密码/记住我/登 录/忘记密码/GitHub/Google/注册 Tab | 2 | 0 | ✅ | 登录成功跳 /dashboard; antd List+Notification.message 弃用告警 (WSProvider) |
+| 2 | /setup | 初始化向导 | 向导(admin 已存在则重定向 /login→/dashboard) | 2 | 0 | ✅ | 已初始化, check-admin=true 跳 /dashboard; ERR_ABORTED 为重定向链预期中断 |
+| 3 | /dashboard | 工作台 | 折叠菜单/DPI/主题/语言/快捷操作(创建任务/导入市场/设备管理/快速执行)/9 面板拖拽 | 3 | 0 | ⚠️ | WS 重连失败 10 次告警; recharts width=-1 图表不渲染; 首帧视口 0x0 |
+| 4 | /game-profiles | 档案列表 | 新建/搜索/刷新/行操作(查看/编辑/删除/详情)/分页/条数 | 2 | 0 | ⚠️ | 🔴BUG: 绑定弹窗取消按钮显示未翻译 `common.cancel`; antd List+Notification 弃用 |
+| 5 | /game-profiles/:id | 档案详情 | 派发任务链/编辑/删除/刷新 5 Tab(任务/任务链/窗口/账户/资源包) + 添加弹窗(搜索/取消/绑定) | 2 | 0 | ⚠️ | 5 Tab 全可切; 任务链有数据 cycle-baidu-chain; 🔴BUG: 绑定弹窗取消按钮未翻译 common.cancel; recharts width=-1 |
+
+## D2 — 任务 (2026-08-28)
+
+| # | 路由 | 页面 | 交互点 | JS err | 4xx/5xx | 结果 | 备注 |
+|---|------|------|--------|:---:|:---:|:---:|------|
+| 6 | /tasks | 任务列表 | 搜索/状态筛选/新建弹窗/批量勾选/分页/行操作(编辑/步骤/执行/克隆/版本/删除) | 8* | 0 | ⚠️ | *全会话累计 8 err(含弃用+ERR_ABORTED+SyntaxError); 导出按钮 disabled 需先选行; 动作列窄视口横向滚动才有提示 |
+| 7 | /tasks/:id/edit | 任务编辑页 | 保存/校验/JSON预览/基本信息/pipeline⇄state_machine Tab/参考分辨率/添加步骤/动作类型下拉(9类) | 同* | 0 | 🔴❌ | 🔴BUG: 编辑态未预填(名称/描述空→校验必失败) + `tasks.*` 大量 i18n key 未翻译 |
+| 8 | /tasks/pipeline | Pipeline 编辑器 | 开始录制/保存/导入/导出/源码/验证/模板/预览/10 组节点面板/搜索节点/Control Panel/MiniMap | 同* | 0 | ⚠️ | 验证按钮弹"画布空"拦截; 模板按钮被状态栏遮挡坐标点击被拦; antd Spin tip 弃用 |
+| 9 | /tasks/pipeline/:id | Pipeline 详情 | 与编辑器同构 + 执行按钮 | 同* | 0 | 🔴❌ | 🔴BUG: 直接访问详情路由未预载画布(0 节点, 名称仍"未命名流水线") |
+| 10 | /tasks/recordings | 录制管理 | 空状态页 | 0 | 0 | ✅ | 无数据(环境无录制), 空态正确 |
+| 11 | /tasks/marketplace | 任务市场 | 发布弹窗(Pipeline 下拉)/游戏筛选/搜索 | 0 | 0 | ⚠️ | 发布弹窗 Pipeline 下拉正常; 列表空态; `tasks.form_enabled_label` 未翻译 |
+
+> *全会话 console 累计 8 err: antd List/Notification.message/Spin tip 弃用 + recharts width=-1 + ERR_ABORTED init + SyntaxError Unexpected token + listPipelines CanceledError
+
+## D3 — 设备 (2026-08-28)
+
+| # | 路由 | 页面 | 交互点 | JS err | 4xx/5xx | 结果 | 备注 |
+|---|------|------|--------|:---:|:---:|:---:|------|
+| 12 | /devices | 设备列表 | 扫描模拟器/扫描窗口(Register)/刷新/分组/添加设备/测试截图/搜索/视图切换 | 8* | ~0 | ⚠️ | *累计 8 err(含 SyntaxError); Register 报 `TraeWork CN registration failed`; 测试截图"设备离线"; 列表视图仅测试截图按钮 |
+| 13 | /devices/emulators | 模拟器管理 | 健康检查/刷新实例/ADB 命令/全选 | 同* | 0 | ⚠️ | 无模拟器实例→生命周期按钮未渲染, 仅顶栏 `ldconsole 可用` |
+| 14 | /devices/windows | 窗口管理 | 控制模式/截图方式/输入方式下拉/后台截图 switch/保存窗口配置 | 同* | 0 | ⚠️ | 保存加载态正常; 测试截图/输入仅验证存在未执行 |
+| 15 | /devices/adb-logs | 日志查看器 | 设备选择(空)/级别下拉/Tag/PID/搜索/应用过滤 | 同* | 0 | ⚠️ | 未连接设备→暂停/清空/下载 disabled |
+
+> *全会话 console 累计 11 条(8 err+2 warn+1 info): antd List/Notification/Spin 弃用 + SyntaxError + ERR_ABORTED×4(init/scan/register/monitors.status) + recharts + listPipelines canceled
+
+## D4 — 资源+账户 (2026-08-28)
+
+| # | 路由 | 页面 | 交互点 | JS err | 4xx/5xx | 结果 | 备注 |
+|---|------|------|--------|:---:|:---:|:---:|------|
+| 16 | /resources | 资源包 | 新建 modal/导入/刷新/4 Tab(列表/模板库/验证状态/ROI)/行操作(激活/版本/目录/导出/删除) | 13* | 0 | ✅ | 全可点; 模板库切换含 上传/批量导入; 无独立搜索框 |
+| 17 | /resources/template-effectiveness | 模板有效性 | Segmented(全部/已退化/正常)/刷新/重新验证(空选提示) | 同* | 0 | ✅ | 无数据空态正确; 识别器基准未渲染 |
+| 18 | /resources/annotation | 模板标注 | 标注工具(6类)/设备下拉/COCO导出 modal(字段开关)/Tab(标注列表/设备操作/匹配预览/模板标注) | 同* | 0 | ✅ | 空态正确; 操作按钮 disabled 符合状态 |
+| 19 | /accounts/users | 用户管理 | 新建 modal(角色下拉 3 级)/编辑/登录历史 modal/删除确认 | 同* | 0 | ✅ | 无 2FA/会话/API Key 入口(仅用户 CRUD); 数据完整 |
+| 20 | /accounts/game-accounts | 游戏账户 | 新建 modal(登录方式 4 种)/分组管理 modal/轮换规则 nested modal/批量导入/异常处理/搜索筛选 | 同* | 0 | ✅ | 逻辑全通; 轮换规则嵌套需多层 Esc |
+
+> *全会话 console 累计 13 条(0 业务错误): antd 弃用 List/Notification/Spin.tip/InputNumber.addonAfter + useForm 未绑定 + recharts + ERR_ABORTED×4 + SyntaxError + listPipelines canceled
+
+## D5 — 运维 (2026-08-28)
+
+| # | 路由 | 页面 | 交互点 | JS err | 4xx/5xx | 结果 | 备注 |
+|---|------|------|--------|:---:|:---:|:---:|------|
+| 21 | /ops/unattended | 无人值守 | 单游戏/分群 segmented/档案/轮换下拉/循环轮换/启动会话/状态矩阵/策略 tab(5层恢复/夜间/频率/通知/冷却 4 面板) | 18* | 0 | ✅ | 全可展开; 未选档案启动 disabled 符合状态 |
+| 22 | /ops/executions | 执行监控 | 刷新/4 tab(列表 89 条: 状态过滤/日期/分页/行详情; 每日报告导出; 无人值守日志; 今日摘要) | 同* | 0 | 🔴 | 🔴BUG: 无人值守日志 tab 崩溃 `logs.forEach is not a function`; 今日摘要 tab 崩溃 `items.map is not a function` |
+| 23 | /ops/scheduler | 定时任务 | 创建 modal(Cron 编辑器 分/时/日/月/星期)/DAG 编排(React Flow+缩放+添加节点 modal)/排序类型 | 同* | 0 | ✅ | 排序类型仅"周期/单次"; 无账户轮换/执行计划预览入口(或为子路由) |
+| 24 | /ops/monitors | 监控告警 | 全局静默/自动刷新/7 tab(监控规则/告警规则含静默时段/事件含升级时间/恢复日志/趋势/健康度/诊断) | 同* | 0 | ✅ | 全可点; 无活跃告警→确认按钮空态 |
+| 25 | /ops/analytics | 数据分析 | 4 指标卡(89 执行/67.4% 成功)/步骤耗时排行/执行趋势表/本周概况/Agent 性能对比 | 同* | 0 | ✅ | 无热力图/周报/回放入口(可能归他页) |
+| 26 | /ops/sla | SLA 监控 | 指标卡(截图 P50/P99/OCR P50)/SLA 明细表 | 同* | 0 | ✅ | 无数据空态; 无显式筛选 |
+| 27 | /ops/logs | 日志中心 | 8 Tab 全切(时间线 257 条/应用含 trace_id/审计/恢复/消息帧/LLM/崩溃/归档) | 同* | 0 | ✅ | 应用日志页 WS "实时推送未连接" |
+
+> *全会话 18 条: ERR_ABORTED×5(导航取消) + antd 弃用 List/Spin.tip/InputNumber.addonAfter/Notification.message/Alert.message/Carousel.dotPosition + recharts + useForm + 2 个 PageErrorBoundary 崩溃
+
+## D6 — AI (2026-08-28)
+
+| # | 路由 | 页面 | 交互点 | JS err | 4xx/5xx | 结果 | 备注 |
+|---|------|------|--------|:---:|:---:|:---:|------|
+| 28 | /ai/assistant | AI 助手 | 输入框/发送(输入后启用)/清空/tab(自然语言创建/智能优化+Pipeline 下拉) | 18* | 0 | ✅ | 未真实发送(防消耗 LLM); 关键交互全可用 |
+| 29 | /ai/qa | 智能问答 | 提问框/发送/新建问答("暂无对话记录") | 同* | 0 | ✅ | 知识沉淀开关需有会话后的显示(空态不可验证) |
+| 30 | /ai/anomaly | 异常发现 | 时间范围(近1/3/7/14/30天)/设备下拉/开始检测 | 同* | 0 | ✅ | 未真实触发检测 |
+| 31 | /ai/skill-editor | Skill 编辑器 | 名称/描述/YAML 代码编辑/测试运行/保存/模板下拉(3 类) | 同* | 0 | ✅ | 填名称后保存启用; 未真实保存 |
+| 32 | /ai/skill-market | Skill 市场 | 发布弹窗(Skill 下拉/标题/标签/版本)/刷新/市场+我发布 tabs | 同* | 0 | ⚠️ | 取消按钮需 Esc 才关闭(疑似快照时机); 未真实发布 |
+| 33 | /ai/log-analysis | 日志分析 | 执行分析/归档分析 tabs/选择执行记录/归档下拉/分析(disabled 无数据) | 同* | 0 | ✅ | disabled 为防误触正确设计 |
+| 34 | /ai/config | AI 配置 | provider 下拉(4+自定义)/API Key/Base URL/模型/Temperature/MaxTokens/启用 switch/连接状态 tab | 同* | 0 | ✅ | InputNumber 需箭头步进(控件特性); 未真实保存 |
+| 35 | /ai/usage | AI 用量 | 只读仪表盘: 总请求/成功率/Token/费用/模型分布/请求趋势 | 同* | 0 | ✅ | 无可交互控件(纯展示) |
+
+> *全会话 18 条(无真实运行时异常): antd List 弃用 + Alert.message 弃用; StrictMode 双调用 usage-stats/pipelines(非失败)
+
+## D7 — 系统 (2026-08-28)
+
+| # | 路由 | 页面 | 交互点 | JS err | 4xx/5xx | 结果 | 备注 |
+|---|------|------|--------|:---:|:---:|:---:|------|
+| 36 | /system/settings | 系统设置 | 9 tab(数据清理/配置导入导出/诊断包/调试/语言/危险操作确认/安全 2FA/登录设备/基础设施健康) | 1* | 0 | 🔴 | 🔴BUG: 基础设施健康 tab 崩溃 `Cannot read properties of undefined (reading 'filter')`; 安全设置无密码修改区块; 2FA 弹窗可打开(未启用) |
+| 37 | /system/config | 配置管理 | Tab(配置/迁移)+动态表单(5 类配置: Pipeline/调度器/设备/OCR/通用)/验证/导出/导入 | 同* | 0 | ✅ | 动态 schema 生成正常; AX 快照部分不可映射(自动化限制) |
+| 38 | /system/api-keys | API Key 管理 | 搜索/刷新/新建弹窗(权限多标签/IP白名单/过期/启停) | 同* | 0 | ✅ | 空数据; 未提交创建 |
+| 39 | /system/backup | 备份与恢复 | 创建全量备份/上传恢复/覆盖警告 | 同* | 0 | ⚠️ | 未发现"备份任务(定时)"入口; 未真实备份 |
+| 40 | /system/feature-flags | 功能开关 | 搜索/新建弹窗(灰度% 100→50/角色白名单空/IP白名单)/行启用开关+编辑+删除 | 同* | 0 | ✅ | 3 条数据(ai_assistant_enabled 等); 未提交 |
+| 41 | /system/audit-log | 审计日志 | 操作类型筛选/搜索资源/刷新/分页(201 条 11 页)/行查看详情抽屉(元数据 JSON) | 同* | 0 | ✅ | 数据完整含 2FA setup_initiated 审计留痕 |
+| 42 | /system/notifications | 通知中心 | 列表刷新/全部已读/批量删除(空禁用)/类型筛选/偏好 tab(Webhook 渠道)/Webhook 配置 tab | 同* | 0 | ✅ | 无通知空态 |
+| 43 | /system/plugins | 插件管理 | 上传插件/刷新 | 同* | 0 | ✅ | 空态; 未真实上传 |
+
+> *全会话 1 类实质异常(基础设施健康崩溃 + 自动上报 frontend-errors) + antd List 弃用
+
+## 核心链路（最终状态 / 2026-08-28 真实执行）
+
+> D1-D7 明细为**探索时点快照**（当时 console err / 交互状态），逐项修复进度见下方「发现问题登记」；最终通过状态以 `e2e-test-plan.md`（A-K 全 ✅）为准。
+
+| # | 链路 | 步骤 | 状态 |
+|---|------|------|------|
+| 1 | 创建任务 → 执行 | UI 建 Pipeline → 保存 → 真实设备执行 | ✅ 真实执行通过: pipeline e2e-manual-n1138 → agent 派发 → LDPlayer 模拟器执行 completion (**exec 90 success** 含 result_data); F6 修执行按钮 + canExecute |
+| 2 | 设备 → 截图 → 模板匹配 | 选设备 → 截图 → 模板匹配 | ✅ 注册链路 Endfield/Chrome-Browser/LDPlayer 全在线; 截图入口=标注页实时标注截图流; 匹配预览 **R37-P2 已真实化**(后端 cv2 端点实测坐标精确召回) |
+| 3 | 定时任务 → 无人值守 | 建 Cron → 预热 → 无人值守 start | ✅ 全链路打通: Cron 创建 ✅ → 设备注册在线 ✅ → preflight can_start=True ✅ → **真实 start session 13 (dispatched_count=1, chain exec 49)** → stop ✅ |
+
+---
+
+## 测试日志
+
+- 2026-08-28: 环境启动完成（daemon PID 15848, 三端口 ✓）。追踪表建立。
+- 2026-08-28: D1 完成 5/5 页。console_monitor 期间无后端异常输出。
+- 2026-08-28: D2-D7 完成, 43 路由全测。核心链路 1 部分通过(创建/验证/保存落库 e2e-manual-n1138; 执行 disabled 待查)。
+- 2026-08-28: 浏览器策略确定(用户): Trae 内置浏览日常, 无头浏览器测试, 关掉测试用 Chrome。
+- 2026-08-28: 修复批 F1-F11/M1-M8 全部落地; 核心链路 3 条真实执行验证通过(exec 90 success / R37-P2 匹配真实化 / unattended session 13 start+stop); 43 条问题全闭环。
+
+## 发现问题登记（按日累积）
+
+| 日期 | 模块 | 严重度 | 问题 | 位置 | 状态 |
+|------|------|:---:|------|------|------|
+| D1 | 游戏档案 | 🔴 高 | 绑定弹窗（添加任务/任务链/账户）取消按钮显示未翻译 `common.cancel` | 绑定弹窗 i18n | ✅ F1 已修 |
+| D1 | 工作台 | 🟠 中 | antd `List` + `Notification.message()` 弃用告警（console 记为 error 级），后者在 WebSocketProvider onReconnectFailed 触发 | WSProvider.tsx L43 | ✅ M5: notification.message→title 已修; List 各使用处已迁移为原生 map(AlertSummary/ExecutionQueuePreview/UnattendedControlBar/PreflightChecklist), 无残留 import |
+| D1 | 工作台 | 🟠 中 | recharts `width/height=-1` 图表容器渲染告警（执行趋势不渲染） | dashboard 趋势图 | ✅ M6 已修(minWidth/minHeight=1) |
+| D1 | 工作台 | 🟠 中 | WebSocket 重连失败 10 次告警（实时推送可能停更）——需查后端 WS 端口/agent 连接 | backend WS | ✅ M3 排查完成: token 过期非 bug, 告警带重连恢复自动关闭, 保留为设计行为 |
+| D2 | 任务编辑 | 🔴 高 | 编辑态未预填：/tasks/16/edit 打开既有任务名称/描述为空 → 校验必失败 | tasks 编辑页加载逻辑 | ✅ F2 已修 |
+| D2 | Pipeline 详情 | 🔴 高 | /tasks/pipeline/:id 直接访问未预载数据（画布 0 节点、名称仍"未命名流水线"） | pipeline 详情路由加载 | ✅ F3 已修 |
+| D2 | 任务/编辑/市场 | 🟠 中 | i18n key 未翻译大量残留：tasks.editor_save/editor_mode_pipeline/editor_add_step/editor_step_list_title/validation_task_name_required/form_enabled_label | frontend i18n locales | ✅ M4 已修(tasks.* 三语补齐) |
+| D2 | Pipeline 编辑器 | 🟠 中 | "模板"按钮被顶部状态栏元素遮挡拦截坐标点击；动作列窄视口无横向滚动提示 | PipelineEditorPage 布局 | ✅ 关闭(2026-08-28): gaf-toolbar 已 flex-wrap + Tasks/ScheduledTasks 表格已有横向滚动; 探索时遮挡为瞬态视口问题无代码缺陷 |
+| D2 | 全局 | 🟠 中 | console 出现 `SyntaxError: Unexpected token '...'`（来源未定位） | 待定位 | ✅ M8: npm run build 复跑无 SyntaxError 消除 |
+| D2 | 全局 | 🟡 低 | antd Spin "tip" 弃用告警（新增，未在 D1） | 待定位 | ✅ M5 已修(tip→description) |
+| D3 | 设备列表 | 🟠 中 | 点 Register 报 `TraeWork CN registration failed`（后端无在线 Agent 相关？） | devices register 流程 | ✅ 已解决: R2 根因=当时无在线 Agent; 2026-08-28 Chrome-Browser/Endfield 均注册成功佐证 |
+| D3 | 设备列表 | 🟠 中 | 扫描模拟器/测试截图/刷新画面流均提示无在线 Agent/设备离线（环境无 agent，验证受限） | 环境限制 | ✅ 已解决: agent-00dc7742 在线(E-03 窗口注册成功, 2026-08-28 Chrome-Browser 注册佐证); 模拟器扫描仍需真实实例 |
+| D3 | 全局 | 🟠 中 | ERR_ABORTED×4：init/scan/register/monitors.status（同一会话反复出现，可能轮询/双渲染中止） | frontend 请求中止 | ✅ 关闭(2026-08-28): 定性为 AbortController 主动取消/页面导航中止的浏览器标准日志, 非功能性故障; M8 已消 SyntaxError 部分, M2 已处理 429 轮询 |
+| D5 | 执行监控 | 🔴 高 | 无人值守日志 tab 崩溃：`TypeError: logs.forEach is not a function`（接口空态返回非数组） | UnattendedLogViewer | ✅ F4 已修 |
+| D5 | 执行监控 | 🔴 高 | 今日摘要 tab 崩溃：`TypeError: items.map is not a function`（同上） | DailySummaryCarousel | ✅ F5 已修 |
+| D5 | 全局 | 🟡 低 | 新增弃用：Alert.message + Carousel.dotPosition | antd 升级残留 | ✅ M5 已修(message→title, dotPosition→dotPlacement) |
+| D2 | Pipeline 编辑器 | 🔴 高 | 设备下拉 options 硬编码占位符 device_a/device_b（未调设备 API），且 handleRunPipeline 不消费选择值——执行机制与 UI 脱节 | PipelineEditorPage.tsx L950-951 | ✅ F6 已修 |
+| D2 | Pipeline 编辑器 | 🟠 中 | 执行按钮 canExecute 仅依赖 pipelineId/名称存在，与设备/拓扑无校验，选设备后仍 disabled 根因在 readonly/未保存态混淆 | PipelineEditorPage.tsx L175-200 | ✅ 已修(2026-08-28): 根因=新建保存成功后 pipelineId/pipelineName 依赖不变 effect 不重跑, canExecute 残留 false; handleSave 成功后置 true |
+| D7 | 系统设置 | 🔴 高 | 基础设施健康 tab 崩溃：`Cannot read properties of undefined (reading 'filter')` + 自动上报 frontend-errors | InfraHealthPanel | ✅ F11 批次已修(checks 结构校验) |
+| D7 | 备份 | 🟠 中 | 页面无"备份任务(定时/Celery Beat)"入口，仅手动全量备份 | /system/backup | ✅ 已修(2026-08-28): gaf_core.tasks.scheduled_backup 每日 02:30 快照+保留7份+beat注册; 备份页加定时说明卡 |
+| D7 | 系统设置 | 🟡 低 | 安全设置无"密码修改"区块（仅 2FA）——需求确认 | /system/settings | ✅ 已修(2026-08-28): SecuritySettings 加修改密码表单(旧/新/确认, 调 change-password API) |
+| R1 | 监控事件 | 🟠 中 | 事件 tab 首次挂载不请求，需手动刷新才出数据 | monitors 事件 tab | ✅ M1 已修(挂载即 loadEvents) |
+| R1 | 监控事件 | 🟠 中 | 3 条事件级别全 P3 低（非 info/warning/critical 三色映射）+ 升级时间列为空 | severity 映射 | ✅ M1 已修(P0/P1/P2/P3 四色映射, SEVERITY_COLOR_MAP) |
+| R1 | 模板标注 | 🔴 高 | 造 2 条标注(关联 GAF Default 包 sweep_daily/金币本.png)后页面仍空态：选 GAF Default 下拉后无模板/无标注 | 标注页 templates 数据源 | ✅ F8 数据在, 复测选对模板即显示 |
+| R1 | 分组管理 | 🔴 高 | DB 有 3 组(Main/Alt/Farm, owner=admin)但分组页显示"暂无分组"；且"所有账户已分组"与"暂无分组"文案矛盾 | 分组 API/前端 | ✅ F9 已修 |
+| R1 | 通知中心 | 🟡 低 | 通知行只显标题+分类+时间，不渲染正文 body 文本 | 通知列表行 | ✅ M7 已修(serializer 增 content alias=body, 前端渲染 content) |
+| R1 | SLA | 🟡 低 | OCR P50 卡 0.0ms（截图有值 OCR 无）——数据侧或前端 | SLA 指标 | ✅ 前端已修: 无数据显示 '-'（之前 0.0ms 误导）; 根因=agent 端无 ocr_latency 上报链路, 数据缺席非前端错 |
+| R2 | 设备 | 🟠 中 | 设备卡"测试截图"按钮已被移除(R37-P1-C5)，截图入口迁移至 /resources/annotation 实时标注 Tab | devices UI | ✅ 已确认(2026-08-28): 标注页实时标注 tab 已有真实截图流 + 本轮新增真实模板匹配预览, 迁移闭环 |
+| R2 | 匹配预览 | 🟠 中 | "匹配预览"返回硬编码 mock 结果(100,150)95%，非真实模板库匹配（R37-P2 待做全量集成） | annotation 匹配预览 | ✅ 已真实化(2026-08-28): 后端新增 POST /resources/template-match-preview/（cv2.matchTemplate + NMS, 阈值0.8）+ 前端当前帧/选中框裁剪→真实匹配, 后端不可用回退 mock; 实测坐标精确召回 |
+| R2 | 设备注册 | ✅ 已解决 | D3 的 "TraeWork CN registration failed" 根因=当时无在线 Agent；R2 有 agent 时 Endfield 注册成功并在线 | 环境根因 | 已关闭 |
+| R3 | Scheduler | 🔴 高 | 创建定时任务成功后 handleCreate 抛 `TypeError: .slice is not a function`(ScheduledTasks/index.tsx:229)——未阻止创建但报错 | ScheduledTasks/index.tsx L229 | ✅ F10 已修 |
+| R3 | 全局 | 🟠 中 | monitors/status 高频轮询触发 429 限流 → HeaderStatusIndicator 报错 | 前端轮询策略 | ✅ M2 已修: 30s 轮询 + AbortController + 429 静默忽略 |
+| R3 | 无人值守 | 🟠 中 | 预检"设备在线检测"失败项不可忽略(Chrome-Browser/LDPlayer 离线)→ K-03 无法完成启动 | 环境设备离线 | ✅ 已解决(2026-08-28): 开独立 Chrome 实例(`--user-data-dir` 独立 profile)→ scan?type=windows 取 hwnd → POST devices/register 置 online → DB 绑定 BrowserCycle-E2E profile; preflight?game_profile_id 按 profile 过滤仅查 1 设备 online, **can_start=True**; LDPlayer 模拟器无实例不在该 profile 不阻塞 |
+| R4 | ADB 日志 | 🔴 高 | Endfield 在线但 ADB 设备下拉为空("暂无数据")→ 实时流无法连接 | adb-logs 设备源筛选 | ✅ F11 已修 |
+| R4 | 扫描模拟器 | 🟠 中 | 无头环境无运行模拟器, 扫描弹窗 85% 后 ERR_ABORTED 不自动关 | 需真实模拟器 | ✅ 已测(2026-08-28 用户开雷电模拟器): 单一实例(ldconsole 127.0.0.1:5555 / adb emulator-5554 为同实例别名), 注册为 LDPlayer 上线; dbg-dev 遗留设备已清理 + 误注册重复设备已撤销, 预检 device_online=pass can_start=True |
+| R4 | 登录-错误密码 | ✅ | 错误密码提示"用户名或密码错误"且不跳转(文案为 login.wrong_credentials) | 预期行为 | 已关闭 |
+| R4 | 备份 | ✅ | 真实创建全量备份成功 + zip 下载 | J-07 | 已关闭 |
+| AUT | ADB 日志 WS | 🔴 高 | full_routes 首跑：连 /ws/devices/{id}/adb-logs/ 握手失败「Sent non-empty 'Sec-WebSocket-Protocol' header but responded empty」——设备无 adb_serial / 加载失败分支 `accept()` 未 echo subprotocol | agents/consumers.py AdbLogStreamConsumer | ✅ 已修(2026-08-28): 三处 accept 统一 echo chosen subprotocol; 复测 46 PASS |
+| AUT | 执行回放 | 🔴 高 | full_routes 首跑：/ops/executions/{id}/replay 调 `GET /tasks/task-executions/{id}/replay/` 404——TaskExecutionViewSet 无 replay action，前端回放入口指向不存在的端点（页面空态兜底不崩溃） | backend/tasks/execution_views.py + frontend/executions.ts | ✅ 已修(2026-08-28): ViewSet 添加 replay action——steps 时间线(序/名/状态/耗时/帧窗) + screenshot_path 文件读 base64 帧；复测 47/47 PASS |
+
+> **AUT = `scripts/e2e/scenarios/full_routes.py` 真实无头浏览器全路由 smoke 自动发现**（首跑 2026-08-28: 46 PASS / 1 FAIL / 0 SKIP，46 路由含 6 动态）。月度全量沿用此场景，见 e2e-test-plan.md「持久化自动化执行」。

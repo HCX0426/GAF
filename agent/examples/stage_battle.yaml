@@ -1,0 +1,87 @@
+name: "关卡战斗状态机"
+description: "演示链式+状态机混合执行模式：先进入关卡（链式），再战斗（状态机），最后结算"
+version: "1.0.0"
+target_app: "example_game"
+author: "GAF"
+
+chain_prefix:
+  - name: "进入关卡选择"
+    action:
+      type: "click"
+      target: "templates/battle_button.png"
+    delay_after: 1.0
+  - name: "选择关卡"
+    action:
+      type: "click"
+      target: "templates/stage_01.png"
+    delay_after: 0.5
+
+initial_state: "battle_preparation"
+
+states:
+  battle_preparation:
+    description: "战斗准备界面，点击开始战斗"
+    detect:
+      template: "templates/battle_start_button.png"
+      threshold: 0.85
+    action:
+      type: "click"
+      target: "templates/battle_start_button.png"
+    timeout: 15
+    retry: 3
+    transitions:
+      - target: "in_battle"
+        condition:
+          template: "templates/battle_ui.png"
+          threshold: 0.7
+
+  in_battle:
+    description: "战斗进行中，等待战斗结束"
+    detect:
+      template: "templates/battle_ui.png"
+      threshold: 0.7
+    action:
+      type: "wait"
+      duration: 5
+    timeout: 300
+    retry: 60
+    on_stuck:
+      action:
+        type: "click"
+        coordinates: [640, 360]
+      max_stuck_count: 3
+    transitions:
+      - target: "victory"
+        condition:
+          template: "templates/victory_screen.png"
+          threshold: 0.8
+      - target: "defeat"
+        condition:
+          template: "templates/defeat_screen.png"
+          threshold: 0.8
+
+  victory:
+    description: "胜利结算，点击确认"
+    detect:
+      template: "templates/victory_screen.png"
+      threshold: 0.8
+    action:
+      type: "click"
+      coordinates: [640, 600]
+    timeout: 15
+    is_terminal: true
+
+  defeat:
+    description: "失败结算，点击重试或退出"
+    detect:
+      template: "templates/defeat_screen.png"
+      threshold: 0.8
+    action:
+      type: "click"
+      target: "templates/retry_button.png"
+    timeout: 15
+    transitions:
+      - target: "battle_preparation"
+        condition:
+          template: "templates/battle_start_button.png"
+          threshold: 0.85

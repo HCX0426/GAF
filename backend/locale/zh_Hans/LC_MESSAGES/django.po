@@ -1,0 +1,46 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: GAF backend\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-21 00:00+0800\n"
+"PO-Revision-Date: 2026-06-21 00:00+0800\n"
+"Last-Translator: GAF Team\n"
+"Language-Team: GAF\n"
+"Language: zh_Hans\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "密码修改成功"
+msgstr "密码修改成功"
+
+msgid "2FA 已启用"
+msgstr "2FA 已启用"
+
+msgid "2FA 已禁用"
+msgstr "2FA 已禁用"
+
+msgid "重置链接已发送到您的邮箱"
+msgstr "重置链接已发送到您的邮箱"
+
+msgid "密码重置成功"
+msgstr "密码重置成功"
+
+msgid "会话已下线"
+msgstr "会话已下线"
+
+msgid "系统已存在用户，不能重复初始化"
+msgstr "系统已存在用户，不能重复初始化"
+
+msgid "用户名至少 3 个字符"
+msgstr "用户名至少 3 个字符"
+
+msgid "密码至少 8 个字符"
+msgstr "密码至少 8 个字符"
+
+msgid "仅管理员可查看所有用户登录历史"
+msgstr "仅管理员可查看所有用户登录历史"
+
+msgid "Unsupported language code: {}"
+msgstr "不支持的语言代码: {}"

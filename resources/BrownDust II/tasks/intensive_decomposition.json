@@ -1,0 +1,646 @@
+{
+  "name": "intensive_decomposition",
+  "description": "BD2 equipment decompose + enhance — ported from BD2-AUTO src/auto_tasks/Default/tasks/intensive_decomposition.py. Two phases: (1) decompose R-grade equipment, (2) enhance +10 selected equipment. Skeleton: open backpack → equipment → filter → R → confirm → one-click decompose → select pos → confirm → decompose → back_to_main → backpack → equipment → filter → 18+ → craft → confirm → select pos → refine → continuous refine → +10 → refine → skip → confirm → return. TODO: select_equipment_step, execute_enhancement_step, return_and_exit_step custom_steps simplified to linear sequences (Phase B). ROIs at 1920x1080 base resolution. (pending e2e verification — R37-P2 C2 PoC covers login only)",
+  "version": "1.0.0",
+  "metadata": {
+    "original_base_res": [
+      1920,
+      1080
+    ]
+  },
+  "entry_node": "click_backpack_decompose",
+  "nodes": [
+    {
+      "id": "click_backpack_decompose",
+      "config": {
+        "text": "背包",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_equipment_visible_decompose",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/intensive_decomposition/装备标识.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 15.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_equipment_icon_decompose",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          149,
+          222,
+          60,
+          60
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/intensive_decomposition/装备标识.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_filter_visible_decompose",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/intensive_decomposition/筛选标识.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 10.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_filter_icon_decompose",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          1680,
+          73,
+          60,
+          60
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/intensive_decomposition/筛选标识.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_after_filter_decompose",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_r_grade",
+      "config": {
+        "threshold": 0.8,
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/intensive_decomposition/R.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_after_r_grade",
+      "config": {
+        "mode": "fixed",
+        "seconds": 0.5
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_confirm_filter",
+      "config": {
+        "text": "确认",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_after_confirm_filter",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_one_click_decompose",
+      "config": {
+        "text": "一键分解",
+        "roi": [
+          1645,
+          986,
+          125,
+          35
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_after_one_click_decompose",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_select_position_decompose",
+      "config": {
+        "x": 785,
+        "y": 200,
+        "button": "left",
+        "clicks": 1,
+        "activate_window": true
+      },
+      "node_type": "direct_hit"
+    },
+    {
+      "id": "click_confirm_decompose",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          1748,
+          973,
+          65,
+          62
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/intensive_decomposition/确认.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_after_confirm_decompose",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_decompose_button",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          960,
+          672,
+          177,
+          58
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/intensive_decomposition/分解按钮.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_decompose_confirm_visible",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/intensive_decomposition/确认.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 10.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "back_to_main_after_decompose",
+      "config": {
+        "key": "esc"
+      },
+      "node_type": "key_press"
+    },
+    {
+      "id": "wait_main_menu_after_decompose",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/public/主界面.png",
+        "threshold": 0.8,
+        "roi": [
+          1720,
+          20,
+          120,
+          70
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_backpack_enhance",
+      "config": {
+        "text": "背包",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_equipment_visible_enhance",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/intensive_decomposition/装备标识.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 15.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_equipment_icon_enhance",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          149,
+          222,
+          60,
+          60
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/intensive_decomposition/装备标识.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_filter_visible_enhance",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/intensive_decomposition/筛选标识.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 10.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_filter_icon_enhance",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          1680,
+          73,
+          60,
+          60
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/intensive_decomposition/筛选标识.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_18plus_visible",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/intensive_decomposition/18加.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 10.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_18_plus",
+      "config": {
+        "threshold": 0.8,
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/intensive_decomposition/18加.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "click_craft",
+      "config": {
+        "threshold": 0.8,
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/intensive_decomposition/制作.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_confirm_craft_visible",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/intensive_decomposition/确认.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 10.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_confirm_craft",
+      "config": {
+        "text": "确认",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "click_select_position_enhance",
+      "config": {
+        "x": 785,
+        "y": 200,
+        "button": "left",
+        "clicks": 1,
+        "activate_window": true
+      },
+      "node_type": "direct_hit"
+    },
+    {
+      "id": "click_refine",
+      "config": {
+        "text": "精炼",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_refine_visible",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/intensive_decomposition/精炼.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 10.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_continuous_refine",
+      "config": {
+        "text": "连续精炼",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "click_plus_ten",
+      "config": {
+        "threshold": 0.8,
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/intensive_decomposition/加十.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_after_plus_ten",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_refine_button",
+      "config": {
+        "threshold": 0.8,
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/intensive_decomposition/精炼.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "click_skip_animation",
+      "config": {
+        "threshold": 0.8,
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/public/跳过.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_after_skip",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_confirm_enhance",
+      "config": {
+        "text": "确认",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_enhance_complete_5s",
+      "config": {
+        "mode": "fixed",
+        "seconds": 5.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_back_after_enhance",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          120,
+          20,
+          100,
+          66
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/public/返回键1.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "press_esc_exit",
+      "config": {
+        "key": "esc"
+      },
+      "node_type": "key_press"
+    },
+    {
+      "id": "wait_main_menu_final",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/public/主界面.png",
+        "threshold": 0.8,
+        "roi": [
+          1720,
+          20,
+          120,
+          70
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    }
+  ],
+  "edges": [
+    {
+      "source": "click_backpack_decompose",
+      "target": "wait_equipment_visible_decompose"
+    },
+    {
+      "source": "wait_equipment_visible_decompose",
+      "target": "click_equipment_icon_decompose"
+    },
+    {
+      "source": "click_equipment_icon_decompose",
+      "target": "wait_filter_visible_decompose"
+    },
+    {
+      "source": "wait_filter_visible_decompose",
+      "target": "click_filter_icon_decompose"
+    },
+    {
+      "source": "click_filter_icon_decompose",
+      "target": "wait_after_filter_decompose"
+    },
+    {
+      "source": "wait_after_filter_decompose",
+      "target": "click_r_grade"
+    },
+    {
+      "source": "click_r_grade",
+      "target": "wait_after_r_grade"
+    },
+    {
+      "source": "wait_after_r_grade",
+      "target": "click_confirm_filter"
+    },
+    {
+      "source": "click_confirm_filter",
+      "target": "wait_after_confirm_filter"
+    },
+    {
+      "source": "wait_after_confirm_filter",
+      "target": "click_one_click_decompose"
+    },
+    {
+      "source": "click_one_click_decompose",
+      "target": "wait_after_one_click_decompose"
+    },
+    {
+      "source": "wait_after_one_click_decompose",
+      "target": "click_select_position_decompose"
+    },
+    {
+      "source": "click_select_position_decompose",
+      "target": "click_confirm_decompose"
+    },
+    {
+      "source": "click_confirm_decompose",
+      "target": "wait_after_confirm_decompose"
+    },
+    {
+      "source": "wait_after_confirm_decompose",
+      "target": "click_decompose_button"
+    },
+    {
+      "source": "click_decompose_button",
+      "target": "wait_decompose_confirm_visible"
+    },
+    {
+      "source": "wait_decompose_confirm_visible",
+      "target": "back_to_main_after_decompose"
+    },
+    {
+      "source": "back_to_main_after_decompose",
+      "target": "wait_main_menu_after_decompose"
+    },
+    {
+      "source": "wait_main_menu_after_decompose",
+      "target": "click_backpack_enhance"
+    },
+    {
+      "source": "click_backpack_enhance",
+      "target": "wait_equipment_visible_enhance"
+    },
+    {
+      "source": "wait_equipment_visible_enhance",
+      "target": "click_equipment_icon_enhance"
+    },
+    {
+      "source": "click_equipment_icon_enhance",
+      "target": "wait_filter_visible_enhance"
+    },
+    {
+      "source": "wait_filter_visible_enhance",
+      "target": "click_filter_icon_enhance"
+    },
+    {
+      "source": "click_filter_icon_enhance",
+      "target": "wait_18plus_visible"
+    },
+    {
+      "source": "wait_18plus_visible",
+      "target": "click_18_plus"
+    },
+    {
+      "source": "click_18_plus",
+      "target": "click_craft"
+    },
+    {
+      "source": "click_craft",
+      "target": "wait_confirm_craft_visible"
+    },
+    {
+      "source": "wait_confirm_craft_visible",
+      "target": "click_confirm_craft"
+    },
+    {
+      "source": "click_confirm_craft",
+      "target": "click_select_position_enhance"
+    },
+    {
+      "source": "click_select_position_enhance",
+      "target": "click_refine"
+    },
+    {
+      "source": "click_refine",
+      "target": "wait_refine_visible"
+    },
+    {
+      "source": "wait_refine_visible",
+      "target": "click_continuous_refine"
+    },
+    {
+      "source": "click_continuous_refine",
+      "target": "click_plus_ten"
+    },
+    {
+      "source": "click_plus_ten",
+      "target": "wait_after_plus_ten"
+    },
+    {
+      "source": "wait_after_plus_ten",
+      "target": "click_refine_button"
+    },
+    {
+      "source": "click_refine_button",
+      "target": "click_skip_animation"
+    },
+    {
+      "source": "click_skip_animation",
+      "target": "wait_after_skip"
+    },
+    {
+      "source": "wait_after_skip",
+      "target": "click_confirm_enhance"
+    },
+    {
+      "source": "click_confirm_enhance",
+      "target": "wait_enhance_complete_5s"
+    },
+    {
+      "source": "wait_enhance_complete_5s",
+      "target": "click_back_after_enhance"
+    },
+    {
+      "source": "click_back_after_enhance",
+      "target": "press_esc_exit"
+    },
+    {
+      "source": "press_esc_exit",
+      "target": "wait_main_menu_final"
+    }
+  ]
+}
+

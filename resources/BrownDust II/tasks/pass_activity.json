@@ -1,0 +1,384 @@
+{
+  "name": "pass_activity",
+  "description": "BD2 activity level sweep (level 15) — ported from BD2-AUTO src/auto_tasks/Default/tasks/pass_activity.py. Flow: click activity → challenge battle → select level → quick battle → check blocked (branch: if blocked dismiss+start, else MAX+start) → return → handle boss → back to main. quick_battle if/elif implemented via branch + template_match (check 无法快速战斗.png). handle_boss_step uses existing node chain. ROIs at 1920x1080 base resolution. (pending e2e verification — R37-P2 C2 PoC covers login only)",
+  "version": "1.0.0",
+  "metadata": {
+    "original_base_res": [
+      1920,
+      1080
+    ]
+  },
+  "entry_node": "click_activity_pos",
+  "nodes": [
+    {
+      "id": "click_activity_pos",
+      "config": {
+        "x": 1700,
+        "y": 480,
+        "button": "left",
+        "clicks": 1,
+        "activate_window": true
+      },
+      "node_type": "direct_hit"
+    },
+    {
+      "id": "wait_activity_loaded",
+      "config": {
+        "mode": "fixed",
+        "seconds": 2.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_challenge_battle",
+      "config": {
+        "text": "挑战战斗",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_level_15_visible",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/pass_activity/第15关.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 15.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_level_15",
+      "config": {
+        "threshold": 0.8,
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/pass_activity/第15关.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_after_level_15",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.5
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_quick_battle",
+      "config": {
+        "text": "快速战斗",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_check_block",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/pass_activity/无法快速战斗.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "check_quick_battle_blocked",
+      "config": {
+        "threshold": 0.8,
+        "template_id": "BrownDust II/templates/pass_activity/无法快速战斗.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "branch_quick_battle",
+      "config": {
+        "condition": {
+          "variable": "check_quick_battle_blocked_match_result",
+          "operator": "eq",
+          "value": null
+        },
+        "true_branch": "click_max",
+        "false_branch": "press_esc_dismiss_block"
+      },
+      "node_type": "branch"
+    },
+    {
+      "id": "press_esc_dismiss_block",
+      "config": {
+        "key": "esc"
+      },
+      "node_type": "key_press"
+    },
+    {
+      "id": "click_max",
+      "config": {
+        "text": "MAX",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_after_max",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_start_battle",
+      "config": {
+        "threshold": 0.8,
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/pass_activity/战斗.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_battle_3s",
+      "config": {
+        "mode": "fixed",
+        "seconds": 5.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_back_after_battle",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          120,
+          20,
+          100,
+          66
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/public/返回键1.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_after_back_battle",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.5
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "press_esc_after_back",
+      "config": {
+        "key": "esc"
+      },
+      "node_type": "key_press"
+    },
+    {
+      "id": "click_boss_tracker",
+      "config": {
+        "text": "魔物追踪者",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_boss_tracker_loaded",
+      "config": {
+        "mode": "fixed",
+        "seconds": 2.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_quick_battle_boss",
+      "config": {
+        "text": "快速战斗",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_after_quick_battle_boss",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.5
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_confirm_boss",
+      "config": {
+        "text": "确认",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_boss_reward_3s",
+      "config": {
+        "mode": "fixed",
+        "seconds": 5.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_back_after_boss",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          120,
+          20,
+          100,
+          66
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/public/返回键1.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_after_back_boss",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.5
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "back_to_main_esc",
+      "config": {
+        "key": "esc"
+      },
+      "node_type": "key_press"
+    },
+    {
+      "id": "wait_main_menu",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/public/主界面.png",
+        "threshold": 0.8,
+        "roi": [
+          1720,
+          20,
+          120,
+          70
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    }
+  ],
+  "edges": [
+    {
+      "source": "click_activity_pos",
+      "target": "wait_activity_loaded"
+    },
+    {
+      "source": "wait_activity_loaded",
+      "target": "click_challenge_battle"
+    },
+    {
+      "source": "click_challenge_battle",
+      "target": "wait_level_15_visible"
+    },
+    {
+      "source": "wait_level_15_visible",
+      "target": "click_level_15"
+    },
+    {
+      "source": "click_level_15",
+      "target": "wait_after_level_15"
+    },
+    {
+      "source": "wait_after_level_15",
+      "target": "click_quick_battle"
+    },
+    {
+      "source": "click_quick_battle",
+      "target": "wait_check_block"
+    },
+    {
+      "source": "wait_check_block",
+      "target": "check_quick_battle_blocked"
+    },
+    {
+      "source": "check_quick_battle_blocked",
+      "target": "branch_quick_battle"
+    },
+    {
+      "source": "press_esc_dismiss_block",
+      "target": "click_start_battle"
+    },
+    {
+      "source": "click_max",
+      "target": "wait_after_max"
+    },
+    {
+      "source": "wait_after_max",
+      "target": "click_start_battle"
+    },
+    {
+      "source": "click_start_battle",
+      "target": "wait_battle_3s"
+    },
+    {
+      "source": "wait_battle_3s",
+      "target": "click_back_after_battle"
+    },
+    {
+      "source": "click_back_after_battle",
+      "target": "wait_after_back_battle"
+    },
+    {
+      "source": "wait_after_back_battle",
+      "target": "press_esc_after_back"
+    },
+    {
+      "source": "press_esc_after_back",
+      "target": "click_boss_tracker"
+    },
+    {
+      "source": "click_boss_tracker",
+      "target": "wait_boss_tracker_loaded"
+    },
+    {
+      "source": "wait_boss_tracker_loaded",
+      "target": "click_quick_battle_boss"
+    },
+    {
+      "source": "click_quick_battle_boss",
+      "target": "wait_after_quick_battle_boss"
+    },
+    {
+      "source": "wait_after_quick_battle_boss",
+      "target": "click_confirm_boss"
+    },
+    {
+      "source": "click_confirm_boss",
+      "target": "wait_boss_reward_3s"
+    },
+    {
+      "source": "wait_boss_reward_3s",
+      "target": "click_back_after_boss"
+    },
+    {
+      "source": "click_back_after_boss",
+      "target": "wait_after_back_boss"
+    },
+    {
+      "source": "wait_after_back_boss",
+      "target": "back_to_main_esc"
+    },
+    {
+      "source": "back_to_main_esc",
+      "target": "wait_main_menu"
+    }
+  ]
+}
+

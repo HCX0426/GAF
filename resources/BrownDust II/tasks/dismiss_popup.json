@@ -1,0 +1,37 @@
+{
+  "name": "dismiss_popup",
+  "description": "公共子流程：关闭通用弹窗。先点击返回键模板关闭弹窗，等待 2s 让弹窗消失。适用于奖励结算、活动弹窗等场景。若弹窗需要特定等待逻辑，请在父流程中自行处理。",
+  "version": "1.0.0",
+  "metadata": {
+    "original_base_res": [1920, 1080]
+  },
+  "entry_node": "click_back_dismiss",
+  "nodes": [
+    {
+      "id": "click_back_dismiss",
+      "config": {
+        "threshold": 0.8,
+        "roi": [120, 20, 100, 66],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/public/返回键1.png",
+        "continue_on_error": true
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_dismiss",
+      "config": {
+        "mode": "fixed",
+        "seconds": 2.0
+      },
+      "node_type": "wait"
+    }
+  ],
+  "edges": [
+    {
+      "source": "click_back_dismiss",
+      "target": "wait_dismiss"
+    }
+  ]
+}

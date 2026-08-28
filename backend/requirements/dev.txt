@@ -1,0 +1,14 @@
+-r base.txt
+ruff>=0.5,<1.0
+mypy>=1.10,<2.0
+django-stubs>=5.0,<6.0
+djangorestframework-stubs>=3.15,<4.0
+pytest>=8.0,<9.0
+pytest-django>=4.8,<5.0
+pytest-asyncio>=0.23,<1.0
+factory-boy>=3.3,<4.0
+# 与 pyproject.toml [project.optional-dependencies].dev 对齐 (3 项此前 dev.txt 缺失)
+pytest-xdist>=3.5,<4.0
+playwright>=1.40,<2.0
+# 可选 OCR 引擎 (pyproject 在 ocr-paddle 组, 此处仅与 pyproject dev 段保持依赖集合一致)
+paddleocr>=2.9

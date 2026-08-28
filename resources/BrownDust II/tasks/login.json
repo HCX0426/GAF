@@ -1,0 +1,170 @@
+{
+  "name": "login",
+  "description": "BD2 game login — ported from BD2-AUTO src/auto_tasks/Default/tasks/login.py. Click 'start game' button, dismiss popup with 20s long-press, then navigate back to main menu via simplified ESC+wait sequences. ROIs are defined at 1920x1080 base resolution and auto-scale to the actual window via metadata.original_base_res.",
+  "version": "1.0.0",
+  "metadata": {
+    "original_base_res": [
+      1920,
+      1080
+    ]
+  },
+  "entry_node": "click_start_game",
+  "nodes": [
+    {
+      "id": "click_start_game",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          1105,
+          656,
+          569,
+          98
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/login/开始游戏.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_start_game_disappear",
+      "config": {
+        "mode": "disappear",
+        "template": "BrownDust II/templates/login/开始游戏.png",
+        "threshold": 0.8,
+        "roi": [
+          1105,
+          656,
+          569,
+          98
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "require_seen_first": true,
+        "timeout": 20.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "back_to_main_after_login",
+      "config": {
+        "key": "esc"
+      },
+      "node_type": "key_press"
+    },
+    {
+      "id": "wait_main_menu_1",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/public/主界面.png",
+        "threshold": 0.8,
+        "roi": [
+          1720,
+          20,
+          120,
+          70
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "dismiss_popup_long_press",
+      "config": {
+        "x": 227,
+        "y": 765,
+        "duration_ms": 20000,
+        "button": "left",
+        "activate_window": true
+      },
+      "node_type": "long_press"
+    },
+    {
+      "id": "back_to_map_esc",
+      "config": {
+        "key": "esc"
+      },
+      "node_type": "key_press"
+    },
+    {
+      "id": "wait_map_indicator",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/public/地图标识.png",
+        "threshold": 0.8,
+        "roi": [
+          1740,
+          20,
+          175,
+          88
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "back_to_main_esc",
+      "config": {
+        "key": "esc"
+      },
+      "node_type": "key_press"
+    },
+    {
+      "id": "wait_main_menu_2",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/public/主界面.png",
+        "threshold": 0.8,
+        "roi": [
+          1720,
+          20,
+          120,
+          70
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    }
+  ],
+  "edges": [
+    {
+      "source": "click_start_game",
+      "target": "wait_start_game_disappear"
+    },
+    {
+      "source": "wait_start_game_disappear",
+      "target": "back_to_main_after_login"
+    },
+    {
+      "source": "back_to_main_after_login",
+      "target": "wait_main_menu_1"
+    },
+    {
+      "source": "wait_main_menu_1",
+      "target": "dismiss_popup_long_press"
+    },
+    {
+      "source": "dismiss_popup_long_press",
+      "target": "back_to_map_esc"
+    },
+    {
+      "source": "back_to_map_esc",
+      "target": "wait_map_indicator"
+    },
+    {
+      "source": "wait_map_indicator",
+      "target": "back_to_main_esc"
+    },
+    {
+      "source": "back_to_main_esc",
+      "target": "wait_main_menu_2"
+    }
+  ]
+}
+

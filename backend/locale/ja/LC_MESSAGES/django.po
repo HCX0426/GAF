@@ -1,0 +1,46 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: GAF backend\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-21 00:00+0800\n"
+"PO-Revision-Date: 2026-06-21 00:00+0800\n"
+"Last-Translator: GAF Team\n"
+"Language-Team: GAF\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "密码修改成功"
+msgstr "パスワードの変更に成功しました"
+
+msgid "2FA 已启用"
+msgstr "2FA が有効になりました"
+
+msgid "2FA 已禁用"
+msgstr "2FA が無効になりました"
+
+msgid "重置链接已发送到您的邮箱"
+msgstr "リセットリンクをメールに送信しました"
+
+msgid "密码重置成功"
+msgstr "パスワードのリセットに成功しました"
+
+msgid "会话已下线"
+msgstr "セッションを終了しました"
+
+msgid "系统已存在用户，不能重复初始化"
+msgstr "システムにユーザーが既に存在します。再初期化できません"
+
+msgid "用户名至少 3 个字符"
+msgstr "ユーザー名は3文字以上必要です"
+
+msgid "密码至少 8 个字符"
+msgstr "パスワードは8文字以上必要です"
+
+msgid "仅管理员可查看所有用户登录历史"
+msgstr "管理者のみが全ユーザーのログイン履歴を閲覧できます"
+
+msgid "Unsupported language code: {}"
+msgstr "サポートされていない言語コード: {}"

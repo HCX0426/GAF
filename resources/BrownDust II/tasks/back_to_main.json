@@ -1,0 +1,62 @@
+{
+  "name": "back_to_main",
+  "description": "公共子流程：从任意子界面返回主界面。先点击返回键模板，等待主界面出现。若超时则尝试 ESC 降级。",
+  "version": "1.0.0",
+  "metadata": {
+    "original_base_res": [1920, 1080]
+  },
+  "entry_node": "click_back_btn",
+  "nodes": [
+    {
+      "id": "click_back_btn",
+      "config": {
+        "threshold": 0.8,
+        "roi": [120, 20, 100, 66],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/public/返回键1.png",
+        "continue_on_error": true
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_main_menu",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/public/主界面.png",
+        "roi": [1720, 20, 120, 70],
+        "roi_coord_type": "base",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 5.0,
+        "continue_on_error": true
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "press_esc_fallback",
+      "config": {
+        "key": "esc"
+      },
+      "node_type": "key_press"
+    },
+    {
+      "id": "wait_main_menu_after_esc",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/public/主界面.png",
+        "roi": [1720, 20, 120, 70],
+        "roi_coord_type": "base",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    }
+  ],
+  "edges": [
+    {"source": "click_back_btn", "target": "wait_main_menu"},
+    {"source": "wait_main_menu", "target": "press_esc_fallback"},
+    {"source": "press_esc_fallback", "target": "wait_main_menu_after_esc"}
+  ]
+}

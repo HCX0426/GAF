@@ -1,0 +1,10 @@
+{
+    "pythonVersion": "3.11",
+    "typeCheckingMode": "basic",
+    "extraPaths": [
+        "."
+    ],
+    "reportMissingImports": "none",
+    "reportMissingModuleSource": "none",
+    "reportUnusedVariable": "none"
+}

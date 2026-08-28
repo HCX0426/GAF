@@ -1,0 +1,24 @@
+{
+  "name": "gaf-desktop",
+  "version": "1.0.0",
+  "description": "GAF 通用桌面自动化框架 - 桌面客户端",
+  "main": "dist/main/index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "build:win": "npm run build && electron-builder --win",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0",
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "electron": "^33.3.1",
+    "electron-builder": "^25.1.8",
+    "typescript": "~6.0.2",
+    "vite": "^8.0.12",
+    "vite-plugin-electron": "^0.28.8",
+    "vite-plugin-electron-renderer": "^0.14.7"
+  }
+}

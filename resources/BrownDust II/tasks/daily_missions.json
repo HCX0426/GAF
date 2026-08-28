@@ -1,0 +1,262 @@
+{
+  "name": "daily_missions",
+  "description": "BD2 daily/weekly mission rewards — ported from BD2-AUTO src/auto_tasks/Default/tasks/daily_missions.py. Click 'missions' → 'claim all' (daily) → back → 'weekly' → 'claim all' (weekly) → back → ESC to main. ROIs at 1920x1080 base resolution. (pending e2e verification — R37-P2 C2 PoC covers login only)",
+  "version": "1.0.0",
+  "metadata": {
+    "original_base_res": [
+      1920,
+      1080
+    ],
+    "goal": "Claim BD2 daily and weekly mission rewards"
+  },
+  "entry_node": "click_missions_text",
+  "nodes": [
+    {
+      "id": "click_missions_text",
+      "comment": "Click the '任务' (missions) button on the main menu bottom bar to open the missions panel",
+      "rationale": "OCR is used instead of template matching because the button text is stable across UI themes and resolutions, while button appearance may vary",
+      "config": {
+        "text": "任务",
+        "roi": [
+          630,
+          994,
+          102,
+          36
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_daily_tasks",
+      "comment": "Wait for the '每日任务' (daily tasks) tab label to appear, confirming the missions panel has loaded",
+      "config": {
+        "mode": "ocr",
+        "text": "每日任务",
+        "roi": [
+          218,
+          120,
+          359,
+          147
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "claim_daily_all",
+      "comment": "Click '全部获得' (claim all) button to collect all daily mission rewards",
+      "rationale": "Claim-all button is preferred over per-mission claiming to minimize clicks and reduce OCR cycles",
+      "config": {
+        "text": "全部获得",
+        "roi": [
+          1622,
+          984,
+          146,
+          46
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_after_claim_daily",
+      "comment": "Wait 2s for reward claim animation and UI update to settle before navigating back",
+      "config": {
+        "mode": "fixed",
+        "seconds": 2.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_back_after_daily",
+      "comment": "Click the back button (template '返回键1.png') to return from daily missions view to the missions tab selector",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          120,
+          20,
+          100,
+          66
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/public/返回键1.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_after_back_daily",
+      "comment": "Wait 1.5s for back-navigation transition animation to complete before clicking the weekly tab",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.5
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_weekly_tasks",
+      "comment": "Click the '每周任务' (weekly tasks) tab label to switch from daily to weekly missions view",
+      "config": {
+        "text": "每周任务",
+        "roi": [
+          235,
+          195,
+          129,
+          54
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_weekly_tasks_visible",
+      "comment": "Wait 2s for the weekly tasks tab content to load after tab switch",
+      "rationale": "Fixed wait is used instead of OCR wait because the weekly tab does not show a distinct text label that differs from the tab selector",
+      "config": {
+        "mode": "fixed",
+        "seconds": 2.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "claim_weekly_all",
+      "comment": "Click '全部获得' (claim all) button to collect all weekly mission rewards",
+      "config": {
+        "text": "全部获得",
+        "roi": [
+          1622,
+          984,
+          146,
+          46
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_after_claim_weekly",
+      "comment": "Wait 2s for reward claim animation to settle before navigating back",
+      "config": {
+        "mode": "fixed",
+        "seconds": 2.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_back_after_weekly",
+      "comment": "Click the back button to return from weekly missions view to the main menu",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          120,
+          20,
+          100,
+          66
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/public/返回键1.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_after_back_weekly",
+      "comment": "Wait 1.5s for back-navigation transition before pressing ESC",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.5
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "exit_to_main",
+      "comment": "Press ESC to close any remaining missions overlay and return to the game main menu",
+      "config": {
+        "key": "esc"
+      },
+      "node_type": "key_press"
+    },
+    {
+      "id": "wait_main_menu",
+      "comment": "Wait for the main menu template ('主界面.png') to appear, confirming successful return to the main screen",
+      "rationale": "Template wait at the end provides a synchronization point — if this node fails, the pipeline did not return to main menu correctly and subsequent tasks in a chain should not proceed",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/public/主界面.png",
+        "threshold": 0.8,
+        "roi": [
+          1720,
+          20,
+          120,
+          70
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    }
+  ],
+  "edges": [
+    {
+      "source": "click_missions_text",
+      "target": "wait_daily_tasks"
+    },
+    {
+      "source": "wait_daily_tasks",
+      "target": "claim_daily_all"
+    },
+    {
+      "source": "claim_daily_all",
+      "target": "wait_after_claim_daily"
+    },
+    {
+      "source": "wait_after_claim_daily",
+      "target": "click_back_after_daily"
+    },
+    {
+      "source": "click_back_after_daily",
+      "target": "wait_after_back_daily"
+    },
+    {
+      "source": "wait_after_back_daily",
+      "target": "click_weekly_tasks"
+    },
+    {
+      "source": "click_weekly_tasks",
+      "target": "wait_weekly_tasks_visible"
+    },
+    {
+      "source": "wait_weekly_tasks_visible",
+      "target": "claim_weekly_all"
+    },
+    {
+      "source": "claim_weekly_all",
+      "target": "wait_after_claim_weekly"
+    },
+    {
+      "source": "wait_after_claim_weekly",
+      "target": "click_back_after_weekly"
+    },
+    {
+      "source": "click_back_after_weekly",
+      "target": "wait_after_back_weekly"
+    },
+    {
+      "source": "wait_after_back_weekly",
+      "target": "exit_to_main"
+    },
+    {
+      "source": "exit_to_main",
+      "target": "wait_main_menu"
+    }
+  ]
+}
+

@@ -1,0 +1,8 @@
+{
+  "name": "BrownDust II",
+  "version": "1.2.0",
+  "target_app": "BrownDust II",
+  "author": "BD2-AUTO port to GAF (Phase R29/R37-P2)",
+  "gaf_version": ">=1.0.0",
+  "description": "BrownDust II Resource Pack - ported from BD2-AUTO/src/auto_tasks/Default. Contains 12 pipelines + 67 PNG templates. Status: 12 pipelines ready for e2e (login/get_guild/get_pvp/intensive_decomposition/lucky_draw/sweep_daily/daily_missions/get_email/get_restaurant/map_collection/pass_rewards/pass_activity). TD-013 closed (branch node support added, commit 0a31940). OCR verify migration bugs fixed in R37-P2 (5 wait nodes corrected from template to ocr mode)."
+}

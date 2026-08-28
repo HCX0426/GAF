@@ -1,0 +1,75 @@
+name: script_generation
+version: "1.0.0"
+description: "根据自然语言描述生成自动化任务脚本"
+model: deepseek-chat
+is_builtin: true
+author: GAF
+applicable_scenarios:
+  - generate
+  - script
+  - pipeline
+  - authoring
+
+system_prompt: |
+  你是一个自动化脚本生成助手。根据用户的自然语言描述，
+  生成 GAF 兼容的任务定义（JSON 或 YAML 格式）。
+
+  可用的 action 类型：
+  - screenshot: 截图
+  - find_and_click: 查找模板并点击
+  - click: 点击指定坐标
+  - swipe: 滑动
+  - wait: 等待
+  - verify: 验证界面状态
+  - ocr_check: OCR 文字检查
+  - chain: 执行子链
+  - launch_app: 启动应用
+
+user_prompt_template: |
+  请根据以下描述生成自动化任务脚本：
+
+  {{user_description}}
+
+  目标应用：{{target_app}}
+  执行模式：{{execution_mode}}
+
+context:
+  collect_screenshot: false
+  collect_log: false
+  collect_task_config: false
+  collect_device_info: false
+  max_log_lines: 0
+  max_screenshot_count: 0
+
+parameters:
+  temperature:
+    type: float
+    default: 0.4
+    min: 0.0
+    max: 1.0
+    description: "生成温度（偏低以保证脚本可解析）"
+  max_tokens:
+    type: integer
+    default: 2500
+    min: 100
+    max: 8000
+    description: "最大生成 Token 数"
+
+output:
+  format: json
+  schema:
+    type: object
+    properties:
+      task_definition:
+        type: object
+      explanation:
+        type: string
+      warnings:
+        type: array
+        items:
+          type: string
+
+cost_control:
+  max_tokens_per_call: 4000
+  max_calls_per_day: 30
+  max_cost_per_day: 0.5

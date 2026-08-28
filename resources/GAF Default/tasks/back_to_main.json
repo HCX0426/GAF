@@ -1,0 +1,39 @@
+{
+  "name": "back_to_main",
+  "description": "公共子流程：从任意子界面返回主界面。先点击返回键模板，等待主界面出现。",
+  "version": "1.0.0",
+  "metadata": {
+    "original_base_res": [1280, 720]
+  },
+  "entry_node": "click_back_btn",
+  "nodes": [
+    {
+      "id": "click_back_btn",
+      "node_type": "template_match",
+      "config": {
+        "threshold": 0.8,
+        "roi": [120, 20, 100, 66],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template": "GAF Default/templates/public/返回键1.png",
+        "continue_on_error": true
+      }
+    },
+    {
+      "id": "wait_main_menu",
+      "node_type": "wait",
+      "config": {
+        "mode": "template",
+        "template": "GAF Default/templates/public/主界面.png",
+        "roi": [1720, 20, 120, 70],
+        "roi_coord_type": "base",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 5.0
+      }
+    }
+  ],
+  "edges": [
+    {"source": "click_back_btn", "target": "wait_main_menu"}
+  ]
+}

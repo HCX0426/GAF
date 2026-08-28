@@ -1,0 +1,73 @@
+name: resource_analysis
+version: "1.0.0"
+description: "分析资源包结构和内容，提供改进建议"
+model: deepseek-chat
+is_builtin: true
+author: GAF
+applicable_scenarios:
+  - resource
+  - pack
+  - template
+  - quality
+
+system_prompt: |
+  你是一个自动化资源包分析专家。分析资源包的结构、
+  模板图片质量和任务定义，提供改进建议。
+
+user_prompt_template: |
+  请分析以下资源包：
+
+  资源包名称：{{pack_name}}
+  资源包版本：{{pack_version}}
+  任务数量：{{task_count}}
+  模板数量：{{template_count}}
+  监控规则数量：{{monitor_count}}
+
+  任务列表：
+  {{task_list}}
+
+  监控规则列表：
+  {{monitor_list}}
+
+context:
+  collect_screenshot: false
+  collect_log: false
+  collect_task_config: true
+  collect_device_info: false
+  max_log_lines: 0
+  max_screenshot_count: 0
+
+parameters:
+  temperature:
+    type: float
+    default: 0.4
+    min: 0.0
+    max: 1.0
+    description: "生成温度（偏低以保证建议稳定）"
+  max_tokens:
+    type: integer
+    default: 2000
+    min: 100
+    max: 8000
+    description: "最大生成 Token 数"
+
+output:
+  format: json
+  schema:
+    type: object
+    properties:
+      quality_score:
+        type: number
+      issues:
+        type: array
+        items:
+          type: object
+      suggestions:
+        type: array
+        items:
+          type: string
+
+cost_control:
+  max_tokens_per_call: 3000
+  max_calls_per_day: 20
+  max_cost_per_day: 0.3

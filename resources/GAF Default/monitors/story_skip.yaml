@@ -1,0 +1,9 @@
+name: story_skip
+description: 剧情跳过器
+rules:
+  - template: story/skip_button
+    action: click
+    description: 跳过剧情
+  - template: story/auto_button
+    action: click
+    description: 自动播放

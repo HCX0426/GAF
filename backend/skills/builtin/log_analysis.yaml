@@ -1,0 +1,76 @@
+name: log_analysis
+version: "1.0.0"
+description: "分析任务执行日志，发现潜在问题和模式"
+model: deepseek-chat
+is_builtin: true
+author: GAF
+applicable_scenarios:
+  - log
+  - anomaly
+  - pattern
+  - monitor
+  - alert
+
+system_prompt: |
+  你是一个日志分析专家。分析自动化任务执行日志，识别：
+  1. 异常模式和趋势
+  2. 潜在风险
+  3. 性能瓶颈
+  4. 改进建议
+
+user_prompt_template: |
+  请分析以下任务执行日志：
+
+  日志内容：
+  {{log_content}}
+
+  任务信息：{{task_name}} (执行ID: {{execution_id}})
+
+context:
+  collect_screenshot: false
+  collect_log: true
+  collect_task_config: false
+  collect_device_info: false
+  max_log_lines: 200
+  max_screenshot_count: 0
+
+parameters:
+  temperature:
+    type: float
+    default: 0.3
+    min: 0.0
+    max: 1.0
+    description: "生成温度（偏低以保证分析稳定）"
+  max_tokens:
+    type: integer
+    default: 2500
+    min: 100
+    max: 8000
+    description: "最大生成 Token 数"
+
+output:
+  format: json
+  schema:
+    type: object
+    properties:
+      patterns:
+        type: array
+        items:
+          type: object
+      risks:
+        type: array
+        items:
+          type: string
+      bottlenecks:
+        type: array
+        items:
+          type: string
+      recommendations:
+        type: array
+        items:
+          type: string
+
+cost_control:
+  max_tokens_per_call: 5000
+  max_calls_per_day: 20
+  max_cost_per_day: 0.5

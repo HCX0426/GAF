@@ -1,0 +1,168 @@
+{
+  "name": "get_email",
+  "description": "BD2 email claim — ported from BD2-AUTO src/auto_tasks/Default/tasks/get_email.py. Open mailbox, check if empty (branch), if not empty click 'claim all' then dismiss reward popup, finally call back_to_main sub_pipeline to return to main menu. ROIs at 1920x1080 base resolution. (pending e2e verification — R37-P2 C2 PoC covers login only)",
+  "version": "1.0.0",
+  "metadata": {
+    "original_base_res": [
+      1920,
+      1080
+    ]
+  },
+  "entry_node": "open_mailbox",
+  "nodes": [
+    {
+      "id": "open_mailbox",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          1564,
+          28,
+          95,
+          61
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/get_email/邮箱.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_regular_email",
+      "config": {
+        "mode": "ocr",
+        "text": "普通邮箱",
+        "roi": [
+          214,
+          10,
+          333,
+          276
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "timeout": 15.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "detect_empty_email",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          1000,
+          370,
+          420,
+          389
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": false,
+        "template_id": "BrownDust II/templates/get_email/空邮箱标识.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "branch_empty_email",
+      "config": {
+        "condition": {
+          "variable": "detect_empty_email_match_result",
+          "operator": "eq",
+          "value": true
+        },
+        "true_branch": "call_back_to_main",
+        "false_branch": "claim_all_rewards"
+      },
+      "node_type": "branch"
+    },
+    {
+      "id": "claim_all_rewards",
+      "config": {
+        "text": "全部领取",
+        "roi": [
+          1573,
+          969,
+          252,
+          61
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_mailbox_still_visible",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/get_email/邮箱.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 10.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_back_dismiss_popup",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          120,
+          20,
+          100,
+          66
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/public/返回键1.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_popup_dismissed",
+      "config": {
+        "mode": "disappear",
+        "template": "BrownDust II/templates/get_email/邮箱.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "require_seen_first": true,
+        "timeout": 10.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "call_back_to_main",
+      "config": {
+        "pipeline_path": "resources/BrownDust II/pipelines/back_to_main.json"
+      },
+      "node_type": "sub_pipeline"
+    }
+  ],
+  "edges": [
+    {
+      "source": "open_mailbox",
+      "target": "wait_regular_email"
+    },
+    {
+      "source": "wait_regular_email",
+      "target": "detect_empty_email"
+    },
+    {
+      "source": "detect_empty_email",
+      "target": "branch_empty_email"
+    },
+    {
+      "source": "claim_all_rewards",
+      "target": "wait_mailbox_still_visible"
+    },
+    {
+      "source": "wait_mailbox_still_visible",
+      "target": "click_back_dismiss_popup"
+    },
+    {
+      "source": "click_back_dismiss_popup",
+      "target": "wait_popup_dismissed"
+    },
+    {
+      "source": "wait_popup_dismissed",
+      "target": "call_back_to_main"
+    }
+  ]
+}
+

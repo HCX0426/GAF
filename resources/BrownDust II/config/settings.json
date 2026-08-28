@@ -1,0 +1,15 @@
+{
+  "base_resolution": [1280, 720],
+  "ocr_engine": "rapidocr",
+  "screenshot_method_preference": "printwindow",
+  "input_method_preference": "auto",
+  "screenshot_cache_ttl": 50,
+  "humanize_enabled": true,
+  "humanize_offset": 5,
+  "servers": {
+    "cn": {
+      "label": "国服",
+      "template_dir": "templates/"
+    }
+  }
+}

@@ -1,0 +1,332 @@
+[
+  {
+    "question": "GAF 是什么？",
+    "answer": "GAF（Game Automation Framework）是一个游戏自动化框架，支持 Windows 和 Android 平台的任务自动化、图像识别、OCR 文字识别、Pipeline 可视化编辑等功能。",
+    "category": "安装配置",
+    "tags": ["入门", "概述"]
+  },
+  {
+    "question": "如何安装 GAF？",
+    "answer": "1. 克隆仓库到本地；2. Windows 下以管理员身份运行 powershell -ExecutionPolicy Bypass -File scripts\\setup-dev-env.ps1 一键部署（会自动安装 Git/Redis/Miniconda/Node.js 并创建 conda env gaf 和 agent venv gaf-agent）；3. Linux/macOS 参考 docs/architecture/desktop/deployment-design.md 手动初始化；4. 配置环境变量（参考 .env.example）；5. 执行 python manage.py migrate 初始化数据库；6. 用 scripts\\gaf_services.ps1 start 一键启动 Redis+Backend+Agent+Frontend (确保唯一实例)。",
+    "category": "安装配置",
+    "tags": ["安装", "环境"]
+  },
+  {
+    "question": "GAF 支持哪些平台？",
+    "answer": "GAF 支持 Windows 桌面应用自动化（通过 Win32 API / WGC 截图）和 Android 设备自动化（通过 ADB），也支持 Android 模拟器。",
+    "category": "安装配置",
+    "tags": ["平台", "Windows", "Android"]
+  },
+  {
+    "question": "如何配置 LLM（大语言模型）？",
+    "answer": "在系统设置 → LLM 配置中填写提供商（OpenAI/Anthropic/Azure/本地模型）、模型名称、API Key 和 API Base URL。也可以设置 Temperature 和 Max Tokens 参数。",
+    "category": "安装配置",
+    "tags": ["LLM", "配置"]
+  },
+  {
+    "question": "如何创建第一个 Pipeline？",
+    "answer": "进入 Pipeline 编辑器页面，从左侧节点库拖拽节点到画布上，连接节点形成流程，配置每个节点的参数，然后点击保存。也可以使用 AI 助手通过自然语言描述自动生成 Pipeline。",
+    "category": "Pipeline编辑",
+    "tags": ["Pipeline", "创建"]
+  },
+  {
+    "question": "Pipeline 支持哪些节点类型？",
+    "answer": "支持 15 种节点类型：模板匹配(template_match)、OCR识别(ocr)、点击(click)、滑动(swipe)、按键(key_press)、文本输入(text_input)、等待(wait)、分支(branch)、循环(loop)、跳转(goto)、设备控制(device_control)、监控(monitor)、子流程(sub_pipeline)、颜色检测(color_detect)、特征匹配(feature_match)。",
+    "category": "Pipeline编辑",
+    "tags": ["Pipeline", "节点"]
+  },
+  {
+    "question": "如何校验 Pipeline 是否合法？",
+    "answer": "在 Pipeline 编辑器中点击\"校验\"按钮，系统会检查：1. 所有节点是否有有效 ID；2. 节点 ID 是否重复；3. 节点类型是否有效；4. 边的 source 和 target 是否引用存在的节点。",
+    "category": "Pipeline编辑",
+    "tags": ["Pipeline", "校验"]
+  },
+  {
+    "question": "Pipeline 版本管理怎么做？",
+    "answer": "每次保存 Pipeline 时会自动创建快照（Snapshot），版本号自动递增。可以在 Pipeline 详情页查看版本历史，并回退到任意历史版本。",
+    "category": "Pipeline编辑",
+    "tags": ["Pipeline", "版本"]
+  },
+  {
+    "question": "如何使用 AI 生成 Pipeline？",
+    "answer": "在 AI 实验室页面输入自然语言描述（如\"点击登录按钮，输入用户名密码，点击确认\"），AI 会自动生成对应的 Pipeline JSON。支持流式和非流式两种模式。",
+    "category": "Pipeline编辑",
+    "tags": ["AI", "Pipeline"]
+  },
+  {
+    "question": "GAF 支持哪些截图方式？",
+    "answer": "Windows 平台支持：DXGI Desktop Duplication（高效）、BitBlt（兼容）、PrintWindow（后台窗口）。Android 平台通过 ADB screencap 截图。可通过游戏档案配置推荐截图方式排序。",
+    "category": "截图方式",
+    "tags": ["截图", "Windows", "Android"]
+  },
+  {
+    "question": "截图性能如何优化？",
+    "answer": "1. 优先使用 DXGI Desktop Duplication（WGC），帧率最高可达 60fps；2. 使用帧池(FramePool)复用缓冲区；3. 根据需求调整截图分辨率；4. 避免频繁全屏截图，使用 ROI 区域截图。",
+    "category": "截图方式",
+    "tags": ["截图", "性能"]
+  },
+  {
+    "question": "OCR 识别支持哪些语言？",
+    "answer": "支持中文(ch)、英文(en)、日文(jp)、韩文(korean)等语言。默认 OCR 引擎为 RapidOCR，也可切换到 PaddleOCR。可在游戏档案中配置默认 OCR 语言。",
+    "category": "OCR识别",
+    "tags": ["OCR", "语言"]
+  },
+  {
+    "question": "如何提高 OCR 识别准确率？",
+    "answer": "1. 选择正确的语言；2. 使用 ROI 限制识别区域；3. 对截图进行预处理（灰度化、二值化）；4. 确保目标区域分辨率足够；5. 在游戏档案中配置合适的 OCR 引擎。",
+    "category": "OCR识别",
+    "tags": ["OCR", "准确率"]
+  },
+  {
+    "question": "模板匹配的阈值应该设多少？",
+    "answer": "推荐阈值 0.7-0.85。阈值越高匹配越严格（可能漏检），越低越宽松（可能误检）。建议从 0.8 开始，根据实际情况调整。可在模板有效性统计中查看匹配成功率。",
+    "category": "模板匹配",
+    "tags": ["模板匹配", "阈值"]
+  },
+  {
+    "question": "如何创建模板图片？",
+    "answer": "1. 在资源包管理中上传模板图片；2. 使用截图工具截取目标 UI 元素；3. 确保模板图片清晰、特征明显；4. 避免使用包含动态内容（如数字、进度条）的图片作为模板。",
+    "category": "模板匹配",
+    "tags": ["模板匹配", "创建"]
+  },
+  {
+    "question": "模板匹配失败怎么办？",
+    "answer": "1. 降低匹配阈值；2. 检查模板是否过期（UI 变化）；3. 尝试使用特征匹配(feature_match)；4. 使用 OCR 文字识别作为替代方案；5. 检查截图分辨率是否与模板匹配。",
+    "category": "模板匹配",
+    "tags": ["模板匹配", "故障"]
+  },
+  {
+    "question": "如何使用录制回放功能？",
+    "answer": "1. 在设备页选择目标设备；2. 点击\"开始录制\"；3. 在设备上进行操作（点击、滑动、输入等）；4. 点击\"停止录制\"；5. 录制完成后可转换为 Pipeline 进行编辑和复用。",
+    "category": "录制回放",
+    "tags": ["录制", "回放"]
+  },
+  {
+    "question": "录制能保存哪些操作？",
+    "answer": "录制会保存：鼠标点击坐标、滑动轨迹、键盘输入、等待时间、以及每一步的截图。录制数据包含事件列表和时间戳，支持转换为 Pipeline JSON。",
+    "category": "录制回放",
+    "tags": ["录制", "操作"]
+  },
+  {
+    "question": "如何将录制转换为 Pipeline？",
+    "answer": "在录制列表中点击\"转换为 Pipeline\"，系统会自动将录制的事件序列转换为 Pipeline 节点。转换后的 Pipeline 可以进行编辑、添加条件分支和循环等高级逻辑。",
+    "category": "录制回放",
+    "tags": ["录制", "Pipeline"]
+  },
+  {
+    "question": "AI 助手能做什么？",
+    "answer": "AI 助手支持：1. 自然语言生成 Pipeline；2. Pipeline 优化建议；3. 执行日志分析；4. QA 问答（基于 RAG 知识库）；5. 错误排查辅助。需要先配置 LLM。",
+    "category": "AI助手",
+    "tags": ["AI", "功能"]
+  },
+  {
+    "question": "AI 实验室的用量如何控制？",
+    "answer": "系统会自动记录每次 LLM 调用的 Token 消耗和费用估算。管理员可在 LLMUsageLog 中查看用量统计，包括输入/输出 Token 数和预估费用。",
+    "category": "AI助手",
+    "tags": ["AI", "用量"]
+  },
+  {
+    "question": "如何添加新设备？",
+    "answer": "Windows 设备自动发现，Android 设备通过 ADB 连接后自动发现。也可在设备管理页面手动添加。设备需要绑定到 Agent 才能执行任务。",
+    "category": "设备管理",
+    "tags": ["设备", "添加"]
+  },
+  {
+    "question": "设备分组有什么用？",
+    "answer": "设备分组可以将多台设备归为一组，任务可以指定在某个设备组上执行。支持按设备类型、状态筛选分组内的设备。适用于多设备并行执行场景。",
+    "category": "设备管理",
+    "tags": ["设备", "分组"]
+  },
+  {
+    "question": "Agent 是什么？",
+    "answer": "Agent 是运行在目标机器上的客户端程序，负责：1. 接收并执行任务；2. 截图和图像识别；3. 设备控制（点击、按键等）；4. 上报执行状态和心跳。每个 Agent 有唯一的 Token 进行认证。",
+    "category": "设备管理",
+    "tags": ["Agent"]
+  },
+  {
+    "question": "如何生成 Agent Token？",
+    "answer": "在系统设置 → Agent Token 页面点击\"生成 Token\"，输入 Agent 名称即可生成。生成的 Token 需要妥善保存，Agent 启动时通过 Token 连接后端。",
+    "category": "设备管理",
+    "tags": ["Agent", "Token"]
+  },
+  {
+    "question": "如何管理用户账户？",
+    "answer": "管理员可在系统设置 → 用户管理页面创建/删除用户。用户角色分为 admin（管理员）和 user（普通用户）。支持用户密码修改、2FA 两步验证。",
+    "category": "账户系统",
+    "tags": ["用户", "管理"]
+  },
+  {
+    "question": "如何启用两步验证（2FA）？",
+    "answer": "在系统设置 → 安全设置中点击\"启用 2FA\"，使用身份验证器 App（如 Google Authenticator）扫描二维码，输入 6 位验证码完成设置。后续登录需要输入动态验证码。",
+    "category": "账户系统",
+    "tags": ["2FA", "安全"]
+  },
+  {
+    "question": "游戏账户如何管理？",
+    "answer": "在游戏账户页面可以添加游戏账户信息（游戏名、用户名、密码、服务器、登录方式）。密码使用加密存储。任务可以关联游戏账户实现自动登录。",
+    "category": "账户系统",
+    "tags": ["游戏账户", "加密"]
+  },
+  {
+    "question": "任务执行失败如何排查？",
+    "answer": "1. 查看任务执行记录的日志和错误信息；2. 检查每个步骤的截图和识别结果；3. 查看 Agent 心跳状态是否正常；4. 在 AI 实验室使用日志分析功能；5. 上传调试日志包进行深度分析。",
+    "category": "故障排查",
+    "tags": ["故障", "调试"]
+  },
+  {
+    "question": "截图无法获取怎么办？",
+    "answer": "1. 检查目标窗口是否在前台；2. Windows 平台尝试切换截图方式（DXGI → BitBlt）；3. Android 检查 ADB 连接；4. 确认 Agent 端截图权限正常；5. 查看 Agent 日志。",
+    "category": "故障排查",
+    "tags": ["截图", "故障"]
+  },
+  {
+    "question": "Agent 显示离线怎么办？",
+    "answer": "1. 检查 Agent 进程是否运行；2. 检查 Agent Token 是否正确；3. 检查网络连接；4. 查看 Agent 日志中的连接错误；5. 尝试重启 Agent。心跳超时 30 秒会标记为离线。",
+    "category": "故障排查",
+    "tags": ["Agent", "离线"]
+  },
+  {
+    "question": "OCR 识别不到文字怎么办？",
+    "answer": "1. 确认 OCR 语言设置正确；2. 检查截图是否包含目标文字；3. 尝试扩大或调整 ROI 区域；4. 切换 OCR 引擎（PaddleOCR ↔ RapidOCR）；5. 检查截图分辨率是否过低。",
+    "category": "故障排查",
+    "tags": ["OCR", "故障"]
+  },
+  {
+    "question": "如何提升任务执行速度？",
+    "answer": "1. 优化截图方式，使用 DXGI 获取更高帧率；2. 减小截图区域(ROI)降低处理量；3. 合理设置等待时间，避免不必要延迟；4. 使用更快的 OCR 引擎(RapidOCR)；5. 并行执行独立任务。",
+    "category": "性能优化",
+    "tags": ["性能", "优化"]
+  },
+  {
+    "question": "大量模板匹配如何优化性能？",
+    "answer": "1. 使用 ONNX 推理引擎加速模板匹配；2. 启用模板匹配缓存；3. 按匹配频率排序模板（高频优先）；4. 使用模板有效性统计淘汰低效模板；5. 考虑使用特征匹配替代大量模板匹配。",
+    "category": "性能优化",
+    "tags": ["性能", "模板匹配"]
+  },
+  {
+    "question": "如何配置恢复策略？",
+    "answer": "恢复策略支持 5 层：L1-步骤重试（默认3次）、L2-任务重启（连续失败阈值）、L3-应用重启、L4-设备重连、L5-系统告警。可在恢复策略配置页面调整参数。",
+    "category": "故障排查",
+    "tags": ["恢复", "容错"]
+  },
+  {
+    "question": "Webhook 支持哪些渠道？",
+    "answer": "支持 5 种通知渠道：Discord、Slack、Telegram、钉钉(DingTalk)、企业微信(WeCom)。在 Webhook 配置页面添加渠道 URL 并测试连通性。",
+    "category": "账户系统",
+    "tags": ["Webhook", "通知"]
+  },
+  {
+    "question": "如何设置告警规则？",
+    "answer": "在告警规则页面创建规则：选择规则类型、设置阈值、配置通知方式（站内通知/Webhook）。支持静默时段设置，在指定时间段内不触发告警。",
+    "category": "账户系统",
+    "tags": ["告警", "监控"]
+  },
+  {
+    "question": "SLA 指标是如何采集的？",
+    "answer": "SLA 指标包括任务成功率、平均执行时间、步骤耗时等。Agent 端自动上报指标数据，后端存储到 SLAMetric 表。可在分析仪表盘查看趋势图表。",
+    "category": "性能优化",
+    "tags": ["SLA", "指标"]
+  },
+  {
+    "question": "子流程(sub_pipeline)怎么用？",
+    "answer": "子流程节点可以引用另一个已有的 Pipeline，实现流程复用。配置时选择目标 Pipeline ID 并传入参数。子流程执行完毕后返回主流程继续执行。",
+    "category": "Pipeline编辑",
+    "tags": ["子流程", "复用"]
+  },
+  {
+    "question": "循环(loop)节点怎么配置？",
+    "answer": "配置最大迭代次数(max_iterations)防止无限循环，可选配置退出条件(condition)。循环体内的节点会重复执行直到达到最大次数或满足退出条件。",
+    "category": "Pipeline编辑",
+    "tags": ["循环", "节点"]
+  },
+  {
+    "question": "分支(branch)节点怎么使用？",
+    "answer": "分支节点根据条件表达式的结果决定执行路径。条件可以是模板匹配结果、OCR 识别结果等。配置 true_branch（条件为真时执行）和 false_branch（条件为假时执行）。",
+    "category": "Pipeline编辑",
+    "tags": ["分支", "条件"]
+  },
+  {
+    "question": "任务市场是什么？",
+    "answer": "任务市场允许用户发布和下载 Pipeline 模板。已发布的 Pipeline 经过审核后可被其他用户一键导入使用。支持评分和评论功能。",
+    "category": "Pipeline编辑",
+    "tags": ["市场", "分享"]
+  },
+  {
+    "question": "如何发布 Pipeline 到市场？",
+    "answer": "在 Pipeline 详情页点击\"发布到市场\"，填写标题、描述、游戏名称、标签等信息提交审核。审核通过后其他用户可见。",
+    "category": "Pipeline编辑",
+    "tags": ["市场", "发布"]
+  },
+  {
+    "question": "审计日志记录哪些操作？",
+    "answer": "审计日志记录：登录/登出、创建/更新/删除资源、任务执行、导入/导出操作。每条日志包含操作者、操作类型、资源类型、IP 地址和详细描述。",
+    "category": "账户系统",
+    "tags": ["审计", "安全"]
+  },
+  {
+    "question": "如何进行数据备份？",
+    "answer": "在备份页面点击\"创建备份\"，可选择备份内容（任务配置、执行记录、用户数据等）。备份文件存储在服务器指定目录，支持下载和一键恢复。",
+    "category": "安装配置",
+    "tags": ["备份", "恢复"]
+  },
+  {
+    "question": "定时任务如何配置？",
+    "answer": "创建定时任务时选择调度类型：一次性(one_time)或周期性(periodic)。周期性任务使用 Cron 表达式配置执行时间（如 \"0 8 * * *\" 表示每天8点）。",
+    "category": "Pipeline编辑",
+    "tags": ["定时", "Cron"]
+  },
+  {
+    "question": "Cron 表达式怎么写？",
+    "answer": "Cron 表达式格式：分 时 日 月 周。示例：'*/5 * * * *' 每5分钟；'0 */2 * * *' 每2小时；'0 8 * * 1-5' 工作日8点；'0 0 1 * *' 每月1号零点。",
+    "category": "Pipeline编辑",
+    "tags": ["定时", "Cron"]
+  },
+  {
+    "question": "执行记录中的 trace_id 有什么用？",
+    "answer": "trace_id 用于分布式追踪，可以串联整个任务执行链路中的所有 Span（操作单元）。在 Tracing 页面可以通过 trace_id 查看完整的执行链路和耗时分析。",
+    "category": "故障排查",
+    "tags": ["追踪", "调试"]
+  },
+  {
+    "question": "崩溃报告如何查看？",
+    "answer": "在崩溃报告页面查看所有组件崩溃记录，包括错误类型、堆栈跟踪、系统信息。崩溃报告按时间排序，支持标记为\"已解决\"。",
+    "category": "故障排查",
+    "tags": ["崩溃", "调试"]
+  },
+  {
+    "question": "资源包是什么？怎么管理？",
+    "answer": "资源包是模板图片、配置文件等资源的集合。每个任务关联一个资源包。资源包支持版本管理，可以激活/停用。在资源包管理页面进行创建和上传。",
+    "category": "安装配置",
+    "tags": ["资源包", "模板"]
+  },
+  {
+    "question": "游戏档案(GameProfile)有什么作用？",
+    "answer": "游戏档案存储游戏特定的自动化配置：推荐截图方式、OCR 语言、UI 参考分辨率、已知弹窗模板、分辨率适配策略。不同游戏可以有不同的自动化配置。",
+    "category": "安装配置",
+    "tags": ["游戏档案", "配置"]
+  },
+  {
+    "question": "如何迁移配置到新版本？",
+    "answer": "使用配置迁移工具 migrate_config() 函数，支持 v1→v2 的配置键自动映射。在设置导入/导出流程中会自动调用迁移工具确保兼容性。",
+    "category": "安装配置",
+    "tags": ["迁移", "版本"]
+  },
+  {
+    "question": "如何恢复出厂设置？",
+    "answer": "在系统设置页面点击\"恢复出厂设置\"，确认后会清空所有执行数据、恢复默认配置，但保留用户账户。此操作不可逆，请谨慎操作。",
+    "category": "安装配置",
+    "tags": ["重置", "恢复"]
+  },
+  {
+    "question": "任务执行支持哪些状态？",
+    "answer": "任务执行状态包括：pending（等待）、running（运行中）、paused（已暂停）、success（成功）、failed（失败）、cancelled（已取消）、force_terminated（强制终止）。",
+    "category": "故障排查",
+    "tags": ["状态", "执行"]
+  },
+  {
+    "question": "如何暂停和恢复任务执行？",
+    "answer": "在任务执行记录中点击\"暂停\"按钮可暂停正在运行的任务，点击\"恢复\"可继续执行。暂停期间 Agent 保持连接但停止执行步骤。",
+    "category": "故障排查",
+    "tags": ["暂停", "恢复"]
+  }
+]

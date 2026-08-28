@@ -1,0 +1,6 @@
+name: story_skip
+description: 剧情跳过器
+rules:
+  - template: public/跳过.png
+    action: click
+    description: 跳过剧情

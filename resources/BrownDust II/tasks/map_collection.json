@@ -1,0 +1,252 @@
+{
+  "name": "map_collection",
+  "description": "BD2 map reward collection (chapter 7) — ported from BD2-AUTO src/auto_tasks/Default/tasks/map_collection.py. Skeleton: back_to_main → enter_map_select → click chapter 7 (swipe_until with multi-template fallback) → explore → collect materials → collect gold → back_to_main. ROIs at 1920x1080 base resolution. (pending e2e verification — R37-P2 C2 PoC covers login only)",
+  "version": "1.0.0",
+  "metadata": {
+    "original_base_res": [
+      1920,
+      1080
+    ]
+  },
+  "entry_node": "back_to_main_esc",
+  "nodes": [
+    {
+      "id": "back_to_main_esc",
+      "config": {
+        "key": "esc"
+      },
+      "node_type": "key_press"
+    },
+    {
+      "id": "wait_main_menu",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/public/主界面.png",
+        "threshold": 0.8,
+        "roi": [
+          1720,
+          20,
+          120,
+          70
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "enter_map_select",
+      "config": {
+        "x": 1720,
+        "y": 990,
+        "button": "left",
+        "clicks": 1,
+        "activate_window": true
+      },
+      "node_type": "direct_hit"
+    },
+    {
+      "id": "wait_game_collection",
+      "config": {
+        "mode": "ocr",
+        "text": "游戏卡珍藏集",
+        "roi": [
+          209,
+          19,
+          307,
+          69
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_chapter_7",
+      "config": {
+        "templates": [
+          "BrownDust II/templates/map_collection/第七章1.png",
+          "BrownDust II/templates/map_collection/第七章2.png"
+        ],
+        "threshold": 0.8,
+        "click_on_match": true,
+        "x1": 960,
+        "y1": 800,
+        "x2": 960,
+        "y2": 300,
+        "duration": 300,
+        "max_swipes": 3,
+        "delay_between": 0.5
+      },
+      "node_type": "swipe_until"
+    },
+    {
+      "id": "wait_explore",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/map_collection/探寻.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_explore",
+      "config": {
+        "threshold": 0.8,
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/map_collection/探寻.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_material_absorb",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/map_collection/材料吸收.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_material_absorb",
+      "config": {
+        "threshold": 0.8,
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/map_collection/材料吸收.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_material_absorb_complete",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/map_collection/吸收材料完成.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 15.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "wait_gold_absorb",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/map_collection/金币吸收.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_gold_absorb",
+      "config": {
+        "threshold": 0.8,
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/map_collection/金币吸收.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_gold_absorb_complete",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/map_collection/金币吸收完成.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 15.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "back_to_main_final_esc",
+      "config": {
+        "key": "esc"
+      },
+      "node_type": "key_press"
+    },
+    {
+      "id": "wait_main_menu_final",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/public/主界面.png",
+        "threshold": 0.8,
+        "roi": [
+          1720,
+          20,
+          120,
+          70
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    }
+  ],
+  "edges": [
+    {
+      "source": "back_to_main_esc",
+      "target": "wait_main_menu"
+    },
+    {
+      "source": "wait_main_menu",
+      "target": "enter_map_select"
+    },
+    {
+      "source": "enter_map_select",
+      "target": "wait_game_collection"
+    },
+    {
+      "source": "wait_game_collection",
+      "target": "click_chapter_7"
+    },
+    {
+      "source": "click_chapter_7",
+      "target": "wait_explore"
+    },
+    {
+      "source": "wait_explore",
+      "target": "click_explore"
+    },
+    {
+      "source": "click_explore",
+      "target": "wait_material_absorb"
+    },
+    {
+      "source": "wait_material_absorb",
+      "target": "click_material_absorb"
+    },
+    {
+      "source": "click_material_absorb",
+      "target": "wait_material_absorb_complete"
+    },
+    {
+      "source": "wait_material_absorb_complete",
+      "target": "wait_gold_absorb"
+    },
+    {
+      "source": "wait_gold_absorb",
+      "target": "click_gold_absorb"
+    },
+    {
+      "source": "click_gold_absorb",
+      "target": "wait_gold_absorb_complete"
+    },
+    {
+      "source": "wait_gold_absorb_complete",
+      "target": "back_to_main_final_esc"
+    },
+    {
+      "source": "back_to_main_final_esc",
+      "target": "wait_main_menu_final"
+    }
+  ]
+}
+

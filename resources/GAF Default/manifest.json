@@ -1,0 +1,8 @@
+{
+  "name": "GAF Default",
+  "version": "1.0.0",
+  "target_app": "default",
+  "author": "GAF",
+  "gaf_version": ">=1.0.0",
+  "description": "GAF 默认资源包，包含基础任务和监控规则"
+}

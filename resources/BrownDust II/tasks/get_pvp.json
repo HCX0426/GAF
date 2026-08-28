@@ -1,0 +1,376 @@
+{
+  "name": "get_pvp",
+  "description": "BD2 PVP arena battle — ported from BD2-AUTO src/auto_tasks/Default/tasks/get_pvp.py. Skeleton: enter_map_select → click PVP map → enter arena → auto-battle → MAX → start → wait battle → close result → leave → confirm → back to main. TODO: calc_enter_arena_pos (coord transform), wait_battle_complete (while loop), click_leave_battle (retry loop) not implemented (Phase B). ROIs at 1920x1080 base resolution. (pending e2e verification — R37-P2 C2 PoC covers login only)",
+  "version": "1.0.0",
+  "metadata": {
+    "original_base_res": [
+      1920,
+      1080
+    ]
+  },
+  "entry_node": "enter_map_select",
+  "nodes": [
+    {
+      "id": "enter_map_select",
+      "config": {
+        "x": 1720,
+        "y": 990,
+        "button": "left",
+        "clicks": 1,
+        "activate_window": true
+      },
+      "node_type": "direct_hit"
+    },
+    {
+      "id": "wait_game_collection",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/public/游戏卡带.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_pvp_map",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          52,
+          517,
+          364,
+          370
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/get_pvp/pvp地图.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_arena_identifier",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/get_pvp/竞技场标识.png",
+        "threshold": 0.8,
+        "roi": [
+          744,
+          465,
+          97,
+          70
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_enter_arena",
+      "config": {
+        "x": 744,
+        "y": 617,
+        "button": "left",
+        "clicks": 1,
+        "activate_window": true
+      },
+      "node_type": "direct_hit"
+    },
+    {
+      "id": "wait_auto_battle",
+      "config": {
+        "mode": "ocr",
+        "text": "自动战斗",
+        "roi": [
+          1457,
+          947,
+          138,
+          83
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 1.0,
+        "timeout": 10.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_auto_battle",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          1457,
+          947,
+          138,
+          83
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/get_pvp/自动战斗.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_multiplier_visible",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/get_pvp/倍数.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 15.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_max",
+      "config": {
+        "text": "MAX",
+        "roi": [
+          1170,
+          602,
+          138,
+          83
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_option_completed",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/get_pvp/选项完成.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 10.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_option_completed",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          888,
+          775,
+          328,
+          80
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/get_pvp/选项完成.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_battle_complete",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/get_pvp/X.png",
+        "threshold": 0.8,
+        "check_interval": 1.0,
+        "timeout": 90.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_close_battle_result",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          1155,
+          278,
+          69,
+          60
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/get_pvp/X.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_leave_visible",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/get_pvp/离开.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 10.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_leave_battle",
+      "config": {
+        "text": "离开",
+        "roi": [
+          1025,
+          973,
+          92,
+          42
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "click_confirm",
+      "config": {
+        "text": "确认",
+        "roi": [
+          795,
+          906,
+          399,
+          137
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_map_indicator",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/public/地图标识.png",
+        "threshold": 0.8,
+        "roi": [
+          1740,
+          20,
+          175,
+          88
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 1.0,
+        "timeout": 10.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "press_h_to_main",
+      "config": {
+        "key": "h"
+      },
+      "node_type": "key_press"
+    },
+    {
+      "id": "wait_after_h_key",
+      "config": {
+        "mode": "fixed",
+        "seconds": 1.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "back_to_main_esc",
+      "config": {
+        "key": "esc"
+      },
+      "node_type": "key_press"
+    },
+    {
+      "id": "wait_main_menu",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/public/主界面.png",
+        "threshold": 0.8,
+        "roi": [
+          1720,
+          20,
+          120,
+          70
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    }
+  ],
+  "edges": [
+    {
+      "source": "enter_map_select",
+      "target": "wait_game_collection"
+    },
+    {
+      "source": "wait_game_collection",
+      "target": "click_pvp_map"
+    },
+    {
+      "source": "click_pvp_map",
+      "target": "wait_arena_identifier"
+    },
+    {
+      "source": "wait_arena_identifier",
+      "target": "click_enter_arena"
+    },
+    {
+      "source": "click_enter_arena",
+      "target": "wait_auto_battle"
+    },
+    {
+      "source": "wait_auto_battle",
+      "target": "click_auto_battle"
+    },
+    {
+      "source": "click_auto_battle",
+      "target": "wait_multiplier_visible"
+    },
+    {
+      "source": "wait_multiplier_visible",
+      "target": "click_max"
+    },
+    {
+      "source": "click_max",
+      "target": "wait_option_completed"
+    },
+    {
+      "source": "wait_option_completed",
+      "target": "click_option_completed"
+    },
+    {
+      "source": "click_option_completed",
+      "target": "wait_battle_complete"
+    },
+    {
+      "source": "wait_battle_complete",
+      "target": "click_close_battle_result"
+    },
+    {
+      "source": "click_close_battle_result",
+      "target": "wait_leave_visible"
+    },
+    {
+      "source": "wait_leave_visible",
+      "target": "click_leave_battle"
+    },
+    {
+      "source": "click_leave_battle",
+      "target": "click_confirm"
+    },
+    {
+      "source": "click_confirm",
+      "target": "wait_map_indicator"
+    },
+    {
+      "source": "wait_map_indicator",
+      "target": "press_h_to_main"
+    },
+    {
+      "source": "press_h_to_main",
+      "target": "wait_after_h_key"
+    },
+    {
+      "source": "wait_after_h_key",
+      "target": "back_to_main_esc"
+    },
+    {
+      "source": "back_to_main_esc",
+      "target": "wait_main_menu"
+    }
+  ]
+}
+

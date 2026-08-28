@@ -1,0 +1,48 @@
+import type { LocaleMessages } from '@/i18n/types';
+
+export const resourcePacks: LocaleMessages = {
+  'zh-CN': {
+    'resourcePacks.msg_load_versions_failed': '加载版本历史失败',
+    'resourcePacks.msg_restore_success': '已恢复到指定版本',
+    'resourcePacks.msg_restore_failed': '恢复版本失败',
+    'resourcePacks.empty': '暂无版本历史',
+    'resourcePacks.confirm_restore_title': '恢复此版本',
+    'resourcePacks.confirm_restore_desc': '恢复后将覆盖当前模板内容，是否继续？',
+    'resourcePacks.confirm_ok': '确认恢复',
+    'resourcePacks.confirm_cancel': '取消',
+    'resourcePacks.btn_restore': '恢复此版本',
+  },
+  'en-US': {
+    'resourcePacks.msg_load_versions_failed': 'Failed to load version history',
+    'resourcePacks.msg_restore_success': 'Restored to specified version',
+    'resourcePacks.msg_restore_failed': 'Restore version failed',
+    'resourcePacks.empty': 'No version history',
+    'resourcePacks.confirm_restore_title': 'Restore this version',
+    'resourcePacks.confirm_restore_desc': 'Restoring will overwrite current template content. Continue?',
+    'resourcePacks.confirm_ok': 'Confirm Restore',
+    'resourcePacks.confirm_cancel': 'Cancel',
+    'resourcePacks.btn_restore': 'Restore this version',
+  },
+  'ja-JP': {
+    'resourcePacks.msg_load_versions_failed': 'バージョン履歴の読み込みに失敗しました',
+    'resourcePacks.msg_restore_success': '指定バージョンに復元しました',
+    'resourcePacks.msg_restore_failed': 'バージョン復元に失敗しました',
+    'resourcePacks.empty': 'バージョン履歴がありません',
+    'resourcePacks.confirm_restore_title': 'このバージョンを復元',
+    'resourcePacks.confirm_restore_desc': '復元すると現在のテンプレート内容が上書きされます。続行しますか？',
+    'resourcePacks.confirm_ok': '復元確認',
+    'resourcePacks.confirm_cancel': 'キャンセル',
+    'resourcePacks.btn_restore': 'このバージョンを復元',
+  },
+  'ko-KR': {
+    'resourcePacks.msg_load_versions_failed': '버전 기록 로드 실패',
+    'resourcePacks.msg_restore_success': '지정된 버전으로 복원됨',
+    'resourcePacks.msg_restore_failed': '버전 복원 실패',
+    'resourcePacks.empty': '버전 기록 없음',
+    'resourcePacks.confirm_restore_title': '이 버전 복원',
+    'resourcePacks.confirm_restore_desc': '복원 시 현재 템플릿 내용이 덮어씌워집니다. 계속하시겠습니까?',
+    'resourcePacks.confirm_ok': '복원 확인',
+    'resourcePacks.confirm_cancel': '취소',
+    'resourcePacks.btn_restore': '이 버전 복원',
+  },
+};

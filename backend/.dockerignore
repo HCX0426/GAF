@@ -1,0 +1,44 @@
+# Backend
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Database
+*.sqlite3
+*.db
+
+# Media & uploads
+media/
+uploads/
+*.log
+
+# Frontend (when building backend only)
+../frontend/node_modules/
+../frontend/dist/
+
+# Docker
+Dockerfile
+docker-compose.yml

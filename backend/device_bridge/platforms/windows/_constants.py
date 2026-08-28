@@ -1,0 +1,17 @@
+SYSTEM_PROCESS_BLACKLIST = frozenset({
+    'explorer.exe', 'taskmgr.exe', 'regedit.exe', 'notepad.exe',
+    'code.exe', 'devenv.exe', 'cmd.exe', 'powershell.exe', 'conhost.exe',
+    'searchhost.exe', 'systemsettings.exe', 'textinputhost.exe',
+    'shellexperiencehost.exe', 'applicationframehost.exe',
+    'sihost.exe', 'svchost.exe', 'dllhost.exe', 'rundll32.exe',
+    'runtimebroker.exe', 'startmenuexperiencehost.exe', 'lockapp.exe',
+    'wmiprvse.exe', 'spoolsv.exe', 'csrss.exe', 'winlogon.exe', 'smss.exe',
+    'services.exe', 'lsass.exe', 'logonui.exe', 'taskhostw.exe',
+    'nvidia share.exe', 'securityhealthsystray.exe',
+    'securityhealthservice.exe', 'onedrive.exe', 'teams.exe', 'outlook.exe',
+    'ms-teams.exe', 'steam.exe', 'epicgameslauncher.exe',
+    'wechat.exe', 'qq.exe', 'dingtalk.exe', 'feishu.exe',
+    'shutdown.exe', 'wallpaper_host.exe', 'widgets.exe', 'widgetservice.exe',
+    'ctfmon.exe', 'dwm.exe', 'systemsettingsadminflows.exe',
+    'trae cn.exe',
+})

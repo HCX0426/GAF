@@ -1,0 +1,5 @@
+# 仅保留脚本和说明，证书文件不提交
+*.pem
+*.csr
+*.srl
+!generate_dev_cert.ps1

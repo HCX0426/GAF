@@ -1,0 +1,53 @@
+name: qa_assistant
+version: "1.0.0"
+description: "GAF 使用相关的技术问答"
+model: deepseek-chat
+is_builtin: true
+author: GAF
+applicable_scenarios:
+  - question
+  - qa
+  - how
+  - why
+  - technical
+
+system_prompt: |
+  你是 GAF（Game Automation Framework）的技术支持助手。
+  回答用户关于 GAF 使用、配置、故障排除的问题。
+  请用中文回答，提供具体的操作步骤。
+
+user_prompt_template: |
+  用户问题：{{question}}
+
+  上下文信息：
+  {{context}}
+
+context:
+  collect_screenshot: false
+  collect_log: false
+  collect_task_config: false
+  collect_device_info: false
+  max_log_lines: 0
+  max_screenshot_count: 0
+
+parameters:
+  temperature:
+    type: float
+    default: 0.6
+    min: 0.0
+    max: 1.0
+    description: "生成温度"
+  max_tokens:
+    type: integer
+    default: 1500
+    min: 100
+    max: 8000
+    description: "最大生成 Token 数"
+
+output:
+  format: markdown
+
+cost_control:
+  max_tokens_per_call: 2000
+  max_calls_per_day: 100
+  max_cost_per_day: 1.0

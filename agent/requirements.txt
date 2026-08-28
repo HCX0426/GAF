@@ -1,0 +1,19 @@
+python-dotenv>=1.0.0
+websockets>=12.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+# spec-42 (TD-287): msgpack + zlib compression for large WS frames
+msgpack>=1.0.0
+adbutils>=1.2.0
+Pillow>=10.0.0
+mss>=9.0.0
+# scrcpy>=2.0.0  # not available on PyPI for Python 3.11; agent falls back to other capture methods
+comtypes>=1.2.0
+# H24 fix: align upper bound with backend pyproject.toml (cryptography>=43.0,<44.0)
+cryptography>=43.0,<44.0
+pywin32>=305
+pynput>=1.7.6
+# TD-337 (2026-07-23): OCR engine for pipeline OCR nodes (wait_regular_email etc.)
+# Aligns with backend/requirements/base.txt rapidocr-onnxruntime>=1.3
+# Without this, agent startup lazily skips OCR registration and pipeline OCR nodes fail at runtime.
+rapidocr-onnxruntime>=1.3,<2.0

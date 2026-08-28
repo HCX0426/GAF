@@ -1,0 +1,17 @@
+name: GAF Build
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-electron:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build placeholder
+        shell: pwsh
+        run: |
+          Write-Host "Electron build placeholder - desktop/ package not yet created"
+          Write-Host "Tag: ${{ github.ref_name }}"

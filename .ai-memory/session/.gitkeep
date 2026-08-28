@@ -1,0 +1,2 @@
+# Placeholder to keep session/ directory in git.
+# Checkpoint files (.json) are runtime artifacts, gitignored.

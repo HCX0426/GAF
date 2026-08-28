@@ -1,0 +1,12 @@
+name: popup_handler
+description: 通用弹窗处理器
+rules:
+  - template: common/close_button
+    action: click
+    description: 关闭弹窗
+  - template: common/confirm_button
+    action: click
+    description: 确认弹窗
+  - template: common/cancel_button
+    action: click
+    description: 取消弹窗

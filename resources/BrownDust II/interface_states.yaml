@@ -1,0 +1,35 @@
+# 界面状态定义 + 转移图 (recovery-design.md §4.1)
+# 人工维护。detect_templates 匹配逻辑: OR — 任一模板命中 (score >= threshold) 即识别为该状态。
+#
+# template 路径格式 (与 pipeline JSON 一致, 由 resource_resolver.py 解析):
+#   - 短路径: "public/主界面.png" -> 自动搜索 <resources>/<game>/templates/public/主界面.png
+#   - 全路径: "BrownDust II/templates/public/主界面.png" -> 相对 resources/ 目录
+# 路径解析在 orchestrator 注入 template_match_fn 时包装 (recovery-design.md §5.3 Step 4)。
+#
+# 状态命名一致性 (§4.3 命名一致性要求):
+#   - 自动推断: <task>_state (模板路径 templates/ 后第一级目录 + "_state")
+#   - 本文件状态名必须与推断结果一致, 否则 expected_state != current_state 误触发回退
+
+states:
+  main_menu:
+    description: 主界面 (安全状态, 回退到这里不会丢进度)
+    detect_templates:
+      - template: BrownDust II/templates/public/主界面.png
+        threshold: 0.8
+        roi: [1720, 20, 120, 70]  # 右上角主界面标识区域
+    is_safe_state: true
+
+  map_view:
+    description: 地图界面
+    detect_templates:
+      - template: BrownDust II/templates/public/地图标识.png
+        threshold: 0.8
+
+transitions:
+  # 地图界面按 ESC 回主界面
+  - from: map_view
+    to: main_menu
+    action:
+      type: key_press
+      key: esc
+    description: 地图界面按 ESC 回主界面

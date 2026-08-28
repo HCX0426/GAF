@@ -1,0 +1,189 @@
+name: GAF CI
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+  # TD-327 spec-92: weekly e2e regression (每周一 03:00 UTC = 周一 11:00 北京时间)
+  schedule:
+    - cron: '0 3 * * 1'
+  # 手动触发支持 (用于 ad-hoc e2e 验证)
+  workflow_dispatch:
+
+jobs:
+  lint-frontend:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+
+  lint-backend:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: "3.11"
+          activate-environment: gaf
+          environment-file: environment.yml
+          auto-activate-base: false
+      - name: Lint with ruff
+        shell: pwsh
+        run: |
+          conda activate gaf
+          ruff check backend/
+
+  test-backend:
+    needs: lint-backend
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: "3.11"
+          activate-environment: gaf
+          environment-file: environment.yml
+          auto-activate-base: false
+      - name: Run tests with pytest
+        shell: pwsh
+        run: |
+          conda activate gaf
+          pytest backend/ -n auto --maxfail=20 -q
+
+  test-frontend:
+    needs: lint-frontend
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm ci
+      - name: Run unit tests
+        run: npm run test
+
+  test-agent:
+    needs: lint-backend
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: "3.11"
+          activate-environment: gaf
+          environment-file: environment.yml
+          auto-activate-base: false
+      - name: Run agent tests with pytest
+        shell: pwsh
+        run: |
+          conda activate gaf
+          pytest agent/tests/ -n auto --maxfail=20 -q
+
+  test-scripts:
+    needs: lint-backend
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: "3.11"
+          activate-environment: gaf
+          environment-file: environment.yml
+          auto-activate-base: false
+      - name: Run scripts tests with pytest
+        shell: pwsh
+        run: |
+          conda activate gaf
+          pytest scripts/tests/ -n auto --maxfail=10 -q
+
+  typecheck-frontend:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm ci
+      - name: Type check
+        run: npx tsc --noEmit
+
+  # TD-333: Playwright E2E job (前端真实浏览器 E2E, 区别于 e2e-weekly 的 Python 脚本式)
+  playwright-e2e:
+    needs: typecheck-frontend
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Run Playwright tests
+        run: npx playwright test
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          retention-days: 30
+          if-no-files-found: ignore
+
+  # TD-327 spec-92: weekly e2e regression job
+  # 跑 scripts/e2e/run_all.py (非 --strict, 允许部分失败), artifact 上传失败日志
+  # 触发: weekly schedule (周一 03:00 UTC) + workflow_dispatch (手动)
+  # 注意: push/PR 也会触发本 job (on.push/pull_request), 但 e2e 耗时 ~22s 可接受
+  e2e-weekly:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: "3.11"
+          activate-environment: gaf
+          environment-file: environment.yml
+          auto-activate-base: false
+      - name: Run e2e scenarios
+        shell: pwsh
+        run: |
+          conda activate gaf
+          python scripts/e2e/run_all.py
+      - name: Upload e2e failure logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-failure-logs
+          path: |
+            .trash/.e2e-failures.log
+            ops/why-skipped.md
+          retention-days: 30
+          if-no-files-found: ignore
+      - name: Notify on failure
+        if: failure()
+        shell: pwsh
+        run: |
+          Write-Host "::error::e2e-weekly job failed. Check e2e-failure-logs artifact for details."
+          Write-Host "::error::Local repro: python scripts/e2e/run_all.py"

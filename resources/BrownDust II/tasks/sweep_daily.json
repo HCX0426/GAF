@@ -1,0 +1,387 @@
+{
+  "name": "sweep_daily",
+  "description": "BD2 daily sweep (onigiri + torch) — ported from BD2-AUTO src/auto_tasks/Default/tasks/sweep_daily.py. Skeleton: quick hunt → select level (onigiri) → quick hunt btn → MAX → hunt btn → handle result → talent dungeon → select torch → quick hunt btn → MAX → hunt btn → handle result → ESC. TODO: handle_hunt_result (click_back + cancel fallback) simplified to single click_back (Phase B). ROIs at 1920x1080 base resolution. (pending e2e verification — R37-P2 C2 PoC covers login only)",
+  "version": "1.0.0",
+  "metadata": {
+    "original_base_res": [
+      1920,
+      1080
+    ]
+  },
+  "entry_node": "click_quick_hunt_text",
+  "nodes": [
+    {
+      "id": "click_quick_hunt_text",
+      "config": {
+        "text": "快速狩猎",
+        "roi": [
+          1707,
+          279,
+          110,
+          50
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "wait_quick_hunt_button",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/sweep_daily/快速狩猎按钮.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 15.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_level_9",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          1385,
+          229,
+          240,
+          53
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/sweep_daily/第九关.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_level_9_selected",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/sweep_daily/第九关选中.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 10.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_quick_hunt_button_1",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          1429,
+          942,
+          427,
+          101
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/sweep_daily/快速狩猎按钮.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_hunt_button_1_active",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/sweep_daily/狩猎按钮.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 10.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_max_1",
+      "config": {
+        "text": "MAX",
+        "roi": [
+          1127,
+          562,
+          88,
+          42
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "click_hunt_button_1",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          863,
+          733,
+          198,
+          80
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/sweep_daily/狩猎按钮.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_sweep_1_complete",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/sweep_daily/第九关产出.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 30.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_back_after_hunt_1",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          120,
+          20,
+          100,
+          66
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/public/返回键1.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_back_after_hunt_1",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/sweep_daily/天赋本.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 10.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_talent_dungeon",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          146,
+          415,
+          60,
+          53
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/sweep_daily/天赋本.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_talent_dungeon_entered",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/sweep_daily/第七关.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 10.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_torch_level",
+      "config": {
+        "text": "火之洞穴",
+        "roi": [
+          222,
+          128,
+          136,
+          45
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "click_quick_hunt_button_2",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          1429,
+          942,
+          427,
+          101
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/sweep_daily/快速狩猎按钮.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "click_max_2",
+      "config": {
+        "text": "MAX",
+        "roi": [
+          1127,
+          562,
+          88,
+          42
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true
+      },
+      "node_type": "ocr"
+    },
+    {
+      "id": "click_hunt_button_2",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          863,
+          733,
+          198,
+          80
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/sweep_daily/狩猎按钮.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_sweep_2_complete",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/sweep_daily/第七关产出.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 30.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "click_back_after_hunt_2",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          120,
+          20,
+          100,
+          66
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/public/返回键1.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "press_esc_exit",
+      "config": {
+        "key": "esc"
+      },
+      "node_type": "key_press"
+    },
+    {
+      "id": "wait_main_menu",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/public/主界面.png",
+        "threshold": 0.8,
+        "roi": [
+          1720,
+          20,
+          120,
+          70
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "timeout": 5.0
+      },
+      "node_type": "wait"
+    }
+  ],
+  "edges": [
+    {
+      "source": "click_quick_hunt_text",
+      "target": "wait_quick_hunt_button"
+    },
+    {
+      "source": "wait_quick_hunt_button",
+      "target": "click_level_9"
+    },
+    {
+      "source": "click_level_9",
+      "target": "wait_level_9_selected"
+    },
+    {
+      "source": "wait_level_9_selected",
+      "target": "click_quick_hunt_button_1"
+    },
+    {
+      "source": "click_quick_hunt_button_1",
+      "target": "wait_hunt_button_1_active"
+    },
+    {
+      "source": "wait_hunt_button_1_active",
+      "target": "click_max_1"
+    },
+    {
+      "source": "click_max_1",
+      "target": "click_hunt_button_1"
+    },
+    {
+      "source": "click_hunt_button_1",
+      "target": "wait_sweep_1_complete"
+    },
+    {
+      "source": "wait_sweep_1_complete",
+      "target": "click_back_after_hunt_1"
+    },
+    {
+      "source": "click_back_after_hunt_1",
+      "target": "wait_back_after_hunt_1"
+    },
+    {
+      "source": "wait_back_after_hunt_1",
+      "target": "click_talent_dungeon"
+    },
+    {
+      "source": "click_talent_dungeon",
+      "target": "wait_talent_dungeon_entered"
+    },
+    {
+      "source": "wait_talent_dungeon_entered",
+      "target": "click_torch_level"
+    },
+    {
+      "source": "click_torch_level",
+      "target": "click_quick_hunt_button_2"
+    },
+    {
+      "source": "click_quick_hunt_button_2",
+      "target": "click_max_2"
+    },
+    {
+      "source": "click_max_2",
+      "target": "click_hunt_button_2"
+    },
+    {
+      "source": "click_hunt_button_2",
+      "target": "wait_sweep_2_complete"
+    },
+    {
+      "source": "wait_sweep_2_complete",
+      "target": "click_back_after_hunt_2"
+    },
+    {
+      "source": "click_back_after_hunt_2",
+      "target": "press_esc_exit"
+    },
+    {
+      "source": "press_esc_exit",
+      "target": "wait_main_menu"
+    }
+  ]
+}
+

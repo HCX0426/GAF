@@ -1,0 +1,88 @@
+name: "每日签到任务"
+description: "游戏每日签到状态机示例，演示状态机模式的基本用法"
+version: "1.0.0"
+target_app: "example_game"
+author: "GAF"
+
+initial_state: "main_menu"
+
+states:
+  main_menu:
+    description: "主界面，检测是否已进入游戏"
+    detect:
+      template: "templates/main_menu_logo.png"
+      roi: { x: 0, y: 0, w: 200, h: 100 }
+      threshold: 0.85
+    action:
+      type: "click"
+      target: "templates/sign_in_button.png"
+      roi: { x: 800, y: 0, w: 480, h: 720 }
+    timeout: 30
+    retry: 3
+    transitions:
+      - target: "sign_in_page"
+        condition:
+          template: "templates/sign_in_title.png"
+          threshold: 0.8
+      - target: "loading"
+        condition:
+          template: "templates/loading_screen.png"
+          threshold: 0.7
+
+  loading:
+    description: "加载界面，等待加载完成"
+    detect:
+      template: "templates/loading_screen.png"
+      threshold: 0.7
+    action:
+      type: "wait"
+      duration: 3
+    timeout: 60
+    retry: 10
+    transitions:
+      - target: "main_menu"
+        condition:
+          template: "templates/main_menu_logo.png"
+          threshold: 0.85
+
+  sign_in_page:
+    description: "签到页面，执行签到操作"
+    detect:
+      template: "templates/sign_in_title.png"
+      threshold: 0.8
+    action:
+      type: "click"
+      target: "templates/daily_reward.png"
+      roi: { x: 200, y: 200, w: 880, h: 400 }
+    timeout: 15
+    retry: 2
+    transitions:
+      - target: "reward_collected"
+        condition:
+          template: "templates/reward_collected.png"
+          threshold: 0.8
+      - target: "already_signed"
+        condition:
+          template: "templates/already_signed.png"
+          threshold: 0.8
+
+  reward_collected:
+    description: "奖励已领取，关闭弹窗"
+    detect:
+      template: "templates/reward_collected.png"
+      threshold: 0.8
+    action:
+      type: "click"
+      coordinates: [640, 600]
+    timeout: 10
+    is_terminal: true
+
+  already_signed:
+    description: "今日已签到，直接结束"
+    detect:
+      template: "templates/already_signed.png"
+      threshold: 0.8
+    action:
+      type: "none"
+    timeout: 5
+    is_terminal: true

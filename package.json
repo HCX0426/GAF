@@ -1,0 +1,10 @@
+{
+  "name": "gaf",
+  "private": true,
+  "version": "0.1.0",
+  "description": "GAF - Game Automation Framework",
+  "workspaces": [
+    "frontend",
+    "desktop"
+  ]
+}

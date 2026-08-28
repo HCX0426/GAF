@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      CHANNEL_LAYERS_HOST: redis
+      # TD-334: SECRET_KEY 默认值与 base.py 一致, prod 启动时 base.py 会 fail-fast
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-gaf-dev-change-me-in-production}
+      DEBUG: 'False'
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-*}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost,http://127.0.0.1}
+      SECURE_SSL_REDIRECT: ${SECURE_SSL_REDIRECT:-false}
+      # N196: 统一调试模式（与 .env 的 GAF_DEBUG 同步）
+      GAF_DEBUG: ${GAF_DEBUG:-0}
+    ports:
+      - '8000:8000'
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "
+        python manage.py migrate --noinput &&
+        python manage.py collectstatic --noinput &&
+        gunicorn --config gunicorn.conf.py config.wsgi:application
+      "
+
+  celery-worker:
+    build: ./backend
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      CHANNEL_LAYERS_HOST: redis
+      # TD-334: SECRET_KEY 默认值与 base.py 一致, prod 启动时 base.py 会 fail-fast
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-gaf-dev-change-me-in-production}
+      DEBUG: 'False'
+      # N196: 统一调试模式
+      GAF_DEBUG: ${GAF_DEBUG:-0}
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: celery -A config worker --loglevel=info --concurrency=4
+
+  celery-beat:
+    build: ./backend
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      CHANNEL_LAYERS_HOST: redis
+      # TD-334: SECRET_KEY 默认值与 base.py 一致, prod 启动时 base.py 会 fail-fast
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-gaf-dev-change-me-in-production}
+      DEBUG: 'False'
+      # N196: 统一调试模式
+      GAF_DEBUG: ${GAF_DEBUG:-0}
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: celery -A config beat --loglevel=info
+
+  frontend:
+    build: ./frontend
+    ports:
+      - '80:80'
+    depends_on:
+      - backend

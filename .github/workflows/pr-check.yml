@@ -1,0 +1,25 @@
+name: GAF PR Check
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  pr-title-check:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate PR title
+        shell: pwsh
+        run: |
+          $title = "${{ github.event.pull_request.title }}"
+          $pattern = '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?!?: .+'
+          if ($title -match $pattern) {
+            Write-Host "PR title '$title' matches conventional commit format"
+          } else {
+            Write-Error "PR title '$title' does NOT match conventional commit format"
+            Write-Host "Expected format: type(scope): description"
+            Write-Host "Example: feat(auth): add login support"
+            exit 1
+          }

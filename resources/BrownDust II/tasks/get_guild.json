@@ -1,0 +1,110 @@
+{
+  "name": "get_guild",
+  "description": "BD2 guild reward claim — ported from BD2-AUTO src/auto_tasks/Default/tasks/get_guild.py. ROIs are defined at 1920x1080 base resolution and auto-scale to the actual window via metadata.original_base_res.",
+  "version": "1.0.0",
+  "metadata": {
+    "original_base_res": [
+      1920,
+      1080
+    ]
+  },
+  "entry_node": "match_guild_icon",
+  "nodes": [
+    {
+      "id": "match_guild_icon",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          310,
+          111,
+          130,
+          100
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/get_guild/公会标识.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_guild_shop_visible",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/get_guild/公会商店.png",
+        "threshold": 0.8,
+        "check_interval": 0.5,
+        "timeout": 15.0
+      },
+      "node_type": "wait"
+    },
+    {
+      "id": "verify_guild_shop",
+      "config": {
+        "threshold": 0.7,
+        "roi": [
+          1631,
+          16,
+          230,
+          70
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": false,
+        "template_id": "BrownDust II/templates/get_guild/公会商店.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "click_back",
+      "config": {
+        "threshold": 0.8,
+        "roi": [
+          120,
+          20,
+          100,
+          66
+        ],
+        "roi_coord_type": "base",
+        "click_on_match": true,
+        "template_id": "BrownDust II/templates/public/返回键1.png"
+      },
+      "node_type": "template_match"
+    },
+    {
+      "id": "wait_main_menu_after_guild",
+      "config": {
+        "mode": "template",
+        "template": "BrownDust II/templates/public/主界面.png",
+        "threshold": 0.8,
+        "roi": [
+          1720,
+          20,
+          120,
+          70
+        ],
+        "roi_coord_type": "base",
+        "check_interval": 0.5,
+        "timeout": 15.0
+      },
+      "node_type": "wait"
+    }
+  ],
+  "edges": [
+    {
+      "source": "match_guild_icon",
+      "target": "wait_guild_shop_visible"
+    },
+    {
+      "source": "wait_guild_shop_visible",
+      "target": "verify_guild_shop"
+    },
+    {
+      "source": "verify_guild_shop",
+      "target": "click_back"
+    },
+    {
+      "source": "click_back",
+      "target": "wait_main_menu_after_guild"
+    }
+  ]
+}
+
