@@ -1,5 +1,7 @@
+import json
 import logging
 import os
+from pathlib import Path
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -257,6 +259,33 @@ class SLAMetricViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(SLAMetricSerializer(metric).data, status=status.HTTP_201_CREATED)
 
 
+def _load_service_health() -> list[dict]:
+    """读取 gaf_daemon 写入的健康快照 (debug/health-status.json).
+
+    spec 2026-08-29 P3: 快照由 daemon 看门狗每轮写入; 文件不存在或损坏时
+    返回空列表, 由 frontend 显示为 N/A (不阻塞状态灯).
+    """
+    health_file = Path(__file__).resolve().parents[2] / "debug" / "health-status.json"
+    try:
+        if not health_file.exists():
+            return []
+        data = json.loads(health_file.read_text(encoding="utf-8"))
+        services = data.get("services", {})
+        updated_at = data.get("updated_at", "")
+        return [
+            {
+                "name": name,
+                "healthy": bool(h.get("healthy")),
+                "detail": h.get("detail", ""),
+                "ts": h.get("ts"),
+            }
+            for name, h in services.items()
+        ] + ([{"name": "daemon", "healthy": True, "detail": f"快照 {updated_at}", "ts": None}] if services else [])
+    except Exception as exc:
+        logger.warning("读取服务健康快照失败: %s", exc)
+        return []
+
+
 @extend_schema(
     tags=['monitors'],
     summary='System global status summary',
@@ -355,6 +384,9 @@ def system_status_view(request):
 
     from django.utils import timezone
 
+    # spec 2026-08-29 P3: 服务健康矩阵 (daemon 快照)
+    services = _load_service_health()
+
     response_data = {
         'overall': overall,
         'devicesOnline': devices_online,
@@ -366,7 +398,13 @@ def system_status_view(request):
         'recentWarnings': warnings,
         'recentErrors': errors,
         'updatedAt': timezone.now().isoformat(),
+        'services': services,
     }
+    if services:
+        # 任一服务不健康 → 降级为 warning (服务编排健康感知, spec P3)
+        unhealthy_services = [s for s in services if not s['healthy']]
+        if unhealthy_services and overall in ('running', 'idle'):
+            response_data['overall'] = 'warning'
     if agent_error:
         response_data['agentError'] = agent_error
     if task_error:

@@ -5,8 +5,9 @@ Mounted at ``/api/v2/system/`` in ``config/urls.py``. Provides:
 """
 from django.urls import path
 
-from gaf_core.views import PerfAPIView
+from gaf_core.views import HealthzView, PerfAPIView
 
 urlpatterns = [
+    path('healthz/', HealthzView.as_view(), name='system-healthz'),
     path('perf/', PerfAPIView.as_view(), name='system-perf'),
 ]

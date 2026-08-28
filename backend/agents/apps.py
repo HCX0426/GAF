@@ -80,38 +80,10 @@ class AgentsConfig(AppConfig):
         from . import agent_runtime
         agent_runtime.start_heartbeat_loop()
 
-        # Agent auto-start: disabled by default since 2026-07-11 black screen
-        # incident. The agent subprocess spawns its own device health checker
-        # (5s adb polling), device auto-discovery, and monitor threads —
-        # compounding with the backend heartbeat loop caused adb.exe crash
-        # dialogs and GPU driver TDR.
-        # To re-enable, set GAF_AUTO_START_AGENT=1 (or legacy GAF_SKIP_AUTO_AGENT
-        # is not '1'). The legacy GAF_SKIP_AUTO_AGENT=1 env var still works as
-        # a hard kill switch.
-        if os.environ.get('GAF_SKIP_AUTO_AGENT') == '1':
-            logger.info('GAF_SKIP_AUTO_AGENT=1, skipping agent auto-start')
-            return
-
-        from django.conf import settings as django_settings
-        auto_start = getattr(django_settings, 'GAF_AUTO_START_AGENT', False)
-        if not auto_start:
-            logger.info(
-                'Agent auto-start disabled (set GAF_AUTO_START_AGENT=1 to enable). '
-                'Device heartbeat is still active.'
-            )
-            return
-
-        # Singleton: only one Django process (parent + autoreload child) is
-        # allowed to manage the agent. Without this guard, both processes
-        # would race to start the agent and create duplicate windows.
-        if agent_runtime.acquire_manager_lock() is None:
-            logger.info('Agent Manager 锁已被其他进程持有（当前 PID=%s），跳过自启', os.getpid())
-            return
-
-        # N154 recurrence fix: kill stale agent processes before starting a
-        # new one. Django autoreload kills the old Django process, but the
-        # admin-elevated agent child (PID untrackable) survives. Without
-        # this cleanup, N autoreload cycles = N stacked agents = adb storm
-        # → GPU TDR → black screen.
-        agent_runtime.kill_stale_agent_processes()
-        agent_runtime.start_agent_monitor_loop()
+        # spec 2026-08-29 P4: agent 生命周期单一 Owner — daemon 唯一管理.
+        # 移除 backend 自启 agent 分支 (原 GAF_AUTO_START_AGENT) 以避免双 Owner
+        # 竞争导致僵尸连接/黑屏 (N154/N216). 设备心跳线程仍保留 (backend 职责).
+        logger.info(
+            'Agent 由 gaf_daemon 统一管理 (单一 Owner, spec P4). '
+            'Device heartbeat is active.'
+        )

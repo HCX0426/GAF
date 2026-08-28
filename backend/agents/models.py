@@ -100,6 +100,14 @@ class Agent(models.Model):
         verbose_name='最后心跳时间',
         help_text='最近一次心跳上报时间',
     )
+    active_channel = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        verbose_name='当前活跃 WS channel',
+        help_text='spec 2026-08-29 P4: Channels channel_name 唯一连接指纹; '
+                  '僵尸连接写入校验: heartbeat/offline 仅当 active_channel 匹配自身才生效',
+    )
     cpu_usage = models.FloatField(
         null=True,
         blank=True,

@@ -181,12 +181,15 @@ def update_or_create_agent_with_session(agent_id, payload):
     return str(session.agent_id)
 
 
-def update_agent_heartbeat(agent_id, payload):
+def update_agent_heartbeat(agent_id, payload, channel=None):
     """Update Agent's heartbeat timestamp + resource stats.
 
     Args:
         agent_id: ``Agent.agent_id`` string identifier.
         payload: Heartbeat payload dict (status / stats{cpu,memory,fps}).
+        channel: current WS ``channel_name``. When given, the UPDATE carries
+            a ``active_channel=channel`` guard — a zombie/stale consumer whose
+            channel no longer owns the agent writes 0 rows (spec P4).
     """
     from agents.models import Agent  # cross-app import isolated (TD-259 #29)
 
@@ -201,6 +204,7 @@ def update_agent_heartbeat(agent_id, payload):
     update_fields = {
         "last_heartbeat": django_timezone.now(),
         "status": status_map.get(agent_status, Agent.Status.IDLE),
+        "active_channel": channel,
     }
 
     stats = payload.get("stats", {})
@@ -214,10 +218,14 @@ def update_agent_heartbeat(agent_id, payload):
     if fps is not None and fps >= 0:
         update_fields["screenshot_fps"] = fps
 
-    Agent.objects.filter(agent_id=agent_id).update(**update_fields)
+    qs = Agent.objects.filter(agent_id=agent_id)
+    if channel:
+        # 只允许"现任 channel"写入 — 僵尸连接此条件不满足 → 0 行, 不污染状态
+        qs = qs.filter(active_channel=channel)
+    qs.update(**update_fields)
 
 
-def set_agent_offline(agent_id):
+def set_agent_offline(agent_id, channel=None):
     """Mark an Agent as OFFLINE and cancel its running executions.
 
     N197 fix: when an agent disconnects (WS close / heartbeat timeout),
@@ -231,11 +239,22 @@ def set_agent_offline(agent_id):
     from agents.models import Agent  # cross-app import isolated (TD-259 #29)
     from tasks.models import TaskExecution
 
-    # 1. Mark agent OFFLINE
-    Agent.objects.filter(agent_id=agent_id).update(
+    # 1. Mark agent OFFLINE (spec P4: 仅"现任 channel"可置离线; 僵尸连接 0 行)
+    agent_qs = Agent.objects.filter(agent_id=agent_id)
+    if channel:
+        agent_qs = agent_qs.filter(active_channel=channel)
+    offline_n = agent_qs.update(
         status=Agent.Status.OFFLINE,
+        active_channel=None,
     )
-    logger.info("数据库标记 Agent 离线: agent_id=%s", agent_id)
+    if offline_n:
+        logger.info("数据库标记 Agent 离线: agent_id=%s", agent_id)
+    else:
+        logger.info(
+            "Agent offline 写入被 channel 校验拦截 (可能已被新连接接管): agent_id=%s channel=%s",
+            agent_id, channel,
+        )
+        return  # 非现任连接: 不取消执行, 避免误杀新连接的任务
 
     # 2. Cancel all RUNNING executions for this agent
     running_execs = list(

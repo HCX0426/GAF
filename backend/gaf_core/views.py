@@ -33,6 +33,58 @@ from gaf_core.serializers import LogEntrySerializer
 logger = logging.getLogger(__name__)
 
 
+class HealthzView(APIView):
+    """GET /api/v2/system/healthz/ — 应用级健康探针 (AllowAny).
+
+    供 gaf_daemon 健康感知编排器轮询 (spec 2026-08-29 P1):
+    - db:    SQLite/DB 只读连接检查
+    - redis: cache 写读往返
+    仅返回 pass/fail 状态码, 不暴露凭据/版本/路径等敏感信息.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request=None,
+        responses={200: OpenApiTypes.OBJECT},
+        description="Liveness/readiness probe for service orchestration (DB + Redis).",
+    )
+    def get(self, request):
+        from django.db import connections
+
+        health = {"status": "pass", "checks": {}}
+
+        # 数据库检查 (只读: 执行 SELECT 1)
+        try:
+            with connections["default"].cursor() as cursor:
+                cursor.execute("SELECT 1")
+                cursor.fetchone()
+            health["checks"]["db"] = "pass"
+        except Exception as exc:
+            logger.warning("healthz db check failed: %s", exc, exc_info=True)
+            health["checks"]["db"] = "fail"
+            health["status"] = "fail"
+
+        # Redis 检查 (cache set/get 往返)
+        try:
+            from django.core.cache import cache
+
+            cache.set("healthz_probe", "ok", 5)
+            if cache.get("healthz_probe") == "ok":
+                health["checks"]["redis"] = "pass"
+            else:
+                health["checks"]["redis"] = "fail"
+                health["status"] = "fail"
+        except Exception as exc:
+            logger.warning("healthz redis check failed: %s", exc, exc_info=True)
+            health["checks"]["redis"] = "fail"
+            health["status"] = "fail"
+
+        status_code = 200 if health["status"] == "pass" else 503
+        return Response(data=health, status=status_code)
+
+
 class PerfAPIView(APIView):
     """GET /api/v2/system/perf — 返回 PerformanceMonitor 的内存聚合.
 

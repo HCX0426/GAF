@@ -34,7 +34,15 @@ interface SystemStatus {
   recentErrors: StatusMessage[];
   agentError?: string;
   taskError?: string;
+  services?: ServiceHealth[];
   updatedAt: string;
+}
+
+interface ServiceHealth {
+  name: string;
+  healthy: boolean;
+  detail: string;
+  ts: number | null;
 }
 
 const STATUS_STYLE: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
@@ -160,6 +168,24 @@ export function HeaderStatusIndicator() {
             {status?.devicesOnline ?? '-'} / {status?.devicesTotal ?? '-'}
           </Text>
         </div>
+
+        {status?.services && status.services.length > 0 && (
+          <div className="gaf-mt-sm">
+            <Text type="secondary">服务健康：</Text>
+            <div className="gaf-mt-xs" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2px 12px' }}>
+              {status.services.map((s) => (
+                <div key={s.name} className="gaf-flex-center gaf-gap-xs" style={{ justifyContent: 'flex-start' }}>
+                  {s.healthy ? (
+                    <CheckCircleFilled className="gaf-text-xs" style={{ color: '#52c41a' }} />
+                  ) : (
+                    <CloseCircleFilled className="gaf-text-xs" style={{ color: '#ff4d4f' }} />
+                  )}
+                  <Text className="gaf-text-xs">{s.name}</Text>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {(status?.agentError || status?.taskError) && (
           <div className="gaf-mt-sm gaf-py-sm gaf-px-md" style={{ background: token.colorErrorBg, borderRadius: 4 }}>

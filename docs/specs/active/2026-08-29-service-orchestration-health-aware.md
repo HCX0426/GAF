@@ -23,10 +23,10 @@ next: N/A
 
 | Phase | 内容 | 状态 |
 |-------|------|------|
-| P1 | 服务健康探针层（backend healthz + agent hb probe + frontend http） | ⏳ |
-| P2 | daemon 健康检查循环 + 自动重启 + 状态上报 | ⏳ |
-| P3 | 前端状态灯接入服务健康矩阵（monitors/status 扩展） | ⏳ |
-| P4 | agent 生命周期单一 Owner 收敛（daemon 唯一管理） | ⏳ |
+| P1 | 服务健康探针层（backend healthz + agent hb probe + frontend http） | ✅ 完成 (health.py + HealthzView, 4 探针全过) |
+| P2 | daemon 健康检查循环 + 自动重启 + 状态上报 | ✅ 完成 (杀 backend 后 40s 内自动拉起, 快照自动写) |
+| P3 | 前端状态灯接入服务健康矩阵（monitors/status 扩展） | ✅ 完成 (5 服务全绿对勾, API+浏览器双验证) |
+| P4 | agent 生命周期单一 Owner 收敛（daemon 唯一管理） | ✅ 完成 (active_channel CAS + 写入仲裁 + 僵尸自愈, 40s 无 offline 跳变) |
 | P5 | 全量回归 + 文档同步 + 沉淀 | ⏳ |
 
 ## 3. N151 架构盘点

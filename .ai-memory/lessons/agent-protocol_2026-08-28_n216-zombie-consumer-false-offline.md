@@ -58,4 +58,7 @@ diff_keywords: ["_heartbeat_checker", "set_agent_offline", "update_agent_heartbe
 ## 防错机制
 
 - 诊断口诀：**"status 与 last_heartbeat 矛盾 + 心跳超时秒数巨大且递增 = 僵尸连接，重启后端"**。
-- 长期方案（建议 TD）：Agent 表加 `active_channel` 字段，heartbeat/offline 写入前校验 channel 匹配。
+- **治本已落地 (spec 2026-08-29 P4)**：Agent 表加 `active_channel` 字段（migration 0018），
+  `connect()` CAS 接管，`update_agent_heartbeat` / `set_agent_offline` 带 channel 守卫
+  （非现任 channel 写入 0 行），`_heartbeat_checker` 每轮自查 active_channel 过期即自愈退出。
+  后续出现 agent 状态异常时，优先检查 active_channel 是否被正确接管/清理。

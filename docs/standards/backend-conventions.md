@@ -104,6 +104,7 @@ class Device(models.Model):
 - 必加 `class Meta` 含 `verbose_name` + `ordering`
 - 高频查询字段加 `indexes` 或 `db_index=True`
 - 游标/状态字段示例（2026-08-27 E2E 落地）：`UnattendedSession.rotation_index`（`IntegerField(default=0)` + `verbose_name` + `help_text`），用于 loop_rotation 公平轮换——session 级推进、派发后自增，保证多账户轮流而非总选队首
+- 连接/会话指纹字段示例（2026-08-29 服务编排落地）：`Agent.active_channel`（`CharField(max_length=255, null=True, blank=True)` + `verbose_name` + `help_text`），存 Channels `channel_name` 作连接所有权仲裁——heartbeat/offline 写入带 `active_channel` 守卫，僵尸连接 UPDATE 0 行不污染状态；新增连接级状态字段时沿用"连接指纹 + 写入仲裁"模式
 
 ## 3. 序列化器
 

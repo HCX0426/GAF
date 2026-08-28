@@ -131,6 +131,18 @@ class AgentConsumer(AsyncWebsocketConsumer):
         # _handle_agent_register calls group_add again (idempotent in Channels).
         await self.channel_layer.group_add(f"agent_{self.agent_id}", self.channel_name)
 
+        # spec P4: CAS 抢占 active_channel — 新连接接管 agent 所有权.
+        # 旧的僵尸连接 channel 与 active_channel 不匹配 → 其 heartbeat/offline
+        # 写入全部被 service 层校验拦截, 无法再污染 Agent 状态.
+        claimed = await self._db_claim_active_channel()
+        if not claimed:
+            logger.warning(
+                "Agent active_channel CAS 抢占失败 (可能已有更新连接): agent_id=%s channel=%s",
+                self.agent_id, self.channel_name,
+            )
+            await self.close(code=4003)
+            return
+
         self._heartbeat_task = asyncio.create_task(self._heartbeat_checker())
 
         ack_frame = serialize_frame(
@@ -1563,6 +1575,17 @@ class AgentConsumer(AsyncWebsocketConsumer):
                 await asyncio.sleep(HEARTBEAT_CHECK_INTERVAL)
                 if self.agent_id is None or self._last_heartbeat is None:
                     continue
+
+                # spec P4: 僵尸自愈 — 若 active_channel 已不是自己, 说明已被
+                # 新连接接管, 立即取消本任务 (不依赖 disconnect 触发清理).
+                still_owner = await self._db_am_i_active_owner()
+                if not still_owner:
+                    logger.info(
+                        "Agent active_channel 已被新连接接管 (曾属 %s), 僵尸 checker 自愈退出",
+                        self.agent_id,
+                    )
+                    return
+
                 elapsed = time.time() - self._last_heartbeat
                 if elapsed > HEARTBEAT_OFFLINE_SECONDS:
                     logger.warning(
@@ -1598,17 +1621,53 @@ class AgentConsumer(AsyncWebsocketConsumer):
         return update_or_create_agent_with_session(self.agent_id, payload)
 
     @database_sync_to_async
+    def _db_claim_active_channel(self) -> bool:
+        """spec P4: 原子接管 agent 所有权 (active_channel = 自身 channel).
+
+        新连接无条件接管 — 它总是比旧连接新. 被覆盖的旧连接其后续心跳/离线
+        写入均因 active_channel 不匹配而失效 (见 update_agent_heartbeat /
+        set_agent_offline 的 channel 守卫).
+
+        若 Agent 记录尚不存在 (首次连接 / 测试用 MagicMock scope), 返回 True
+        放行 — 记录由后续 register/心跳路径创建并接管.
+        """
+        from agents.models import Agent
+
+        exists = Agent.objects.filter(agent_id=self.agent_id).exists()
+        if exists:
+            Agent.objects.filter(agent_id=self.agent_id).update(
+                active_channel=self.channel_name,
+                status=Agent.Status.ONLINE,
+                last_heartbeat=django_timezone.now(),
+            )
+        # 记录不存在 → 只是没得接管, 放行 (测试/首次连接, 后续 register 会 create)
+        return True
+
+    @database_sync_to_async
+    def _db_am_i_active_owner(self) -> bool:
+        """spec P4: 查询 DB 确认自己仍是 agent 的现任 active_channel."""
+        from agents.models import Agent
+
+        return (
+            Agent.objects.filter(
+                agent_id=self.agent_id,
+                active_channel=self.channel_name,
+            ).exists()
+        )
+
+    @database_sync_to_async
     def _db_update_heartbeat(self, agent_id, payload):
         """更新 Agent 心跳时间和资源统计。
 
         Delegates to ``protocol.services.update_agent_heartbeat``
         (TD-259 #29: cross-app Agent model import isolated in service).
+        spec P4: 传入当前 channel, 僵尸连接的心跳 UPDATE 被 active_channel 校验挡住.
 
         Args:
             agent_id: Agent 唯一标识
             payload: 心跳消息负载，包含 resource_stats / status 等
         """
-        update_agent_heartbeat(agent_id, payload)
+        update_agent_heartbeat(agent_id, payload, channel=self.channel_name)
 
     @database_sync_to_async
     def _db_update_agent_session_resource(self, session_id, stats):
@@ -1679,11 +1738,13 @@ class AgentConsumer(AsyncWebsocketConsumer):
 
         Delegates to ``protocol.services.set_agent_offline``
         (TD-259 #29: cross-app Agent model import isolated in service).
+        spec P4: 仅当前连接 (channel) 是 agent 现任 owner 时才生效 —
+        僵尸连接的离线写入被 service 内 active_channel 校验拦截.
 
         Args:
             agent_id: Agent 唯一标识
         """
-        set_agent_offline(agent_id)
+        set_agent_offline(agent_id, channel=self.channel_name)
 
 
 class FrontendConsumer(JWTAuthMixin, AsyncWebsocketConsumer):

@@ -19,6 +19,7 @@ PID 文件: debug/gaf_daemon.pid — 单例检测 + stop 定位
     python scripts/gaf_daemon.py daemon     # 前台模式 (调试)
 """
 
+import json
 import os
 import re
 import signal
@@ -39,6 +40,16 @@ _AGENT_UTILS_DIR = _GAF_ROOT_FOR_IMPORT / "agent" / "src" / "utils"
 if str(_AGENT_UTILS_DIR) not in sys.path:
     sys.path.insert(0, str(_AGENT_UTILS_DIR))
 from log_rotation import DateRotatingFileHandler  # noqa: E402
+
+# spec 2026-08-29 P1/P2: 服务健康探针层 + 健康快照文件 (供 monitors/status 读取)
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+from services.health import (
+    HEALTH_STATUS_FILE,
+    check_all,
+    write_health_snapshot,
+)  # noqa: E402
 
 # =============================================================================
 # 路径常量
@@ -66,6 +77,8 @@ WATCHDOG_INTERVAL = 15  # 检查周期 (秒)
 MAX_RESTART_COUNT = 3    # 30 分钟内最大重启次数
 RESTART_WINDOW = 1800    # 重启计数窗口 (秒, 30 分钟)
 STOP_TIMEOUT = 5         # 等待进程退出的最大时间 (秒)
+# spec 2026-08-29 P2: 健康探针周期 (每轮看门狗循环内执行, 与 WATCHDOG_INTERVAL 对齐)
+HEALTH_CHECK_INTERVAL = WATCHDOG_INTERVAL
 
 
 # =============================================================================
@@ -599,6 +612,39 @@ class DaemonRunner:
         logger.info("收到 %s, 开始优雅关闭... (再次发送强制退出)", sig_name)
         self._shutdown_requested = True
 
+    def _run_health_checks(self):
+        """spec 2026-08-29 P2: 跑健康探针 → 写快照 → 对"进程在但应用假死"的服务触发重启.
+
+        健康感知重启规则:
+        - 服务进程存活 但 应用级探针 unhealthy → 视为假死 (如僵尸 consumer 假离线),
+          走与进程退出相同的重启流程 (撞车保护不变).
+        - 探针异常 (无法执行) 不重启, 仅记日志 — 避免误杀.
+        """
+        try:
+            snapshot = check_all()
+        except Exception as exc:
+            logger.warning("健康探针执行失败 (跳过本轮): %s", exc)
+            return
+
+        try:
+            write_health_snapshot(snapshot)
+        except Exception as exc:
+            logger.warning("健康快照写入失败: %s", exc)
+
+        unhealthy = {name: h for name, h in snapshot.items() if not h.healthy}
+        if not unhealthy:
+            return
+
+        for name, h in unhealthy.items():
+            info = self.manager.services.get(name)
+            if not info or not info.is_running:
+                continue  # 进程已不在 → 已有下方进程退出逻辑处理
+            logger.warning(
+                "  [%s] 进程存活但健康检查失败 (%s) → 触发健康感知重启",
+                name, h.detail,
+            )
+            self.manager.restart_service(name)
+
     def run(self):
         """进入看门狗模式."""
         self._running = True
@@ -620,6 +666,9 @@ class DaemonRunner:
 
                 if self._shutdown_requested:
                     break
+
+                # spec 2026-08-29 P2: 每轮执行健康探针并写快照 (供 monitors/status 读取)
+                self._run_health_checks()
 
                 for name, info in self.manager.services.items():
                     if self._shutdown_requested:
@@ -740,7 +789,7 @@ def stop_daemon_process(pid: int):
             return True  # 进程已不存在
 
 
-def print_daemon_status():
+def print_daemon_status(with_health: bool = False):
     """打印 daemon 状态 + 服务状态."""
     daemon_pid = check_daemon_running()
 
@@ -763,13 +812,28 @@ def print_daemon_status():
     logger.info("  [backend]  Port=%d %s", cfg["backend_port"], "✓" if backend_ok else "✗")
     logger.info("  [frontend] Port=%d %s", cfg["frontend_port"], "✓" if frontend_ok else "✗")
 
-    return {
+    # spec 2026-08-29 P2: 应用级健康探针（可选 --health）
+    health_detail = None
+    if with_health:
+        try:
+            snapshot = check_all()
+            for name, h in snapshot.items():
+                flag = "OK " if h.healthy else "FAIL"
+                logger.info("  [%s] 健康 %s (%s)", name, flag.strip(), h.detail)
+            health_detail = {name: h.to_dict() for name, h in snapshot.items()}
+        except Exception as exc:
+            logger.warning("健康探针执行失败: %s", exc)
+
+    result = {
         "daemon_running": daemon_pid is not None,
         "daemon_pid": daemon_pid,
         "redis": redis_ok,
         "backend": backend_ok,
         "frontend": frontend_ok,
     }
+    if health_detail is not None:
+        result["health"] = health_detail
+    return result
 
 
 # =============================================================================
@@ -856,7 +920,13 @@ def main():
 
     # ── status ────────────────────────────────────────────────────
     if command == "status":
-        print_daemon_status()
+        # spec 2026-08-29 P2: --health / --json 输出应用级健康详情
+        want_health = any(a in sys.argv[2:] for a in ("--health", "-h", "--json"))
+        if "--json" in sys.argv:
+            result = print_daemon_status(with_health=want_health)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+        else:
+            print_daemon_status(with_health=want_health)
         sys.exit(0)
 
     # ── daemon: 前台模式 (调试) ───────────────────────────────────
