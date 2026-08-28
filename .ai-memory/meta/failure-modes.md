@@ -96,6 +96,7 @@ last_manual_edit: 2026-07-23
 | N213 | DRF 装饰器顺序 (2026-08-28 新增模板匹配端点致全站 500) — @permission_classes 写在 @api_view 之上 → import 期 TypeError | 新 DRF FBV 装饰器顺序: extend_schema → api_view → permission_classes (policy 在 api_view 之下); 后端 500 + 日志指 urls import 链先查装饰器顺序; 详见 lesson N213 | `lessons/misc_2026-08-28_n213-drf-decorator-order.md` | 0 | 2026-08-28 |
 | N214 | E2E 环境造数四坑 (2026-08-28 全量测试 + 匹配端点 + 模拟器补测) — 测试自造 429(throttle) / cv2 纯色模板病态 / 雷电 ldconsole+adb 双视角重复注册 / 遗留假设备阻塞预检 | 造数前四查: throttle 额度是否被测试总量打爆(先查设置); 匹配测试图带纹理; 设备多数据源先归一再去重; 数据库遗留假记录定期清理; 详见 lesson N214 | `lessons/testing_2026-08-28_n214-e2e-env-data-hazards.md` | 0 | 2026-08-28 |
 | N215 | 对话起始未加载 gaf-orchestrator (2026-08-28 整轮 E2E/文档/沉淀对话无入口判定; 用户追问暴露) — 自执行入口步骤被跳过, 连带收尾(沉淀/反思)纪律一起丢 | 每次对话第一条任务消息先 `Skill(name='gaf-orchestrator')` 判定 task_type → 按分支加载 skill+KB 再动手; 恢复会话(summary 续接)同样必做; 收尾该 commit 后跑 gaf-lesson-router collect; 详见 lesson N215 | `lessons/workflow_2026-08-28_n215-load-orchestrator-at-conversation-start.md` | 0 | 2026-08-28 |
+| N216 | Agent 假离线 (2026-08-28 状态灯显示未启动但 agent 心跳新鲜) — 僵尸 consumer 的 _heartbeat_checker 永不取消, 每 10s set_agent_offline 覆盖新连接写入的 idle, 形成 idle↔offline 抖动 | 诊断口诀: status 与 last_heartbeat 矛盾 + 日志"心跳超时 15xxx s"(秒数递增) = 僵尸连接, 重启后端进程树 (`gaf_daemon.py restart`) 即清; 治本: Agent 加 active_channel 字段做最新连接仲裁; 详见 lesson N216 | `lessons/agent-protocol_2026-08-28_n216-zombie-consumer-false-offline.md` | 0 | 2026-08-28 |
 
 
 ### Archived-Early N## 索引（低触发归档）

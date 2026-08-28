@@ -12,16 +12,16 @@ related_files:
 created_by: AI
 priority: high
 # lessons_count: counts all lesson files in lessons/ root (excludes README.md + archived-early/; includes archived N30 in root); synced by sync_ai_memory.py
-lessons_count: 67
-active_n_count: 36
+lessons_count: 68
+active_n_count: 37
 # retired_n_count: M0.M 闭环 N## (硬约束沉淀到 rules/skills, 在 failure-modes.md §Retired; 2026-08-28 校准: 实测 §Retired 索引行 26 条, 旧注释值 43 计错(含家族子条目数误加)已修正)
 retired_n_count: 26
 # archived_n_count: only true archived N## (N30); dormant markers + P2 auto-archived are in archived-lessons.md
 archived_n_count: 3
 # dormant_n_count: family-merged sub-entries in failure-modes.md §Dormant (15 N## across 10 family-merged rows; TD-315 2026-07-21)
 dormant_n_count: 15
-# next_n_id: 下一个可用的 N 编号 (spec §6.2 P1-8 新增; AI 写新 lesson 时原子递增 + 文件锁; 2026-08-28 校准: N209-N215 均已分配, 新 lesson 从 N216 起)
-next_n_id: 216
+# next_n_id: 下一个可用的 N 编号 (spec §6.2 P1-8 新增; AI 写新 lesson 时原子递增 + 文件锁; 2026-08-28 校准: N209-N216 均已分配, 新 lesson 从 N217 起)
+next_n_id: 217
 ---
 
 # AI Lessons — Topic 分类索引（N132 文档治理）
@@ -58,7 +58,7 @@ next_n_id: 216
 | `agent-platform` | Agent 平台层 (COM/Win32/ctypes + 窗口设备动态绑定/失效重连) | N138, N146, N211 | 3 | — |
 | `doc-governance` | 文档职责分离 + 教训分类 + skill 漂移 | N132 | 2 (1 active + 1 archived N30, 文件在 lessons/ 根目录) | — |
 | `api-design` | API 设计问题 + URL 拼接归一化 (L0 硬约束, 无独立 lesson) + DRF 装饰器顺序 | N136, N197, N213 | 2 (+1 early unnumbered archived in `archived-early/`) | — |
-| `agent-protocol` | Agent 协议问题 (消息路由/consumer/heartbeat) | N145, N148 | 2 (+3 early unnumbered archived in `archived-early/`) | — |
+| `agent-protocol` | Agent 协议问题 (消息路由/consumer/heartbeat/僵尸连接假离线) | N145, N148, N216 | 3 (+3 early unnumbered archived in `archived-early/`) | — |
 | `platform-env` | 平台环境问题 (Vite proxy/ADB 风暴/黑屏/agent 单例锁/venv 依赖漂移/conda gaf 环境规则未生效/环境归一化 L0) | N139, N154+N155, N186, N187, N188, N199 | 5 | N154+N155 |
 | `command-errors` | 命令使用错误 + 反思纪律 (pre-commit stash/上下文预算/命令防错/PowerShell heredoc/git commit -m vs -F) | N150+N153, N160+N162, N165, N190 | 4 (N170 spec-36 撤销分发) | N150+N153, N160+N162 |
 | `architecture` | 架构视角原则 (大修改架构优先 / backup-restore 安全 / 7 维度评估 / schema 归一化全链路扫描 / AI 可调试性 review gate / 双调试视角硬约束 / 任务归属硬约束) | N151, N167, N168, N191, N192, N193 | 6 | — |
@@ -190,9 +190,10 @@ next_n_id: 216
 - `misc_2026-08-28_n213-drf-decorator-order.md` — DRF 装饰器顺序 (policy 装饰器必须在 @api_view 之下, 否则 import 期 TypeError 全站 500) ⭐ **N213**
 - (archived) `early archived lesson (已归档)` — API 404 tasks
 
-### agent-protocol (2 files + 3 archived)
+### agent-protocol (3 files + 3 archived)
 - `agent-protocol_2026-07-05-n145-login-poc-agent-no-response.md` — login PoC: agent heartbeat 正常但执行卡 pending, consumer 只 ACK 不更新 DB
 - `agent-protocol_2026-07-06-n148-control-message-routing-and-db-pk-vs-business-id.md` — 双向控制消息缺路由标识被静默丢弃 + Channels group 路由混淆
+- `agent-protocol_2026-08-28_n216-zombie-consumer-false-offline.md` — Agent 假离线 (僵尸 consumer 的 _heartbeat_checker 覆盖心跳状态, status↔offline 抖动; 重启后端即清) ⭐ **N216**
 - (archived) `early archived lesson (已归档)` — agent popup bug
 - (archived) `early archived lesson (已归档)` — capability mismatch
 - (archived) `early archived lesson (已归档)` — message frame format
