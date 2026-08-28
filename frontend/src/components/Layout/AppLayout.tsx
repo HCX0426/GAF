@@ -485,7 +485,7 @@ export function AppLayout() {
               <BellOutlined
                 className="gaf-text-lg"
                 style={{ cursor: 'pointer', color: themeToken.colorTextSecondary }}
-                onClick={() => navigate('/notifications')}
+                onClick={() => navigate('/system/notifications')}
               />
             </Badge>
             {isMuted ? (
