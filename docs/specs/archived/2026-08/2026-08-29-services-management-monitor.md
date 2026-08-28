@@ -1,11 +1,13 @@
 ---
 spec_id: 2026-08-29-services-management-monitor
-status: active
+status: archived
 created: 2026-08-29
 type: new_feature
 scope: scripts/gaf_daemon.py, scripts/services/health.py, backend/monitors, frontend/src/pages/System
 prev: 2026-08-29-service-orchestration-health-aware
 next: N/A
+implemented_in: 7d6736a
+archived: 2026-08-29
 ---
 
 # Spec: 服务管理页 + 服务终端报错捕获/检测/统一查看
@@ -34,7 +36,7 @@ next: N/A
 | P2 | health.py 报错扫描 `scan_log_errors` + 快照扩展（processes/log_errors） | ✅ 完成 (backend 10 条 / agent 4 条真实检测) |
 | P3 | backend `GET /api/v2/monitors/services/` + `GET .../services/logs/` | ✅ 完成 (9 测试通过; filter=error 跨文件收集) |
 | P4 | 前端 System tab 服务管理页（状态卡片 + 日志 Drawer） | ✅ 完成 (369 vitest 全过 + tsc 0 + 浏览器实测) |
-| P5 | 验证：pytest + tsc/vitest + 浏览器实测 + 文档 + commit | ⏳ commit 待执行 |
+| P5 | 验证：pytest + tsc/vitest + 浏览器实测 + 文档 + commit | ✅ 完成 (backend monitors 45 + scripts 19 + 前端 369 vitest + tsc 0; 浏览器实测 5 卡片/报错标签/日志 Drawer; commit 7d6736a) |
 
 ## 3. 实施设计
 
