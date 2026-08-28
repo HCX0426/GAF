@@ -10,6 +10,8 @@ from monitors.views import (
     auto_fix_view,
     device_health_view,
     diagnose_view,
+    service_logs_view,
+    services_view,
     system_status_view,
 )
 
@@ -21,6 +23,8 @@ router.register(r'sla', SLAMetricViewSet, basename='metric-sla')
 urlpatterns = [
     path('', include(router.urls)),
     path('status/', system_status_view, name='system-status'),
+    path('services/', services_view, name='system-services'),
+    path('services/logs/', service_logs_view, name='system-services-logs'),
     path('alerts/', alerts_summary_view, name='alerts-summary'),
     path('alerts/history/', alert_history_view, name='alert-history'),
     path('device-health/', device_health_view, name='device-health'),

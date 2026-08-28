@@ -148,6 +148,8 @@ const menuItemConfigs: MenuItemConfig[] = [
     roles: ADMIN_ROLES,
     children: [
       { key: '/system/settings', labelKey: 'sidebar.settings', permission: 'settings.view', roles: ADMIN_ROLES },
+      // spec 2026-08-29-services-management-monitor: 服务管理页
+      { key: '/system/services', labelKey: 'sidebar.services', permission: 'settings.view', roles: ADMIN_ROLES },
       { key: '/system/config', labelKey: 'sidebar.config', permission: 'settings.view', roles: ADMIN_ROLES },
       { key: '/system/api-keys', labelKey: 'sidebar.api_keys', permission: 'settings.view', roles: ADMIN_ROLES },
       // TD-099 fix 3: /ops/backup moved to /system/backup (system admin function)
@@ -241,6 +243,7 @@ function getSelectedKey(pathname: string): string {
     '/ai/config',
     '/ai/usage',
     '/system/settings',
+    '/system/services',
     '/system/config',
     '/system/api-keys',
     '/system/backup',

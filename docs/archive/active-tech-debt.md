@@ -1,7 +1,7 @@
 ---
 summary: 活跃技术债务清单 — 🔧 待修/待办/待决 和 🚧 进行中 条目 (完整详情)
 applies_to: [project]
-last_updated: "2026-08-28 (TD-413 闭环迁出; active 清空; 全部 3 项 nightly 治理项已处理)"
+last_updated: "2026-08-29 (TD-415 登记: log_rotation 跨天轮转 _stream=None)"
 ---
 
 # Active Tech Debts (待修 / 进行中)
@@ -66,6 +66,25 @@ last_updated: "2026-08-28 (TD-413 闭环迁出; active 清空; 全部 3 项 nigh
 > - TD-412 → fixed（N105 出清 + N201 行修复，check-cap 35 ≤ 35，2026-08-28）
 > - TD-414 → fixed（N209/N210/N211 补 yn-matrices 条目，doc_health 0，2026-08-28）
 > - TD-413 → fixed（SKILL.md 27.6KB→18.3KB 瘦身，9 处冗余外迁/压缩，2026-08-28）
+
+---
+
+## TD-415: DateRotatingFileHandler 跨天轮转偶发 _stream=None (🔧)
+
+- **状态**: 🔧 (登记 2026-08-29, 本次 spec 范围外检出)
+- **优先级**: P3
+- **登记时间**: 2026-08-29
+- **来源**: spec 2026-08-29-services-management-monitor 实测 daemon status 时发现
+- **症状**: `gaf_daemon.py status --json` / daemon 运行时 `log_rotation.py:139 emit → AttributeError: 'NoneType' object has no attribute 'write'`
+  反复打印 Logging error; stdout 正常但文件 handler 失效 (跨天轮转后 `_stream` 为 None 未重建)
+- **根因**: `DateRotatingFileHandler._rotate_if_needed` 在日期变化时 close 旧流后, 若 `_open_today()` 之前某异常路径
+  或并发 (多进程同 handler) 导致 `_stream` 保持 None; 跨午夜后首条日志 emit 即崩 (handleError 吞掉, 日志持续丢失)
+- **影响**: daemon/agent 跨天首条日志丢失 + 每次 status 调用刷 Logging error traceback; 文件句柄泄漏风险
+- **修复方案**: `emit` 前对 None 自愈: `if self._stream is None: self._open_today()`; 并用 `single-file lock` 防止多进程并发写
+- **验证标准**: ① 设置系统日期跨天 (或 mock datetime) 触发 rotate; ② 首条 emit 不再 AttributeError; ③ status/daemon 连续 3 次调用无 Logging error; ④ 当天日志文件持续增长且无 .gz 缺失
+- **何时修**: 下一轮 L3 循环 (agent 日志可靠性, 涉及 agent+scripts 两处 import 同一 handler)
+- **三维根因评估**: 代码 (emit 无 None 守卫) + 工作流 (跨天场景长期未测) + 规则 (无跨天轮转测试用例)
+- **修复方案验证**: ✅ grep `log_rotation.py` emit/None/rotate 三处确认缺口; 复现命令 `python scripts/gaf_daemon.py status --json` → Logging error (2026-08-29 实测复现)
 
 ---
 

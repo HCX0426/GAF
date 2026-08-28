@@ -30,7 +30,7 @@ import time
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
+from typing import BinaryIO, Optional
 
 # N205 (2026-08-21): 日志轮转 handler 唯一来源 = agent/src/utils/log_rotation.py.
 # scripts 端不再维护 _log_rotation.py 副本 (已删除), 统一从 agent 包导入,
@@ -48,6 +48,7 @@ if str(_SCRIPTS_DIR) not in sys.path:
 from services.health import (
     HEALTH_STATUS_FILE,
     check_all,
+    scan_log_errors,
     write_health_snapshot,
 )  # noqa: E402
 
@@ -61,6 +62,12 @@ FRONTEND_DIR = GAF_ROOT / "frontend"
 DEBUG_DIR = GAF_ROOT / "debug"
 ENV_FILE = GAF_ROOT / ".env"
 PID_FILE = DEBUG_DIR / "gaf_daemon.pid"
+
+# spec 2026-08-29-services-management-monitor P1:
+# 服务终端输出目录 (固定路径, 便于前端统一 tail/排查; 不进入日期归档目录).
+# 布局: debug/system/services/<name>.log (+ <name>.log.1 轮转备份)
+SERVICE_LOG_DIR = DEBUG_DIR / "system" / "services"
+MAX_SERVICE_LOG_BYTES = 5 * 1024 * 1024  # 单服务终端日志 5MB 轮转
 
 PYTHON_EXE = Path("D:/code/environment/conda/envs/gaf/python.exe")
 REDIS_SERVER_EXE = Path("D:/code/environment/redis/redis-server.exe")
@@ -178,6 +185,35 @@ def setup_logging():
     logger.addHandler(file_handler)
 
     logger.setLevel(logging.INFO)
+
+
+# =============================================================================
+# 服务终端日志 (spec 2026-08-29-services-management-monitor P1)
+# =============================================================================
+
+def service_log_path(name: str) -> Path:
+    """返回服务终端日志文件路径 (固定位置 + 简单大小轮转)."""
+    return SERVICE_LOG_DIR / f"{name}.log"
+
+
+def _open_service_log(name: str) -> BinaryIO | None:
+    """打开服务终端日志文件 (追加模式), 超过阈值则先轮转为 <name>.log.1.
+
+    返回可写的二进制文件对象, 供 subprocess.Popen 的 stdout/stderr 使用.
+    打开失败 (磁盘/权限) 返回 None, 由调用方 fallback 到 DEVNULL.
+    """
+    try:
+        SERVICE_LOG_DIR.mkdir(parents=True, exist_ok=True)
+        path = service_log_path(name)
+        if path.exists() and path.stat().st_size > MAX_SERVICE_LOG_BYTES:
+            backup = path.with_suffix(".log.1")
+            if backup.exists():
+                backup.unlink()
+            path.replace(backup)
+        return open(path, "ab")  # noqa: SIM115 - 句柄由 Popen/ServiceInfo 生命周期管理
+    except OSError:
+        logger.error("  [%s] 打开终端日志失败, 回退 DEVNULL", name)
+        return None
 
 
 # =============================================================================
@@ -385,6 +421,7 @@ class ServiceInfo:
         self.process: Optional[subprocess.Popen] = None
         self.restart_times: list[float] = []  # 重启时间戳列表
         self.restart_count = 0  # 当前窗口内重启次数
+        self.log_fh: Optional[BinaryIO] = None  # 服务终端输出文件句柄 (P1)
 
     @property
     def is_running(self) -> bool:
@@ -397,6 +434,15 @@ class ServiceInfo:
     @property
     def returncode(self) -> Optional[int]:
         return self.process.poll() if self.process else None
+
+    def close_log(self):
+        """关闭终端输出句柄 (停止/进程退出时调用)."""
+        if self.log_fh is not None:
+            try:
+                self.log_fh.close()
+            except OSError:
+                pass
+            self.log_fh = None
 
     def clean_restart_history(self):
         """清理超过窗口期的重启记录."""
@@ -441,6 +487,7 @@ class ServiceManager:
         if info.process is not None and info.process.poll() is not None:
             logger.info("  [%s] 清理旧死进程 (PID=%s, exit=%s)", name, info.pid, info.returncode)
             info.process = None
+            info.close_log()
 
         svc = info.config
         cmd = svc["cmd"]
@@ -451,6 +498,13 @@ class ServiceManager:
 
         logger.info("  [%s] 启动中... cmd=%s", name, os.path.basename(cmd[0] if cmd else ""))
 
+        # spec 2026-08-29-services-management-monitor P1:
+        # 服务终端输出 (stdout+stderr) 落盘到 debug/system/services/<name>.log,
+        # 替代原有 DEVNULL 丢弃 — 保留报错痕迹供服务管理页统一查看.
+        info.close_log()
+        log_fh = _open_service_log(name)
+        out_target = log_fh if log_fh is not None else subprocess.DEVNULL
+
         try:
             creationflags = 0
             if sys.platform == "win32":
@@ -459,13 +513,15 @@ class ServiceManager:
                 cmd,
                 cwd=cwd,
                 env=env,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stdout=out_target,
+                stderr=out_target,
                 creationflags=creationflags,
             )
             info.process = proc
+            info.log_fh = log_fh
         except OSError as exc:
             logger.error("  [%s] 启动失败: %s", name, exc)
+            info.close_log()
             return False
 
         # 等待 + 验证
@@ -515,6 +571,7 @@ class ServiceManager:
             proc.wait(timeout=2)
 
         info.process = None
+        info.close_log()
         return True
 
     def stop_all(self) -> bool:
@@ -626,8 +683,15 @@ class DaemonRunner:
             logger.warning("健康探针执行失败 (跳过本轮): %s", exc)
             return
 
+        # spec 2026-08-29-services-management-monitor P2:
+        # 快照注入进程运行时信息 + 服务日志报错计数 (供服务管理 API/页面读取)
+        extra: dict = {
+            "processes": self.manager.get_status(),
+            "log_errors": {name: scan_log_errors(name) for name in snapshot},
+        }
+
         try:
-            write_health_snapshot(snapshot)
+            write_health_snapshot(snapshot, extra=extra)
         except Exception as exc:
             logger.warning("健康快照写入失败: %s", exc)
 
@@ -687,6 +751,7 @@ class DaemonRunner:
                             info.process = None
                             info.restart_times = []
                             info.restart_count = 0
+                            info.close_log()
                             continue
 
                         rc = info.returncode
@@ -694,6 +759,7 @@ class DaemonRunner:
                             "  [%s] 进程已退出 (PID=%s, exit=%s)",
                             name, info.pid, rc,
                         )
+                        info.close_log()
 
                         if info.can_restart():
                             logger.info("  [%s] 自动重启中...", name)

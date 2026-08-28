@@ -378,6 +378,22 @@ last_updated: 2026-08-08
 | 崩溃报告 | `debug/crash-reports` | CrashReport |
 | 日志归档 | `debug/archives` (DebugLogArchiveViewSet) | ZIP 打包 + 上传 |
 
+### 7.8 服务管理 `/system/services`
+
+> spec 2026-08-29-services-management-monitor：系统页签新增"服务管理"，监控各服务
+> （redis/backend/agent/frontend/daemon）健康 + 进程 + 报错，并统一查看服务终端日志。
+
+- **服务状态卡片**：健康灯（app 级探针结果）+ detail + PID/端口/重启次数 + 报错计数
+  （daemon 每 15s 扫描服务日志 ERROR/CRITICAL/Traceback，写入健康快照 `debug/health-status.json`）
+- **终端日志捕获**：daemon 启动服务时 stdout/stderr 落盘 `debug/system/services/<name>.log`
+  （替代原 DEVNULL 丢弃；>5MB 轮转 `.log.1`），backend/agent 原生日志作为 fallback
+- **统一排查**：每服务"查看日志"抽屉（tail 400 行 + 全部/仅报错过滤 + ERROR 高亮）
+
+| 功能点 | 后端 API | 技术 |
+|--------|---------|------|
+| 服务状态列表 | `monitors/services` (services_view) | health-status.json + gaf_daemon.pid |
+| 服务日志 tail | `monitors/services/logs` (service_logs_view) | 日志文件尾部 + 报错正则过滤 |
+
 ---
 
 ## 八、AI

@@ -59,6 +59,7 @@ const MarketplacePage = lazy(() => import('@/pages/Tasks/Marketplace'));
 const PluginsPage = lazy(() => import('@/pages/System/Plugins'));
 const ExecutionReplayPage = lazy(() => import('@/pages/Ops/ExecutionReplay'));
 const SystemSettingsPage = lazy(() => import('@/pages/System/SystemSettings'));
+const ServicesPage = lazy(() => import('@/pages/System/ServicesPage'));
 const ConfigManagementPage = lazy(() => import('@/pages/System/ConfigManagementPage'));
 const BackupPage = lazy(() => import('@/pages/Ops/Backup'));
 const TemplateEffectivenessPage = lazy(() => import('@/pages/Resources/TemplateEffectiveness'));
@@ -476,6 +477,15 @@ export default function App() {
                   element={
                     <Lazy>
                       <SystemSettingsPage />
+                    </Lazy>
+                  }
+                />
+                {/* spec 2026-08-29-services-management-monitor: 服务管理页 */}
+                <Route
+                  path="system/services"
+                  element={
+                    <Lazy>
+                      <ServicesPage />
                     </Lazy>
                   }
                 />

@@ -19,12 +19,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import time
-from dataclasses import dataclass, asdict
+from collections.abc import Callable
+from dataclasses import asdict, dataclass
+from datetime import datetime
 from pathlib import Path
-from typing import Callable
 
 # ---- 路径常量 (与 gaf_daemon.py 保持一致) ------------------------------------
 GAF_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -34,6 +36,18 @@ FRONTEND_DIR = GAF_ROOT / "frontend"
 DEBUG_DIR = GAF_ROOT / "debug"
 ENV_FILE = GAF_ROOT / ".env"
 HEALTH_STATUS_FILE = DEBUG_DIR / "health-status.json"
+
+# spec 2026-08-29-services-management-monitor P1/P2:
+# 服务终端日志目录 (与 gaf_daemon.py 一致) + 报错扫描
+SERVICE_LOG_DIR = DEBUG_DIR / "system" / "services"
+_ERROR_PATTERNS = (
+    re.compile(r"\b(ERROR|CRITICAL|FATAL)\b"),
+    re.compile(r"Traceback \(most recent call last\)"),
+    re.compile(r"(?:Exception|Error)[:(]"),
+)
+_SCAN_MAX_LINES = 5000          # 单个日志文件最多扫描的行数
+_SCAN_CAP_LINES = 2000          # 报错统计最多处理的行数 (防大文件拖慢看门狗)
+_LATEST_MAX_CHARS = 300         # latest 报错文本截断长度
 
 PYTHON_EXE = Path("D:/code/environment/conda/envs/gaf/python.exe")
 REDIS_CLI_EXE = Path("D:/code/environment/redis/redis-cli.exe")
@@ -132,7 +146,7 @@ def check_backend(ports: dict) -> Health:
     if status is None:
         return Health(service="backend", healthy=False, detail=f"HTTP GET {url} 无响应", ts=time.time())
     if status == 503:
-        return Health(service="backend", healthy=False, detail=f"healthz 返回 503 (DB/Redis 不可达)", ts=time.time())
+        return Health(service="backend", healthy=False, detail="healthz 返回 503 (DB/Redis 不可达)", ts=time.time())
     if status != 200:
         return Health(service="backend", healthy=False, detail=f"HTTP {status} @ {url}", ts=time.time())
     # 200 → 解析 body 确认 checks 全 pass
@@ -162,6 +176,7 @@ def check_agent(ports: dict) -> Health:
     try:
         import os
         import sys
+
         import django
 
         sys.path.insert(0, str(BACKEND_DIR))
@@ -169,6 +184,7 @@ def check_agent(ports: dict) -> Health:
         django.setup()
 
         from django.utils import timezone
+
         from agents.models import Agent
 
         agent = Agent.objects.filter(is_local=True).first() or Agent.objects.first()
@@ -198,6 +214,86 @@ def check_frontend(ports: dict) -> Health:
     return Health(service="frontend", healthy=ok, detail=f"HTTP {status if status is not None else '无响应'} @ {url}", ts=time.time())
 
 
+# ---- 报错检测 (spec 2026-08-29-services-management-monitor P2) -------------------
+
+def _is_error_line(line: str) -> bool:
+    """判断一行是否为报错行 (logging 级别 / Traceback / Python 异常冒号行)."""
+    return any(pat.search(line) for pat in _ERROR_PATTERNS)
+
+
+def _latest_day_dir(app_rel: str) -> Path | None:
+    """返回 ``debug/<YYYYMMDD>/<app_rel>`` 日期最大的目录 (其下可能有多个 bucket)."""
+    if not DEBUG_DIR.is_dir():
+        return None
+    for entry in sorted(DEBUG_DIR.iterdir(), reverse=True):
+        if not entry.is_dir():
+            continue
+        try:
+            datetime.strptime(entry.name, "%Y%m%d")
+        except ValueError:
+            continue
+        cand = entry / app_rel
+        if cand.is_dir():
+            return cand
+    return None
+
+
+def _native_log_paths(name: str) -> list[Path]:
+    """返回服务非终端日志 (django/agent/daemon 原生日志, 按最新日优先)."""
+    if name == "backend":
+        day = _latest_day_dir("backend/system")
+        if day is None:
+            return []
+        logs = sorted(day.rglob("*.log"), key=lambda p: p.stat().st_mtime, reverse=True)
+        return logs[:4]
+    if name == "agent":
+        day = _latest_day_dir("agent/system")
+        if day is None:
+            return []
+        f = day / "agent.log"
+        return [f] if f.exists() else []
+    if name == "daemon":
+        day = _latest_day_dir("backend/system")
+        if day is None:
+            return []
+        f = day / "daemon.log"
+        return [f] if f.exists() else []
+    return []  # redis / frontend 无原生日志
+
+
+def service_log_paths(name: str) -> list[Path]:
+    """返回某服务可扫描的日志文件列表 (终端捕获 + 原生 fallback)."""
+    paths = [SERVICE_LOG_DIR / f"{name}.log", SERVICE_LOG_DIR / f"{name}.log.1"]
+    return [p for p in paths + _native_log_paths(name) if p.exists()]
+
+
+def scan_log_errors(name: str) -> dict:
+    """扫描服务日志文件中的报错行, 返回 {count, latest, files}.
+
+    - count: 报错行总数 (最多 _SCAN_CAP_LINES 行防拖慢)
+    - latest: 最后一条报错行的文本 (截断 _LATEST_MAX_CHARS)
+    - files: 实际扫描到内容的文件列表
+    """
+    total = 0
+    latest: str | None = None
+    files: list[str] = []
+    for path in service_log_paths(name):
+        try:
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                lines = fh.readlines()[-(_SCAN_MAX_LINES + _SCAN_CAP_LINES):]
+        except OSError:
+            continue
+        capped = lines[-_SCAN_CAP_LINES:]
+        for line in capped:
+            stripped = line.rstrip("\r\n")
+            if _is_error_line(stripped):
+                total += 1
+                latest = stripped[:_LATEST_MAX_CHARS]
+        if capped:
+            files.append(str(path))
+    return {"count": total, "latest": latest, "files": files}
+
+
 # ---- 编排 ----------------------------------------------------------------------
 
 CHECKERS: dict[str, Callable[[dict], Health]] = {
@@ -214,13 +310,19 @@ def check_all(ports: dict | None = None) -> dict[str, Health]:
     return {name: fn(ports) for name, fn in CHECKERS.items()}
 
 
-def write_health_snapshot(snapshot: dict[str, Health]) -> None:
-    """健康快照写入 debug/health-status.json (供 monitors/status 读取)."""
+def write_health_snapshot(snapshot: dict[str, Health], extra: dict | None = None) -> None:
+    """健康快照写入 debug/health-status.json (供 monitors/status 读取).
+
+    spec 2026-08-29-services-management-monitor P2: daemon 每轮额外注入
+    ``processes`` / ``log_errors`` (进程运行时信息 + 服务日志报错计数).
+    """
     DEBUG_DIR.mkdir(parents=True, exist_ok=True)
     payload = {
         "updated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "services": {name: h.to_dict() for name, h in snapshot.items()},
     }
+    if extra:
+        payload.update(extra)
     HEALTH_STATUS_FILE.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 

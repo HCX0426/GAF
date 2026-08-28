@@ -150,5 +150,6 @@ last_updated: 2026-08-20
 | C-115 | 死代码 | 删除 execution_planner.py (TaskExecuteView 删除后仅测试引用，无生产价值) | 2026-08-27 | `-` | ✅ 净删 243 行 + 20 用例通过 + rotation 逻辑确认独立 |
 | C-116 | 治理 | N167 七维度动态权重表 v1 (用户决策 D: 按任务类型重点维度+豁免基线+否决门槛) | 2026-08-27 | `-` | ✅ yn-matrices index 通过 + 决策树入口强化对话起始判定 (`-`) |
 | C-117 | Agent 窗口 | 浏览器窗口重绑修复 — 页面标题刷新 + 缓存 hwnd 失效强制重连 (用户 2026-08-27: 标题/句柄随页面与重启变化) | 2026-08-27 | (见 git log) | ✅ 单测 10 项新增 + handler 64 全过 + 浏览器 E2E 真实 Chrome 任务 #83 SUCCESS (10s 端到端) |
+| C-118 | 服务管理 | spec: 服务管理页 + 服务终端报错捕获/检测/统一查看 (系统页签 /system/services) | 2026-08-29 | (见 git log) | ✅ daemon stdout/stderr 落盘 debug/system/services/*.log (原 DEVNULL) + 每 15s ERROR 扫描入快照 + monitors/services + services/logs API (28+45 测试) + 前端 3 vitest + tsc 0 + 浏览器实测 5 卡片/报错标签/日志 Drawer 全过 |
 
 > **Note**: Detailed implementation sections (C-001 ~ C-112) were archived to a separate file on 2026-08-06 (since removed as duplicate). Summary table above is the authoritative index.

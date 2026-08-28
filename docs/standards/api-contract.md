@@ -646,6 +646,48 @@ POST /api/v2/logs/frontend-errors/    # 接收浏览器端崩溃报告 (匿名, 
 
 ---
 
+## 18. 服务管理 API（monitors — spec 2026-08-29-services-management-monitor）
+
+> 系统页签"服务管理"页数据源：daemon 健康快照 + 服务终端日志文件。均只读、需鉴权（`IsAuthenticated + RoleBasedPermission(view)`）。
+
+### 18.1 `GET /api/v2/monitors/services/` — 服务状态列表
+
+返回 5 项服务（redis/backend/agent/frontend/daemon）的健康/进程/报错信息：
+
+```json
+{
+  "updatedAt": "2026-08-29T01:33:36+0800",
+  "daemon": { "running": true, "pid": 7260 },
+  "services": [
+    {
+      "name": "backend",
+      "healthy": true,
+      "detail": "healthz {'db': 'pass', 'redis': 'pass'}",
+      "running": true, "pid": 23204, "port": 8000, "restart_count": 0,
+      "error_count": 10, "latest_error": "[2026-08-29 ...] [ERROR] ...", "log_files": ["..."]
+    }
+  ]
+}
+```
+
+- 数据源：`debug/health-status.json`（services/processes/log_errors）+ `debug/gaf_daemon.pid`
+- 快照缺失/损坏 → 各字段为 `null`/`false`，不抛 500
+
+### 18.2 `GET /api/v2/monitors/services/logs/` — 服务终端日志 tail
+
+Query：`service`（必填）、`lines`（默认 300，上限 2000）、`filter`（`all` | `error`，默认 all）
+
+- `filter=all`：服务日志文件尾部（捕获文件 `debug/system/services/<name>.log` 优先，backend/agent/daemon 原生日志 fallback）
+- `filter=error`：跨所有候选文件收集报错行（正则：`\b(ERROR|CRITICAL|FATAL)\b` / `Traceback(...)` / `(Exception|Error)[:(]`），含历史原生日志
+
+```json
+{ "service": "backend", "path": "debug/system/services/backend.log", "files": ["..."], "lines": ["INFO ...", "ERROR ..."] }
+```
+
+- `service` 缺失 → 400；文件不存在 → `files: []`, `lines: []`, `path: null`
+
+---
+
 **维护者**：AI（不人工维护）
 **变更触发**：修改任何 API → 检查本规范 + 后端 model + 前端类型同步 → 同步 `last_updated`
 **验证**：

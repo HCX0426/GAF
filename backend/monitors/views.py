@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 from pathlib import Path
 
 from asgiref.sync import async_to_sync
@@ -411,6 +412,216 @@ def system_status_view(request):
         response_data['taskError'] = task_error
 
     return Response(response_data)
+
+
+# ===========================================================================
+# spec 2026-08-29-services-management-monitor P3: 服务管理 API
+# ===========================================================================
+
+_DEBUG_ROOT = Path(__file__).resolve().parents[2] / "debug"
+_SERVICE_LOG_DIR = _DEBUG_ROOT / "system" / "services"
+_DAEMON_PID_FILE = _DEBUG_ROOT / "gaf_daemon.pid"
+
+# 报错行匹配 (与 scripts/services/health.py _ERROR_PATTERNS 保持语义一致)
+_ERROR_PATTERNS = (
+    re.compile(r"\b(ERROR|CRITICAL|FATAL)\b"),
+    re.compile(r"Traceback \(most recent call last\)"),
+    re.compile(r"(?:Exception|Error)[:(]"),
+)
+
+SERVICE_ORDER = ["redis", "backend", "agent", "frontend"]
+
+
+def _latest_day_dir(debug_root: Path) -> Path | None:
+    """返回 debug/ 下日期最大的目录 (YYYYMMDD)."""
+    if not debug_root.is_dir():
+        return None
+    from datetime import datetime as dt
+
+    for entry in sorted(debug_root.iterdir(), reverse=True):
+        if not entry.is_dir():
+            continue
+        try:
+            dt.strptime(entry.name, "%Y%m%d")
+        except ValueError:
+            logger.debug("跳过非日期目录: %s", entry.name)
+            continue
+        return entry
+    return None
+
+
+def _resolve_service_log_files(name: str) -> list[Path]:
+    """定位服务日志文件列表 (终端捕获优先, 原生日志 fallback)."""
+    candidates = [
+        _SERVICE_LOG_DIR / f"{name}.log",
+        _SERVICE_LOG_DIR / f"{name}.log.1",
+    ]
+    day = _latest_day_dir(_DEBUG_ROOT)
+    if day is not None:
+        if name == "backend":
+            system_dir = day / "backend" / "system"
+            if system_dir.is_dir():
+                logs = sorted(
+                    system_dir.rglob("*.log"),
+                    key=lambda p: p.stat().st_mtime,
+                    reverse=True,
+                )[:2]
+                candidates.extend(logs)
+        elif name == "agent":
+            candidates.append(day / "agent" / "system" / "agent.log")
+        elif name == "daemon":
+            candidates.append(day / "backend" / "system" / "daemon.log")
+    return [p for p in candidates if p.exists()]
+
+
+def _read_log_tail(files: list[Path], max_lines: int) -> list[str]:
+    """读取列表首个存在文件的尾部 max_lines 行 (主捕获文件即为最新输出)."""
+    if not files:
+        return []
+    path = files[0]
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            lines = fh.readlines()
+    except OSError:
+        return []
+    return [ln.rstrip("\r\n") for ln in lines[-max_lines:]]
+
+
+@extend_schema(
+    tags=['monitors'],
+    summary='Service management status list (health + process + log errors)',
+    responses={200: OpenApiTypes.OBJECT},
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, RoleBasedPermission])
+def services_view(request):
+    """
+    服务管理状态列表 API (spec 2026-08-29-services-management-monitor).
+
+    GET /api/v2/monitors/services/
+    数据源: daemon 写入的 debug/health-status.json (services/processes/log_errors)
+    + debug/gaf_daemon.pid. 供系统页签"服务管理"页展示.
+    """
+    # 读健康快照 (services + processes + log_errors)
+    snapshot_services: dict = {}
+    processes: dict = {}
+    log_errors: dict = {}
+    updated_at = None
+    health_file = _DEBUG_ROOT / "health-status.json"
+    try:
+        if health_file.exists():
+            data = json.loads(health_file.read_text(encoding="utf-8"))
+            snapshot_services = data.get("services", {})
+            processes = data.get("processes", {})
+            log_errors = data.get("log_errors", {})
+            updated_at = data.get("updated_at")
+    except Exception as exc:
+        logger.warning("读取服务健康快照失败: %s", exc)
+
+    # daemon 运行信息
+    daemon_running = False
+    daemon_pid = None
+    try:
+        if _DAEMON_PID_FILE.exists():
+            pid = _DAEMON_PID_FILE.read_text().strip()
+            if pid.isdigit():
+                daemon_pid = int(pid)
+                daemon_running = True
+    except OSError as exc:
+        logger.warning("读取 daemon PID 失败: %s", exc)
+
+    services: list[dict] = []
+    for name in SERVICE_ORDER:
+        h = snapshot_services.get(name, {})
+        proc = processes.get(name, {})
+        err = log_errors.get(name, {})
+        services.append({
+            'name': name,
+            'healthy': h.get('healthy'),
+            'detail': h.get('detail'),
+            'ts': h.get('ts'),
+            'running': proc.get('running'),
+            'pid': proc.get('pid'),
+            'port': proc.get('port'),
+            'restart_count': proc.get('restart_count'),
+            'error_count': err.get('count'),
+            'latest_error': err.get('latest'),
+            'log_files': err.get('files'),
+        })
+    services.append({
+        'name': 'daemon',
+        'healthy': daemon_running,
+        'detail': f"daemon PID={daemon_pid}" if daemon_pid else 'daemon 未运行',
+        'ts': None,
+        'running': daemon_running,
+        'pid': daemon_pid,
+        'port': None,
+        'restart_count': None,
+        'error_count': None,
+        'latest_error': None,
+        'log_files': [],
+    })
+
+    return Response({
+        'updatedAt': updated_at,
+        'daemon': {'running': daemon_running, 'pid': daemon_pid},
+        'services': services,
+    })
+
+
+@extend_schema(
+    tags=['monitors'],
+    summary='Service terminal log tail (unified error resolution view)',
+    responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT},
+    parameters=[
+        OpenApiParameter('service', type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, required=True),
+        OpenApiParameter('lines', type=OpenApiTypes.INT, location=OpenApiParameter.QUERY),
+        OpenApiParameter('filter', type=OpenApiTypes.STR, location=OpenApiParameter.QUERY),
+    ],
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, RoleBasedPermission])
+def service_logs_view(request):
+    """
+    服务终端日志尾部 API (统一排查报错).
+
+    GET /api/v2/monitors/services/logs/?service=backend&lines=300&filter=error
+    读取服务日志文件尾部; filter=error 时仅返回报错匹配行.
+    """
+    service = request.query_params.get('service', '').strip()
+    if not service:
+        return Response({'detail': 'service 参数必填'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        max_lines = min(int(request.query_params.get('lines', 300)), 2000)
+    except ValueError:
+        max_lines = 300
+    filter_errors = request.query_params.get('filter', 'all').lower() == 'error'
+
+    files = _resolve_service_log_files(service)
+    if filter_errors:
+        # 跨所有日志文件收集报错行 (含原生日志历史错误, 便于统一排查)
+        error_lines: list[str] = []
+        for path in files:
+            try:
+                with open(path, encoding="utf-8", errors="replace") as fh:
+                    for ln in fh.readlines()[-(max_lines * 2):]:
+                        if any(p.search(ln) for p in _ERROR_PATTERNS):
+                            error_lines.append(ln.rstrip("\r\n"))
+            except OSError as exc:
+                logger.warning("读取服务日志失败 (%s): %s", path, exc)
+                continue
+            if len(error_lines) >= max_lines:
+                break
+        lines = error_lines[:max_lines]
+    else:
+        lines = _read_log_tail(files, max_lines)
+
+    return Response({
+        'service': service,
+        'path': str(files[0]) if files else None,
+        'files': [str(f) for f in files],
+        'lines': lines,
+    })
 
 
 @extend_schema(

@@ -751,6 +751,7 @@ desktop/
 | **EventBus (Phase 3)** | ✅ | monitors/bus.py 跨进程事件总线，事件发布/订阅/路由 |
 | **ArchiveService (Phase 3)** | ✅ | 数据库归档服务，自动清理历史记录 |
 | **GafDaemon (Phase 3)** | ✅ | scripts/gaf_daemon.py Python 守护进程，取代外部 wrapper 脚本 |
+| **服务编排健康感知 (2026-08-29)** | ✅ | app 级健康探针 + 看门狗健康循环 + 状态灯服务矩阵；服务终端输出捕获 `debug/system/services/*.log` + ERROR 扫描 → 服务管理页 `/system/services`（系统页签） |
 | Desktop | 🔧 | Electron 框架已搭建 (待 M2 完整集成) |
 
 ### 13.2 架构问题（已修复）
