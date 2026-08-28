@@ -46,7 +46,7 @@ next_n_id: 217
 
 | Topic | 描述 | 包含 N## | 文件数 | 家族主条目 |
 |-------|------|---------|-------|-----------|
-| `workflow` | 工作流治理 (commit/hook/skill 删除/临时文件/加载机制/持续评估循环/脚本性能/主动并行+真沉淀/spec 用时测量/TD 修复方案验证/subagent 结果落地/单对话批量 spec 单 commit/分级测试/AI 思维链纠偏/反思分级/元评估闭环/规则退役/循环模式不问继续/bug 排查三维根因评估/节点观测性/测试覆盖盲区/AI 主导开发治理必要性元层认知/M2 激活率复盘触发闭环/文档归属判定/调度协调 L0) | N95, N105, N108, N117, N121, N122, N123, N124, N125, N134, N140, N149, N164, N166, N171, N172, N173, N174, N175, N176, N177, N178, N179, N180, N181, N182, N183, N184, N185, N189, N198, N200, N201, N208 | 27 | N105, N134 (N165/N169/N170 已退役见 §Retired) |
+| `workflow` | 工作流治理 (commit/hook/skill 删除/临时文件/加载机制/持续评估循环/脚本性能/主动并行+真沉淀/spec 用时测量/TD 修复方案验证/subagent 结果落地/单对话批量 spec 单 commit/分级测试/AI 思维链纠偏/反思分级/元评估闭环/规则退役/循环模式不问继续/bug 排查三维根因评估/节点观测性/测试覆盖盲区/AI 主导开发治理必要性元层认知/M2 激活率复盘触发闭环/文档归属判定/调度协调 L0/对话起始入口判定) | N95, N105, N108, N117, N121, N122, N123, N124, N125, N134, N140, N149, N164, N166, N171, N172, N173, N174, N175, N176, N177, N178, N179, N180, N181, N182, N183, N184, N185, N189, N198, N200, N201, N208, N215 | 28 | N105, N134 (N165/N169/N170 已退役见 §Retired) |
 | `ai-autonomy` | AI 自决 (决策/节奏/入口/推进/超时/架构决策/优先级排序/主动用 subagent/任务归属硬约束/AskUserQuestion 边界) | N109, N111, N161+N163, N172, N193, N206 | 6 | N109, N161+N163 |
 | `honest-status` | 文档诚实标记 (虚报✅/Mock/审计/虚构实现) | N126, N129, N157 | 3 | N126 |
 | `cross-layer-sync` | 跨层同步 (路径漂移/前后端字段/标识符同步/复制重命名/认证 blob/DRF 分页) | N106, N112, N142, N143, N152 | 5 | — |
@@ -129,6 +129,7 @@ next_n_id: 217
 - `N204-task-failure-auto-diagnosis.md` — 任务失败不自动诊断 (pipeline-task-diagnosis 仅在 bug_fix 条件分支被引用 → 需 L0 硬约束强制触发) ⭐ **L0 硬约束** (env-hardrules.md N204 段)
 - `N202-large-file-split-patch-point-contract.md` — 大文件拆分踩坑家族 (s34-s40 共 27 坑: patch 点语义失效 / 装饰器行丢失 / re-export F401 / TS 顶层 import 丢失 / 级联 any 降级) — 拆前必跑 23 项检查清单 ⭐ **N202**
 - `N208-commit-message-no-claim.md` — commit message 不写规则编号 (写 N## 被 M2 当声称核验 diff 证据, 无证据触发 REVIEW_TRIGGERED; 行为/合规类由 BEHAVIORAL_N 豁免) ⭐ **N208**
+- `workflow_2026-08-28_n215-load-orchestrator-at-conversation-start.md` — 对话起始未加载 gaf-orchestrator (自执行入口步骤被跳过 → 判定/收尾纪律连带丢失) ⭐ **N215**
 
 ### ai-autonomy (5 files)
 - `ai-autonomy_2026-06-16-n109-decision-relaxation.md` — AI 决策自决 ⭐ **家族主条目** (合并 N113/N115/N127, N108 保留独立)
