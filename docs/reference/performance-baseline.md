@@ -741,6 +741,7 @@
 | 2026-08-29T01:06:52+08:00 | 15 | 17 | 5.45 | FAILED: doc-code sync, spec-context carrier |
 | 2026-08-29T01:07:10+08:00 | 15 | 17 | 2.47 | FAILED: doc-code sync, spec-context carrier |
 | 2026-08-29T01:08:36+08:00 | 17 | 17 | 2.55 | all pass |
+| 2026-08-29T01:09:50+08:00 | 17 | 17 | 4.69 | all pass |
 
 ## pytest 耗时记录
 

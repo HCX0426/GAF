@@ -1,11 +1,13 @@
 ---
 spec_id: 2026-08-29-service-orchestration-health-aware
-status: active
+status: archived
 created: 2026-08-29
 type: refactor
 scope: scripts/gaf_daemon.py, backend/monitors, backend/protocol
 prev: N/A
 next: N/A
+implemented_in: def7f03 (P1-P5 实现), 0f5f8f2 (spec 计划)
+archived: 2026-08-29
 ---
 
 # Spec: 服务编排健康感知化（方案 A）
@@ -27,7 +29,8 @@ next: N/A
 | P2 | daemon 健康检查循环 + 自动重启 + 状态上报 | ✅ 完成 (杀 backend 后 40s 内自动拉起, 快照自动写) |
 | P3 | 前端状态灯接入服务健康矩阵（monitors/status 扩展） | ✅ 完成 (5 服务全绿对勾, API+浏览器双验证) |
 | P4 | agent 生命周期单一 Owner 收敛（daemon 唯一管理） | ✅ 完成 (active_channel CAS + 写入仲裁 + 僵尸自愈, 40s 无 offline 跳变) |
-| P5 | 全量回归 + 文档同步 + 沉淀 | ⏳ |
+| P5 | 全量回归 + 文档同步 + 沉淀 | ✅ 完成 (protocol 127 + agents/monitors 50 + accounts/gaf_core/tasks 435; 前端 tsc+vitest 366; backend-conventions + spec-context + N216 更新) |
+| 归档 | spec 归档 + hash 回填 | ⏳ |
 
 ## 3. N151 架构盘点
 
