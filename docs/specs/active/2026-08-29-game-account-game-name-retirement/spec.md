@@ -40,9 +40,9 @@ TD-259 #23 引入 `GameAccount.game_profile` FK（注释约定"替代 game_name 
 | P2 | 数据回填迁移 + game_profile NOT NULL + unique_together 迁移 | ~40 行 + 迁移 | ✅ 已提交 a116d8e |
 | P3 | 断开字符串写入、drop game_name 字段、前端表单/展示/契约同步 | ~200 行 | ✅ 已提交 187296a + 收尾 77c2e18/5f9d3bc |
 | P4 | 验收：accounts 全量测试 + 账户 e2e + 全量回归 + game_name 引用残留清零 | — | ⏳ |
-| P5 | **扩展(用户 2026-08-29 追加)**: GameStateRule.game_name → game_profile FK | ~120 行 + 迁移 | 🔧 后端完成, 待 commit (随 P6 同迁移 0010) |
-| P6 | **扩展**: GameVersionCheck.game_name → game_profile FK（去冗余字符串） | ~40 行 + 迁移 | 🔧 后端完成, 待 commit (随 P5 同迁移 0010) |
-| P7 | **扩展**: MarketplaceItem.game_name → game_profile FK + 前端去硬编码游戏选项 | ~150 行 + 前端 | 🔧 后端完成 (迁移 0057), **前端 Marketplace.tsx 改造未开始** |
+| P5 | **扩展(用户 2026-08-29 追加)**: GameStateRule.game_name → game_profile FK | ~120 行 + 迁移 | ✅ 已提交 b67b34c |
+| P6 | **扩展**: GameVersionCheck.game_name → game_profile FK（去冗余字符串） | ~40 行 + 迁移 | ✅ 已提交 b67b34c |
+| P7 | **扩展**: MarketplaceItem.game_name → game_profile FK + 前端去硬编码游戏选项 | ~150 行 + 前端 | 后端 ✅ 已提交 b67b34c；**前端 Marketplace.tsx 改造 ⏳ 未开始** |
 | P8 | 验收(扩展)：gamestate/tasks 全量测试 + game_name 引用清零 + 归档 | — | ⏳ |
 
 > 每阶段完成 → 更新本表状态 + completed-features；commit 粒度 = 每阶段 1 commit（§4.10 阶段拆分，单阶段 diff < 1500 行）。
