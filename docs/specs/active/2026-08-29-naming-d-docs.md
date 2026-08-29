@@ -45,6 +45,7 @@ D 批为**纯文档**修正（零代码/零 API/零迁移），收口评估稿 �
 | P2 | 子文档矛盾修正（D20–D24/X1） | ⏳ |
 | P3 | 概念速查 + 三健康面（OQ-7/OQ-8） | ⏳ |
 | P4 | 三层节点 + D23② 说明 | ⏳ |
+| P5 | Worker / Agent(AI) 术语区分章（OQ-10） | ⏳ |
 
 #### Task P1.1: overview/features
 
@@ -65,6 +66,11 @@ D 批为**纯文档**修正（零代码/零 API/零迁移），收口评估稿 �
 
 - 文档显式区分：backend `Pipeline`(JSON) / backend `TaskChainNode`(持久化链节点) / agent `PipelineNode`(运行时节点)；可选 `PipelineNode`→`AgentNode` 改名**标 NOT DONE**（不同层非同物，见 §1）。
 - `get_unified_logical_rect`(坐标转换方法) vs `step=publish_match_pos`(trace step 值) 异物说明（D23②）。
+
+#### Task P5.1: Worker / Agent(AI) 术语区分（OQ-10）
+
+- overview/features 显式区分三概念：**Device**(被控 PC/模拟器) / **Worker**(自动化执行节点/进程，原 "Agent") / **Agent**(未来 AI 智能体，`backend/gaf_ai` LangGraph agent，会话 `AgentSession` 保留)。
+- 全文将"执行节点/进程"语义的 "Agent" 统一改 "Worker"（具体符号改名见批 G）；"AI 智能体"语义的 "Agent" 保留。
 
 ## 5. 测试与验收
 

@@ -22,13 +22,13 @@ source: docs/analysis/concept-naming-normalization.md（三 agent 目录审计 2
 | F-1 | `DeviceInfo` 三义 | `device_bridge/platforms/base.py:32` DTO / `agent/src/devices/discovery/base.py:13` DTO / `backend/agents/view_sets/app_info.py:406` `DeviceInfoView` 端点 | 端点 `DeviceInfoView`→`DeviceDetailView`；两 DTO 文档区分（或后端 DTO→`BridgeDeviceInfo`） | med |
 | F-2 | 双发现架构 | backend `device_bridge.discovery`(`scan_all_emulators`/`enum_windows`)+`EmulatorInfo`/`WindowInfo` vs `PlatformDeviceDiscoverer`+`DeviceInfo`；agent `DeviceCenter`/`EmulatorDiscovery`/`WindowDiscovery` | 使 `device_bridge.discovery.*` 为单一扫描源；文档显式区分 bridge(后端)/center(agent 进程) 两层发现 | med |
 | F-3 | `GAME_PROCESS_NAMES` 重复 | `device_bridge/discovery/windows.py:17` 与 `platforms/windows/discovery.py:14` 两份 | 单一来源（去重） | low |
-| F-4 | device_bridge docstring 错称 | `device_bridge/__init__.py:2` "GAF Agent 模块" | 改为设备抽象/桥接层说明；文档注明 "bridge" 仅为包名（无 `Bridge` 类） | low(文档) |
-| F-5 | `consumers.py` 名不副实 + AgentConsumer 位置 | `backend/agents/consumers.py` 仅 `AdbLogStreamConsumer`（无 AgentConsumer）；`AgentConsumer` 实际在 `backend/protocol/consumers.py:123` | `agents/consumers.py`→`adb_log_consumers.py`（需路由更新）；E-6 文本校正：AgentConsumer 属 protocol app | med |
+| F-4 | device_bridge docstring 错称 | `device_bridge/__init__.py:2` "GAF Agent 模块" | 改为设备抽象/桥接层说明（"Worker" 为执行节点，非 device_bridge 概念）；文档注明 "bridge" 仅为包名（无 `Bridge` 类） | low(文档) |
+| F-5 | `consumers.py` 名不副实 + WorkerConsumer 位置 | `backend/agents/consumers.py` 仅 `AdbLogStreamConsumer`（无 WorkerConsumer）；`WorkerConsumer`(原 AgentConsumer) 实际在 `backend/protocol/consumers.py:123` | `agents/consumers.py`→`worker_consumers.py`（需路由更新，随 app 改名 G）；E-6 文本校正：WorkerConsumer 属 protocol app | med |
 | F-6 | `agent_service.py` vs `DeviceService` 类不一致 | `agent_service.py`(函数模块) vs `services/device_service.py`(类) + `AgentViewSet` 重叠 token 生命周期 | 统一 service 形态（文档/可选合并） | low |
 | F-7 | `_check_single_device` 跨层耦合 | `agent_runtime.py:458` 调 `DeviceViewSet()._check_single_device()` 私有方法 | 迁入 `DeviceService`（去 ViewSet 私有依赖） | low-med |
 | F-8 | `EmulatorLifecycleView` vs `emulator_lifecycle.py` | 端点 vs 模块同名 | 文档注明关系 | low |
 | F-9 | `DeviceStats*` 三义 | `DeviceStatsView`/`DeviceStatsSchema`/`Device.device_stats` | 文档区分 | low |
-| F-10 | 双设备发现权威（设计） | backend `DeviceScanView` 与 agent `DeviceCenter.auto_discover()` 均写 `agents.Device` | **设计决策**（非重命名）：定 source-of-truth/触发时机，单独立项（OQ-9） | high(设计) |
+| F-10 | 双设备发现权威（设计） | backend `DeviceScanView` 与 agent `DeviceCenter.auto_discover()` 均写 `agents.Device`(→`workers.Device`) | **设计决策**（非重命名）：定 source-of-truth/触发时机，单独立项（OQ-9） | high(设计) |
 
 ## 3. 目标 (Goals)
 
@@ -45,7 +45,7 @@ source: docs/analysis/concept-naming-normalization.md（三 agent 目录审计 2
 | P1 | F-1 `DeviceInfoView`→`DeviceDetailView` + DTO 文档 | ⏳ |
 | P2 | F-2 单一发现源 + 文档区分两层 | ⏳ |
 | P3 | F-3 `GAME_PROCESS_NAMES` 去重 / F-4 docstring | ⏳ |
-| P4 | F-5 `consumers.py`→`adb_log_consumers.py` + 路由 + E-6 校正 | ⏳ |
+| P4 | F-5 `consumers.py`→`worker_consumers.py` + 路由(app改名随 G) + E-6 校正(WorkerConsumer 属 protocol) | ⏳ |
 | P5 | F-6/F-7/F-8/F-9 一致性清理 + 文档 | ⏳ |
 
 （各任务代码映射见审计 file:line；F-10 单独立项。）
@@ -53,7 +53,7 @@ source: docs/analysis/concept-naming-normalization.md（三 agent 目录审计 2
 ## 5. 测试与验收
 
 - `pytest backend/agents backend/device_bridge agent/tests` 通过。
-- grep `DeviceInfoView`(→`DeviceDetailView`)/`GAME_PROCESS_NAMES` 单源/`AgentConsumer` 位置正确。
+- grep `DeviceInfoView`(→`DeviceDetailView`)/`GAME_PROCESS_NAMES` 单源/`WorkerConsumer`(原 AgentConsumer) 位置正确。
 - 评估稿标记 F 批完成。
 
 ## 6. 回滚
