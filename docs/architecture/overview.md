@@ -82,7 +82,7 @@ GAF/
 │       ├── recognition/        # OCR 4 引擎 + OpenCC + 缓存
 │       ├── core/               # retry/timeout/worker_pool/script_dsl/state_machine 等
 │       ├── client/             # WebSocket 连接 + 设备同步
-│       ├── ai/                 # Agent 端 LLM 客户端 (Phase 2: 统一客户端)
+│   ├── ai/                 # Worker 端 LLM 客户端 (Phase 2: 统一客户端)
 │       └── monitor/            # CPU/内存/截图资源监控
 ├── frontend/                   # React 前端 (31+ 页面, 9 大模块)
 │   └── src/
@@ -477,6 +477,8 @@ Agent 启动
 
 ### 9.3 AI 模块 (2 个)
 
+> **概念边界（2026-08-29 锁定）**：本节的 "Agent" = **AI 智能体**（`backend/gaf_ai` LangGraph agent，会话模型 `AgentSession`），与 §十 的 **Worker（自动化执行节点/进程，原 "Agent"）** 是不同概念。未来 AI 相关开发统一归入本模块（`gaf_ai` + `skills`）。LLM 日志分析能力（`LLMAnalysisResult`，前端 `/ai/log-analysis`）后端模型历史原因落在 `debug` app（见 §9.4），概念上归属本 AI 模块。
+
 | App | 职责 | 关键模型 |
 |-----|------|---------|
 | [gaf_ai](file:///d:/code/GAF/backend/gaf_ai) | LLM Router + RAG + Agent + 异常检测 + 智能问答 + 成本控制 (qa 合并) | LLMConfig, ModelEvaluation, CustomSkill, AgentSession, QASession, QAMessage, LLMUsageLog |
@@ -486,7 +488,7 @@ Agent 启动
 - `graph.py` — LangGraph 状态图定义
 - `tools.py` — Agent 工具集 (设备控制/任务查询/Pipeline 生成)
 - `llm_adapter.py` — LLM 适配器 (OpenAI/DeepSeek/Ollama)
-- `models.py` — Agent 会话/消息模型
+- `models.py` — Agent 会话/消息模型（`AgentSession` 为 AI 智能体会话，**非**执行节点 WS 会话）
 - `views.py` — Agent API 端点
 
 ### 9.4 运维监控 (1 个)
@@ -499,7 +501,7 @@ Agent 启动
 
 | App | 职责 | 关键模型 |
 |-----|------|---------|
-| [protocol](file:///d:/code/GAF/backend/protocol) | WebSocket 消息帧协议/心跳/配额 (5 active WS routes, 见 data-flow.md §0) | AgentSession |
+| [protocol](file:///d:/code/GAF/backend/protocol) | WebSocket 消息帧协议/心跳/配额 (5 active WS routes, 见 data-flow.md §0) | WorkerSession (执行节点 WS 会话；AI 智能体会话 `AgentSession` 见 §9.3 `gaf_ai`) |
 | [device_bridge](file:///d:/code/GAF/backend/device_bridge) | 🔧 纯 Python 包 (非 Django app, 不在 INSTALLED_APPS, 无 apps.py/models.py); 跨平台设备桥接 (Win/macOS/Linux 抽象层, P-028 ✅); 平台代码在 `backend/device_bridge/platforms/{windows,macos,linux}/` | (无 Model, 纯接口层) |
 | [gaf_core](file:///d:/code/GAF/backend/gaf_core) | 全局 mixin/exception/error_code/middleware + 链路追踪 (tracing) + 国际化 (i18n) + 聚合搜索 (search); **AuditMixin (C-045, 114 接入点, 19 个 ViewSet 已接入)**; LogEntry 统一日志中心 | LogEntry |
 | [gamestate](file:///d:/code/GAF/backend/gamestate) | OCR 区域识别/阈值触发/GameProfile + bind/unbind 端点 | GameState, GameVersionCheck, GameProfile (ScreenState/ScreenStateTransition 已于 2026-07-13 移除) |
@@ -514,9 +516,11 @@ Agent 启动
 
 ---
 
-## 十、Agent 架构
+## 十、Worker 架构（自动化执行节点）
 
-Agent 是独立 Python 进程，通过 WebSocket 连接后端，提供跨平台设备控制能力。
+> **概念边界**：本节 "Worker" = 自动化执行节点/进程（原称 "Agent"），负责连接后端、持有令牌、在 Device 上执行 Pipeline。**与 §9.3 的 Agent（LangGraph AI 智能体）是不同概念**——Agent 指 AI 推理实体，Worker 指执行节点。术语拆分详见 `docs/analysis/concept-naming-normalization.md` OQ-10。
+
+Worker 是独立 Python 进程，通过 WebSocket 连接后端，提供跨平台设备控制能力。
 
 ### 10.1 模块结构
 
@@ -574,7 +578,7 @@ agent/src/
 ├── client/                # WebSocket 客户端
 │   ├── connection.py      # 连接管理 + 设备同步
 │   └── handler.py         # 消息处理
-├── ai/                    # Agent 端 LLM 客户端
+├── ai/                    # Worker 端 LLM 客户端
 │   └── llm_client.py
 ├── auth/                  # Agent 端认证
 │   └── token_store.py
@@ -590,18 +594,18 @@ agent/src/
     └── debug_image_saver.py
 ```
 
-### 10.2 Agent 与 Backend 通信协议
+### 10.2 Worker 与 Backend 通信协议
 
 ```
-Agent 启动
+Worker 启动
   ├─ 1. 本地自动发现设备 (DeviceCenter.auto_discover)
   │      ├─ ADB 模拟器 (EmulatorDiscovery)
   │      └─ Windows 窗口 (WindowDiscovery)
   ├─ 2. WebSocket 连接 Backend (ws://backend:8000/ws/protocol/agents/)
   ├─ 3. 发送 device.sync 消息上报设备列表
-  ├─ 4. Backend 创建/更新 Device 记录 + 关联 Agent
+  ├─ 4. Backend 创建/更新 Device 记录 + 关联 Worker
   ├─ 5. Backend 下发任务 (Pipeline JSON)
-  ├─ 6. Agent 执行 + 实时上报进度 (WebSocket)
+  ├─ 6. Worker 执行 + 实时上报进度 (WebSocket)
   └─ 7. 执行完成/失败 → Backend 记录 TaskExecution
 ```
 
@@ -610,16 +614,16 @@ Agent 启动
 - 心跳: agent 端 `heartbeat_interval=10s` (TD-340, 原 30s 临界 backend `HEARTBEAT_OFFLINE_SECONDS=30s` 导致 status 抖动), 3x 安全余量
 - 配额: `protocol/quota.py` 限流
 
-### 10.3 Agent 进程管理 (TD-339, 2026-07-23)
+### 10.3 Worker 进程管理 (TD-339, 2026-07-23)
 
-Agent 进程管理分两层独立机制, 不要混淆:
+Worker 进程管理分两层独立机制, 不要混淆:
 
 | 层 | 代码位置 | 保护范围 | 机制 |
 |----|---------|---------|------|
-| **backend 端自启 agent** | `backend/agents/agent_runtime.py` (TD-217 闭环) | backend 拉起 agent 子进程时 | `manager.lock` + `agent.pid` + `_kill_stale_agent_processes()` + DB 心跳双检测 + 指数退避重启 |
-| **agent 自身独立进程** | `agent/src/__main__.py` `acquire_singleton_lock()` (TD-339) | 手动 `python -m src` 或外部脚本调用时 | `%TEMP%\gaf_agent_lock\standalone.pid` PID 文件锁, 检测到存活 PID 则 exit(1), `--skip-singleton-check` 可绕过 (仅限调试) |
+| **backend 端自启 worker** | `backend/workers/worker_runtime.py` (TD-217 闭环, 原 `backend/agents/agent_runtime.py`) | backend 拉起 worker 子进程时 | `manager.lock` + `worker.pid` + `_kill_stale_worker_processes()` + DB 心跳双检测 + 指数退避重启 |
+| **worker 自身独立进程** | `worker/src/__main__.py` `acquire_singleton_lock()` (TD-339, 原 `agent/src/__main__.py`) | 手动 `python -m src` 或外部脚本调用时 | `%TEMP%\gaf_worker_lock\standalone.pid` PID 文件锁, 检测到存活 PID 则 exit(1), `--skip-singleton-check` 可绕过 (仅限调试) |
 
-**关键边界**: backend 端 `agent_runtime.py` 的 `_kill_stale_agent_processes()` 只在 backend 自启 agent 时生效; 用户手动 `python -m src` 启动完全绕过 backend 管理, 由 agent 自身的 `acquire_singleton_lock()` 兜底.
+**关键边界**: backend 端 `worker_runtime.py` 的 `_kill_stale_worker_processes()` 只在 backend 自启 worker 时生效; 用户手动 `python -m src` 启动完全绕过 backend 管理, 由 worker 自身的 `acquire_singleton_lock()` 兜底.
 
 ---
 

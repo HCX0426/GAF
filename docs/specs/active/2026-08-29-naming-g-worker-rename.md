@@ -55,6 +55,7 @@ source: docs/analysis/concept-naming-normalization.md §1(Agent→Worker 多行)
 | P5 | 其余后端符号 G-8/G-9/G-12 + `tasks` 选 Worker + `agent_runtime`→`worker_runtime` | ⏳ |
 | P6 | 前端类型重生成 + 全仓 import/文案改写（约全仓 Agent 执行节点语义处） | ⏳ |
 | P7 | 后端+前端+agent 测试全绿；评估稿标记 G 完成 | ⏳ |
+| P8 | 架构文档同步：`docs/architecture/overview.md` + `features-overview.md` 执行节点语义 `Agent`→`Worker`（§9.3 概念边界注/§9.5 protocol 模型改 `WorkerSession`/§十 已改名「Worker 架构」已在先行提交；其余 `Agent`(执行节点) 引用随代码重命名同步扫） | ⏳ |
 
 #### Task P1.1: app 重命名（最重）
 
