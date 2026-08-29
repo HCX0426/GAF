@@ -18,7 +18,7 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from services import health  # noqa: E402
+from services import health, log_scan  # noqa: E402
 
 
 @pytest.fixture
@@ -43,7 +43,7 @@ class TestIsErrorLine:
         'node:internal/process: Error: spawn failed',
     ])
     def test_matches(self, line):
-        assert health._is_error_line(line) is True
+        assert log_scan.is_error_line(line) is True
 
     @pytest.mark.parametrize('line', [
         'INFO starting',
@@ -56,7 +56,7 @@ class TestIsErrorLine:
         'ReferenceError: getRememberMe is not defined',
     ])
     def test_non_matches(self, line):
-        assert health._is_error_line(line) is False
+        assert log_scan.is_error_line(line) is False
 
     @pytest.mark.parametrize('line', [
         # 连接级噪音不算服务报错 (客户端断连/取消)
@@ -66,7 +66,7 @@ class TestIsErrorLine:
         'WinError 10053 软件导致了连接中止',
     ])
     def test_noise_excluded(self, line):
-        assert health._is_error_line(line) is False
+        assert log_scan.is_error_line(line) is False
 
 
 class TestParseLineTs:
@@ -78,7 +78,7 @@ class TestParseLineTs:
         ('Traceback (most recent call last):', None),
     ])
     def test_parse(self, line, expect):
-        ts = health._parse_line_ts(line)
+        ts = log_scan.parse_line_ts(line)
         if expect is None:
             if line.startswith('10:25:16'):
                 assert ts is not None  # 当日时间应能解析

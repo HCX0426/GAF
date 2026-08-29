@@ -20,7 +20,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import subprocess
 import sys
 import time
@@ -28,6 +27,14 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
+
+# 报错行分类单一权威源 (与 backend/gaf_core/log_files.py 共用, 禁本地复制):
+# 直跑 `python scripts/services/health.py` 时 sys.path[0]=scripts/services,
+# 需先把 scripts/ 加入路径才能解析顶层 services 包.
+_SCRIPTS_DIR = Path(__file__).resolve().parents[1]
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+from services.log_scan import is_error_line, parse_line_ts
 
 # ---- 路径常量 (与 gaf_daemon.py 保持一致) ------------------------------------
 GAF_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -41,47 +48,12 @@ HEALTH_STATUS_FILE = DEBUG_DIR / "health-status.json"
 # spec 2026-08-29-services-management-monitor P1/P2:
 # 服务终端日志目录 (与 gaf_daemon.py 一致) + 报错扫描
 SERVICE_LOG_DIR = DEBUG_DIR / "system" / "services"
-_ERROR_PATTERNS = (
-    re.compile(r"\b(ERROR|CRITICAL|FATAL)\b"),
-    re.compile(r"Traceback \(most recent call last\)"),
-    re.compile(r"(?:Exception|Error)[:(]"),
-)
-# 连接级噪音: 客户端断连/取消 (ECONNRESET/ECONNABORTED/EPIPE/WinError 10053/10054)
-# 是正常网络现象, 不是服务故障, 不计入"服务报错" (展示层 filter=error 仍可见).
-# 前端自动上报噪声: 前端错误边界 ([error_boundary] 视图) 把浏览器运行时错误
-# (开发期 HMR 窗口瞬时未定义引用等) 落到后端日志, 非 backend 服务故障,
-# 不计入服务报错 — 前端运行时问题已在 console 捕获/前端错误上报链路独立追踪.
-_NOISE_PATTERNS = (
-    re.compile(r"ECONNRESET|ECONNABORTED|EPIPEBROKEN|BrokenPipe"),
-    re.compile(r"WinError\s+1005[34]"),
-    re.compile(r"\[error_boundary\]"),
-    re.compile(r"ReferenceError:.*is not defined"),
-)
 _SCAN_MAX_LINES = 5000          # 单个日志文件最多扫描的行数
 _SCAN_CAP_LINES = 2000          # 报错统计最多处理的行数 (防大文件拖慢看门狗)
 _LATEST_MAX_CHARS = 300         # latest 报错文本截断长度
 # 报错计数时间窗口 (秒): 只统计"当前状态"下的近期报错, 历史残留 (测试痕迹/
 # 重启抖动/已修复事件) 自然滚出, 不污染服务管理页计数. 可被 GAF_LOG_ERROR_WINDOW 覆盖.
 _ERROR_WINDOW_SECONDS = int(os.getenv("GAF_LOG_ERROR_WINDOW", "3600"))
-
-
-# 常见日志行首时间戳格式: "2026-08-29 10:25:16[...]" / "[2026-08-29 01:02:33]" /
-# "10:25:16" (无日期, 视为当天)
-_LINE_TS_RE = re.compile(
-    r"^\[?\s*(?:(?P<date>\d{4}-\d{2}-\d{2})\s+)?(?P<time>\d{2}:\d{2}:\d{2})"
-)
-
-
-def _parse_line_ts(line: str) -> float | None:
-    """解析日志行首时间戳为 epoch 秒; 解析失败返回 None. 仅支持完整/当日时间."""
-    m = _LINE_TS_RE.match(line)
-    if not m:
-        return None
-    date_part = m.group("date") or datetime.now().strftime("%Y-%m-%d")
-    try:
-        return datetime.strptime(f"{date_part} {m.group('time')}", "%Y-%m-%d %H:%M:%S").timestamp()
-    except ValueError:
-        return None
 
 PYTHON_EXE = Path("D:/code/environment/conda/envs/gaf/python.exe")
 REDIS_CLI_EXE = Path("D:/code/environment/redis/redis-cli.exe")
@@ -253,15 +225,7 @@ def check_frontend(ports: dict) -> Health:
 
 
 # ---- 报错检测 (spec 2026-08-29-services-management-monitor P2) -------------------
-
-def _is_error_line(line: str) -> bool:
-    """判断一行是否为报错行 (logging 级别 / Traceback / Python 异常冒号行).
-
-    排除连接级噪音 (客户端断连/取消 — 正常网络现象, 非服务故障).
-    """
-    if any(p.search(line) for p in _NOISE_PATTERNS):
-        return False
-    return any(p.search(line) for p in _ERROR_PATTERNS)
+# 行分类 (is_error_line / parse_line_ts) 见 services.log_scan 单一权威源.
 
 
 def _latest_day_dir(app_rel: str) -> Path | None:
@@ -339,10 +303,10 @@ def scan_log_errors(name: str, window_seconds: int | None = None) -> dict:
         last_ts: float | None = None  # 文件流内最近时间戳, 无时间戳行沿用 (Traceback 续行归入事件时间)
         for line in capped:
             stripped = line.rstrip("\r\n")
-            ts = _parse_line_ts(stripped)
+            ts = parse_line_ts(stripped)
             if ts is not None:
                 last_ts = ts
-            if not _is_error_line(stripped):
+            if not is_error_line(stripped):
                 continue
             line_ts = ts if ts is not None else last_ts
             # window=0 表示禁用时间窗口 (全量历史); 默认近 1 小时

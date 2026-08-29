@@ -15,7 +15,7 @@ AI 可调试性: 前端日志中心/服务管理/AI 通过一个检索层访问*
 from __future__ import annotations
 
 import logging
-import re
+import sys as _sys
 from datetime import datetime
 from pathlib import Path
 
@@ -25,12 +25,13 @@ logger = logging.getLogger(__name__)
 _DEBUG_ROOT = Path(__file__).resolve().parents[2] / "debug"
 _SERVICE_LOG_DIR = _DEBUG_ROOT / "system" / "services"
 
-# 报错行匹配 (与 scripts/services/health.py _ERROR_PATTERNS 保持语义一致)
-ERROR_PATTERNS = (
-    re.compile(r"\b(ERROR|CRITICAL|FATAL)\b"),
-    re.compile(r"Traceback \(most recent call last\)"),
-    re.compile(r"(?:Exception|Error)[:(]"),
-)
+# 报错行分类单一权威源: scripts/services/log_scan.py (与 health.py 共用, 禁本地复制).
+# 背景: 此前本文件独立维护 ERROR_PATTERNS, 靠注释"与 health.py 保持语义一致"防漂移,
+# 2026-08-29 曾因此把前端 error_boundary 上报行误计为服务报错 — 已归一化到 log_scan.
+_SCRIPTS_DIR = Path(__file__).resolve().parents[2] / "scripts"
+if str(_SCRIPTS_DIR) not in _sys.path:
+    _sys.path.insert(0, str(_SCRIPTS_DIR))
+from services.log_scan import ERROR_PATTERNS, is_error_line  # noqa: E402,F401
 
 SERVICE_ORDER = ["redis", "backend", "agent", "frontend", "daemon"]
 
@@ -115,7 +116,7 @@ def collect_error_lines(files: list[Path], max_lines: int) -> list[str]:
         try:
             with open(path, encoding="utf-8", errors="replace") as fh:
                 for ln in fh.readlines()[-(max_lines * 2):]:
-                    if any(p.search(ln) for p in ERROR_PATTERNS):
+                    if is_error_line(ln):
                         error_lines.append(ln.rstrip("\r\n"))
         except OSError as exc:
             logger.debug("读取日志文件失败 %s: %s", path, exc)
