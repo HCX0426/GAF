@@ -24,10 +24,12 @@ from services import health  # noqa: E402
 @pytest.fixture
 def isolated_debug(tmp_path):
     """把 health.DEBUG_DIR / SERVICE_LOG_DIR / HEALTH_STATUS_FILE 指向临时目录."""
-    with patch.object(health, 'DEBUG_DIR', tmp_path):
-        with patch.object(health, 'SERVICE_LOG_DIR', tmp_path / 'system' / 'services'):
-            with patch.object(health, 'HEALTH_STATUS_FILE', tmp_path / 'health-status.json'):
-                yield tmp_path
+    with (
+        patch.object(health, 'DEBUG_DIR', tmp_path),
+        patch.object(health, 'SERVICE_LOG_DIR', tmp_path / 'system' / 'services'),
+        patch.object(health, 'HEALTH_STATUS_FILE', tmp_path / 'health-status.json'),
+    ):
+        yield tmp_path
 
 
 class TestIsErrorLine:
@@ -50,6 +52,8 @@ class TestIsErrorLine:
         'no error found',
         '2026-08-29 10:00:00 [INFO] task completed',
         'WARNING: retry in 1s',
+        'ERROR 2026-08-29 14:20:21,521 views [error_boundary] ReferenceError: CalendarOutlined is not defined | url=http://127.0.0.1:5173/dashboard',
+        'ReferenceError: getRememberMe is not defined',
     ])
     def test_non_matches(self, line):
         assert health._is_error_line(line) is False

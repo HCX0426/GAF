@@ -48,9 +48,14 @@ _ERROR_PATTERNS = (
 )
 # 连接级噪音: 客户端断连/取消 (ECONNRESET/ECONNABORTED/EPIPE/WinError 10053/10054)
 # 是正常网络现象, 不是服务故障, 不计入"服务报错" (展示层 filter=error 仍可见).
+# 前端自动上报噪声: 前端错误边界 ([error_boundary] 视图) 把浏览器运行时错误
+# (开发期 HMR 窗口瞬时未定义引用等) 落到后端日志, 非 backend 服务故障,
+# 不计入服务报错 — 前端运行时问题已在 console 捕获/前端错误上报链路独立追踪.
 _NOISE_PATTERNS = (
     re.compile(r"ECONNRESET|ECONNABORTED|EPIPEBROKEN|BrokenPipe"),
     re.compile(r"WinError\s+1005[34]"),
+    re.compile(r"\[error_boundary\]"),
+    re.compile(r"ReferenceError:.*is not defined"),
 )
 _SCAN_MAX_LINES = 5000          # 单个日志文件最多扫描的行数
 _SCAN_CAP_LINES = 2000          # 报错统计最多处理的行数 (防大文件拖慢看门狗)

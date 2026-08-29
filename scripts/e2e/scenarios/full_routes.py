@@ -98,8 +98,9 @@ ROUTES: list[dict] = [
     {"path": "/system/backup", "ids": "J-07", "group": "系统"},
     {"path": "/system/feature-flags", "ids": "J-08", "group": "系统"},
     {"path": "/system/audit-log", "ids": "J-09", "group": "系统"},
-    {"path": "/system/notifications", "ids": "J-10", "group": "系统"},
-    {"path": "/system/plugins", "ids": "J-11", "group": "系统"},
+    {"path": "/system/services", "ids": "J-10", "group": "系统"},
+    {"path": "/system/notifications", "ids": "J-11", "group": "系统"},
+    {"path": "/system/plugins", "ids": "J-12", "group": "系统"},
 ]
 
 # 动态路由：{id} 占位符 + 真实 id 探测端点（相对 /api/v2）

@@ -126,6 +126,7 @@ last_updated: 2026-08-28
 | 41 | /system/audit-log | 审计日志 | 操作类型筛选/搜索资源/刷新/分页(201 条 11 页)/行查看详情抽屉(元数据 JSON) | 同* | 0 | ✅ | 数据完整含 2FA setup_initiated 审计留痕 |
 | 42 | /system/notifications | 通知中心 | 列表刷新/全部已读/批量删除(空禁用)/类型筛选/偏好 tab(Webhook 渠道)/Webhook 配置 tab | 同* | 0 | ✅ | 无通知空态 |
 | 43 | /system/plugins | 插件管理 | 上传插件/刷新 | 同* | 0 | ✅ | 空态; 未真实上传 |
+| 44 | /system/services | 服务管理 (TD-419, 2026-08-29 新增) | 5 服务卡片渲染/守护进程概览/报错标签/查看日志 Drawer/仅报错过滤/刷新 | 同* | 0 | ✅ | 🔴到✅: backend 卡片一度误报"2 条报错"(latest=`CalendarOutlined is not defined`)——根因=前端 error_boundary 自动上报行混入后端终端捕获被计入服务报错; 已修 health.py _NOISE_PATTERNS 排除 [error_boundary]/ReferenceError 未定义行, 快照 count=0; e2e: frontend/e2e/system/services.spec.ts 2 例(mock) + full_routes J-10 |
 
 > *全会话 1 类实质异常(基础设施健康崩溃 + 自动上报 frontend-errors) + antd List 弃用
 
@@ -192,5 +193,6 @@ last_updated: 2026-08-28
 | R4 | 备份 | ✅ | 真实创建全量备份成功 + zip 下载 | J-07 | 已关闭 |
 | AUT | ADB 日志 WS | 🔴 高 | full_routes 首跑：连 /ws/devices/{id}/adb-logs/ 握手失败「Sent non-empty 'Sec-WebSocket-Protocol' header but responded empty」——设备无 adb_serial / 加载失败分支 `accept()` 未 echo subprotocol | agents/consumers.py AdbLogStreamConsumer | ✅ 已修(2026-08-28): 三处 accept 统一 echo chosen subprotocol; 复测 46 PASS |
 | AUT | 执行回放 | 🔴 高 | full_routes 首跑：/ops/executions/{id}/replay 调 `GET /tasks/task-executions/{id}/replay/` 404——TaskExecutionViewSet 无 replay action，前端回放入口指向不存在的端点（页面空态兜底不崩溃） | backend/tasks/execution_views.py + frontend/executions.ts | ✅ 已修(2026-08-28): ViewSet 添加 replay action——steps 时间线(序/名/状态/耗时/帧窗) + screenshot_path 文件读 base64 帧；复测 47/47 PASS |
+| 2026-08-29 | 服务管理 | 🟠 中 | 服务页 backend 卡片误报"2 条报错"(latest=`ReferenceError: CalendarOutlined is not defined`)——前端错误边界自动上报行([error_boundary] 视图落后端日志)被服务健康计数计入; 来源为开发期 HMR 窗口瞬时前端报错(含历史 getRememberMe 同型行), 非 backend 服务故障 | scripts/services/health.py _NOISE_PATTERNS | ✅ 已修(2026-08-29): _NOISE_PATTERNS 增加 [error_boundary] + `ReferenceError:.*is not defined`; scripts/tests 补 2 断言; daemon 重启后健康快照 backend count=0; 前端错误在 console 捕获/前端错误上报链路独立追踪, 不再污染服务健康 |
 
 > **AUT = `scripts/e2e/scenarios/full_routes.py` 真实无头浏览器全路由 smoke 自动发现**（首跑 2026-08-28: 46 PASS / 1 FAIL / 0 SKIP，46 路由含 6 动态）。月度全量沿用此场景，见 e2e-test-plan.md「持久化自动化执行」。

@@ -30,7 +30,7 @@ last_updated: 2026-08-29
 | `browser_login` | `scripts/e2e/scenarios/browser_login.py` | A-01 | 真实登录跳转 + 0 JS error |
 | `devices_control_mode` | `scripts/e2e/scenarios/devices_control_mode.py` | E-06 | 控制模式选择器渲染/切换（TD-015 回归） |
 | `ai_qa_chat` | `scripts/e2e/scenarios/ai_qa_chat.py` | I-03 | LLM 问答真实链（commit - 回归） |
-| mock spec.ts×3 | `frontend/e2e/auth|devices|tasks/*.spec.ts` | 快速回归（CI 友好，mock 前端） | 不依赖后端，供开发期快速验证 ✅ |
+| mock spec.ts×4 | `frontend/e2e/auth|devices|tasks|system/*.spec.ts` | 快速回归 (CI 友好, mock 前端); system/services 服务管理 TD-419 J-10 | 不依赖后端，供开发期快速验证 ✅ |
 | 环境依赖（已实测 2026-08-28） | 有真实模拟器/设备时手动补测 | E-02(雷电模拟器已扫+注册上线), E-05(模拟器实例+启停按钮已验), K-01~K-03(3 条核心链路已真实执行: exec 90 success / 匹配真实化 / unattended session 13) | 环境齐时均已手动实证；D-09 录制仍需 Agent 端（规格内），其余全自动 |
 | 统计对账抽查（月度手动, N218） | `docs/health/e2e-test-plan.md` B-04/B-05（DB 对照, 浏览器实测） | B-04, B-05 | 统计卡片数字与 DB 对账 + 记住我免登录回归 — 见"月度全量"命令补充步骤 |
 
@@ -194,7 +194,7 @@ conda run -n gaf python scripts/e2e/run_all.py
 | I-07 | AI 配置 | — | /ai/config provider 4+下拉 | 字段全可用 | ✅ CURR |
 | I-08 | AI 用量 | — | /ai/usage 仪表盘 | 只读展示 | ✅ CURR |
 
-## J. 系统 System (9)
+## J. 系统 System (10)
 
 | ID | 测试项 | 前置条件 | 操作步骤 | 期望结果 | 状态 |
 |----|--------|---------|----------|---------|:---:|
@@ -205,9 +205,9 @@ conda run -n gaf python scripts/e2e/run_all.py
 | J-05 | 配置管理 | — | /system/config 5 类动态表单 | schema 生成正常 | ✅ CURR |
 | J-06 | API Key 新建 | — | /system/api-keys 新建 modal | 权限/IP/过期/启停 全可点 | ✅ CURR |
 | J-07 | 备份 | 管理员 | /system/backup 全量备份+恢复 | ✅ 真实备份成功+zip 下载; 定时备份入口已加(scheduled_backup 每日 02:30) | ✅ CURR-R4 |
-| D-09 | 录制管理 | 有录制 | 开 /tasks/recordings | ✅ 空态; 无前端录制入口(需 Agent 端)前置记录 | ✅ CURR-R4 |
 | J-08 | 功能开关 | — | /system/feature-flags 新建(灰度 100→50) | 3 条数据+灰度生效 | ✅ CURR |
 | J-09 | 审计日志 | 有记录 | /system/audit-log 筛选+详情抽屉 | 201 条 11 页；详情 JSON | ✅ CURR |
+| J-10 | 服务管理 | 管理员 | /system/services 5 服务卡片渲染 + 查看日志 Drawer + 仅报错过滤 + 健康快照计数 | 卡片含 redis/backend/agent/frontend/daemon; 服务报错计数仅统计真实服务故障(前端 error_boundary 上报行不计入) | ✅ 2026-08-29 (TD-419 mock spec 2 例 + 健康快照噪声修复后实测 count=0) |
 
 ## K. 核心链路 (3)
 
@@ -229,3 +229,4 @@ conda run -n gaf python scripts/e2e/run_all.py
 | 2026-08-28 | K 链路真实补测 | K-01/K-02/K-03 + I-06/E-04 | exec 90 success(模拟器真实执行) + unattended session 13 start/stop(dispatched 1) + 匹配预览 R37-P2 真实化 + I-06 modal 误判澄清, test-plan 全部测试项 ✅ |
 | 2026-08-28 | 全量终验 | run_all.py 11 场景 | **11/11 全绿**(128s): 7 治理场景 + browser_login/devices_control_mode/ai_qa_chat + full_routes 47/47; 修复 bug_fix(N118 出清后断言泛化) + cross_repo('跨工作区' 措辞演进) 两处测试断言 |
 | 2026-08-29 | B-04/B-05 新增 + 实测 | 统计对账 + 记住我回归 | N218 修复前"运行任务 91"为假(全表 count), 修复后 running 0/failed 26/无参 91, 卡片"运行任务 0" ✅; N217 修复后记住我默认勾选 + 清 sessionStorage 刷新自动进 dashboard ✅ |
+| 2026-08-29 | J-10 服务管理 + 健康快照噪声修复 | 服务管理页 + scan_log_errors | 服务页 backend 卡片误报"2 条报错"(前端 error_boundary 上报行计入服务错误) → health.py _NOISE_PATTERNS 排除 [error_boundary]/ReferenceError 未定义 → 快照 count=0 ✅; frontend/e2e/system/services.spec.ts 2 例 + full_routes 新增 /system/services |
