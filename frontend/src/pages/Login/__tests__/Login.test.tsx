@@ -94,7 +94,7 @@ describe('LoginPage', () => {
     });
   });
 
-  it('输入用户名和密码后提交应调用 store.login', async () => {
+  it('输入用户名和密码后提交应调用 store.login (remember_me 默认 true)', async () => {
     const loginSpy = vi.fn().mockResolvedValue(undefined);
     useAuthStore.setState({ login: loginSpy } as never);
 
@@ -118,7 +118,7 @@ describe('LoginPage', () => {
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(loginSpy).toHaveBeenCalledWith('testuser', 'testpass123', false);
+      expect(loginSpy).toHaveBeenCalledWith('testuser', 'testpass123', true);
     });
   });
 });

@@ -49,9 +49,9 @@ export async function login(data: LoginRequest): Promise<LoginResponse> {
   // persistence vs sessionStorage for session-only). Wrong order causes refresh
   // token to land in sessionStorage even when remember_me=true, breaking the
   // "30-day remember me" feature (token lost on browser close).
-  if (data.remember_me) {
-    setRememberMe(true);
-  }
+  // 2026-08-29: unconditionally persist the flag (including explicit uncheck)
+  // so a remembered session is properly revoked when the user unchecks.
+  setRememberMe(data.remember_me ?? false);
   if (res.data.access) {
     setAccessToken(res.data.access);
   }
@@ -149,9 +149,7 @@ export async function login2FA(data: Login2FARequest): Promise<LoginResponse> {
   });
 
   // P0-4: setRememberMe before setRefreshToken (same fix as login() above)
-  if (data.remember_me) {
-    setRememberMe(true);
-  }
+  setRememberMe(data.remember_me ?? false);
   if (res.data.access) {
     setAccessToken(res.data.access);
   }

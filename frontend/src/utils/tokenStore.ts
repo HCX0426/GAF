@@ -128,6 +128,20 @@ export function getRememberMe(): boolean {
   }
 }
 
+/**
+ * Get the "remember me" default — first-time users (no stored flag) default
+ * to checked so the "30 天内免登录" promise actually takes effect without
+ * the user having to discover the checkbox.
+ */
+export function getRememberMeDefault(): boolean {
+  try {
+    const stored = localStorage.getItem(REMEMBER_ME_KEY);
+    return stored === null ? true : stored === '1';
+  } catch {
+    return true;
+  }
+}
+
 const SAVED_USERNAME_KEY = 'gaf_saved_username';
 
 /**

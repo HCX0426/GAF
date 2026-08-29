@@ -11,7 +11,7 @@ import {
   confirmPasswordReset,
   getInitStatus,
 } from '@/api/auth';
-import { getRememberMe, getSavedUsername } from '@/utils/tokenStore';
+import { getRememberMeDefault, getSavedUsername } from '@/utils/tokenStore';
 import { classifyError, ErrorType } from '@/utils/errorHandler';
 import { evaluatePasswordStrength } from '@/utils/passwordStrength';
 import { useTranslation } from '@/i18n';
@@ -109,7 +109,7 @@ export function LoginPage() {
   const initVals = useMemo(
     () => ({
       username: getSavedUsername() || '',
-      remember_me: getRememberMe(),
+      remember_me: getRememberMeDefault(),
     }),
     [],
   );
@@ -307,14 +307,14 @@ export function LoginPage() {
                       onPressEnter={() => form.submit()}
                     />
                   </Form.Item>
-                  <Form.Item name="remember_me" valuePropName="checked">
-                    <div className="gaf-flex-between">
+                  <div className="gaf-flex-between">
+                    <Form.Item name="remember_me" valuePropName="checked" initialValue={getRememberMeDefault()} className="gaf-m-0">
                       <Checkbox>{t('login.remember_me')}</Checkbox>
-                      <Button type="link" onClick={() => setResetModalOpen(true)} className="gaf-p-0 gaf-text-13">
-                        {t('login.forgot_password')}
-                      </Button>
-                    </div>
-                  </Form.Item>
+                    </Form.Item>
+                    <Button type="link" onClick={() => setResetModalOpen(true)} className="gaf-p-0 gaf-text-13">
+                      {t('login.forgot_password')}
+                    </Button>
+                  </div>
                   <Form.Item>
                     <Button type="primary" htmlType="submit" loading={loading} block>
                       {t('login.login_btn')}
