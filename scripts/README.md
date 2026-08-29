@@ -145,6 +145,7 @@ scripts/
 | `governance/check_dimensions/d4_path_drift.py` | d4: frontmatter `related_files` + body paths (`file:///`, backtick paths) existence check. P0 on missing. | (imported by `doc_health_check.py`) | — |
 | `governance/check_dimensions/d5_frontmatter.py` | d5: 3-mode frontmatter compliance (auto / derived-manual / manual) — required-fields check. P1 on missing. | (imported by `doc_health_check.py`) | — |
 | `governance/check_dimensions/d6_staleness.py` | d6: `last_updated` age (60/90/180 days → P2/P1/P0) refined by `git log` commit count on `applies_to` modules. | (imported by `doc_health_check.py`) | — |
+| `hooks/check_section_numbers.py` | 规范文档章节序号一致性检查 (2026-08-29): 扫描 api-contract / backend-conventions / frontend-conventions 的 `## N.` 顶层章节, 重复序号 → 阻断, 跳号 → 警告. 防"新增章节时重号" (本次 TD-420/421 §19 冲突重演防护). | `python scripts/hooks/check_section_numbers.py [--no-fail]` | `gaf_governance_batch` (commit 热路径) |
 | `governance/check_dimensions/d7_index_consistency.py` | d7: 3-way N## diff (failure-modes.md vs lessons/README.md vs yn-matrices/_*.md). A-B→P1 / B-A→P2 / A-C→P2. | (imported by `doc_health_check.py`) | — |
 | `governance/audit_governance.py` | Governance system audit: runs all governance checks + dashboard, aggregates findings. | `python scripts/governance/audit_governance.py` / `--no-fail` | Manual (governance health review) |
 | `governance/bump_cheatsheet_usage.py` | Bumps cheatsheet usage counters in cli-cheatsheet.md (derived-manual maintenance). | `python scripts/governance/bump_cheatsheet_usage.py` | Manual (cheatsheet maintenance) |

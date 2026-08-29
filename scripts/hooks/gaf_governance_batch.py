@@ -116,6 +116,7 @@ CHECKS: list[tuple[str, str, list[str], str]] = [
     ("governance.sync_spec_index", "main", ["--check"], "spec index drift"),
     ("hooks.check_doc_code_sync", "main", [], "doc-code sync"),
     ("hooks.check_doc_path_drift", "main", [], "doc-path-drift"),
+    ("hooks.check_section_numbers", "main", [], "section numbers"),
     ("hooks.check_claimed_rules", "check_unclosed_review", [], "M2 review-closure"),
     ("hooks.check_deps_sync", "main", [], "deps-sync"),
     ("bootstrap.scan_scripts_vs_readme", "main", ["--check"], "scripts-readme"),
