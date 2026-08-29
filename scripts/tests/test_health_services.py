@@ -8,7 +8,7 @@
 """
 
 import sys
-import tempfile
+from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
@@ -55,7 +55,64 @@ class TestIsErrorLine:
         assert health._is_error_line(line) is False
 
 
+class TestParseLineTs:
+    @pytest.mark.parametrize('line, expect', [
+        ('2026-08-29 10:25:16,311 [ERROR] boom', datetime(2026, 8, 29, 10, 25, 16).timestamp()),
+        ('[2026-08-29 01:02:33] [ERROR] boom', datetime(2026, 8, 29, 1, 2, 33).timestamp()),
+        ('10:25:16 [ERROR] boom', None),  # 无日期 → 依赖当天, 断言格式可解析即非 None
+        ('INFO starting', None),
+        ('Traceback (most recent call last):', None),
+    ])
+    def test_parse(self, line, expect):
+        ts = health._parse_line_ts(line)
+        if expect is None:
+            if line.startswith('10:25:16'):
+                assert ts is not None  # 当日时间应能解析
+            else:
+                assert ts is None
+        else:
+            assert ts == expect
+
+
 class TestScanLogErrors:
+    def test_window_filters_old_errors(self, isolated_debug, tmp_path):
+        """时间窗口: 2 小时前的历史报错不计数, 近 1 分钟内的计入."""
+        svc_dir = tmp_path / 'system' / 'services'
+        svc_dir.mkdir(parents=True)
+        now = datetime.now()
+        old = (now - timedelta(hours=2)).strftime('%Y-%m-%d %H:%M:%S')
+        recent = (now - timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S')
+        (svc_dir / 'backend.log').write_text(
+            f'{old} [ERROR] legacy boom\nINFO ok\n{recent} [ERROR] fresh fail\n',
+            encoding='utf-8',
+        )
+        result = health.scan_log_errors('backend')
+        assert result['count'] == 1
+        assert result['latest'] == f'{recent} [ERROR] fresh fail'
+
+    def test_window_disabled(self, isolated_debug, tmp_path):
+        """传 window_seconds=0 表示无窗口 (保留历史全量行为)."""
+        svc_dir = tmp_path / 'system' / 'services'
+        svc_dir.mkdir(parents=True)
+        old = (datetime.now() - timedelta(hours=2)).strftime('%Y-%m-%d %H:%M:%S')
+        (svc_dir / 'backend.log').write_text(f'{old} [ERROR] legacy boom\n', encoding='utf-8')
+        assert health.scan_log_errors('backend', window_seconds=0)['count'] == 1
+
+    def test_window_applies_timestampless_traceback(self, isolated_debug, tmp_path):
+        """无时间戳的 Traceback 续行沿用前一行时间戳 → 历史事件不跨窗口计入."""
+        svc_dir = tmp_path / 'system' / 'services'
+        svc_dir.mkdir(parents=True)
+        old = (datetime.now() - timedelta(hours=2)).strftime('%Y-%m-%d %H:%M:%S')
+        (svc_dir / 'backend.log').write_text(
+            f'{old} [ERROR] legacy boom\n'
+            'Traceback (most recent call last):\n'
+            '  File "x.py", line 1\n'
+            'DeserializationError: old fixture fail\n',
+            encoding='utf-8',
+        )
+        result = health.scan_log_errors('backend')
+        assert result['count'] == 0  # 首行历史 + 续行都归入 2 小时前, 窗口外
+
     def test_counts_and_latest(self, isolated_debug, tmp_path):
         svc_dir = tmp_path / 'system' / 'services'
         svc_dir.mkdir(parents=True)

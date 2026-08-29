@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -48,6 +49,28 @@ _ERROR_PATTERNS = (
 _SCAN_MAX_LINES = 5000          # 单个日志文件最多扫描的行数
 _SCAN_CAP_LINES = 2000          # 报错统计最多处理的行数 (防大文件拖慢看门狗)
 _LATEST_MAX_CHARS = 300         # latest 报错文本截断长度
+# 报错计数时间窗口 (秒): 只统计"当前状态"下的近期报错, 历史残留 (测试痕迹/
+# 重启抖动/已修复事件) 自然滚出, 不污染服务管理页计数. 可被 GAF_LOG_ERROR_WINDOW 覆盖.
+_ERROR_WINDOW_SECONDS = int(os.getenv("GAF_LOG_ERROR_WINDOW", "3600"))
+
+
+# 常见日志行首时间戳格式: "2026-08-29 10:25:16[...]" / "[2026-08-29 01:02:33]" /
+# "10:25:16" (无日期, 视为当天)
+_LINE_TS_RE = re.compile(
+    r"^\[?\s*(?:(?P<date>\d{4}-\d{2}-\d{2})\s+)?(?P<time>\d{2}:\d{2}:\d{2})"
+)
+
+
+def _parse_line_ts(line: str) -> float | None:
+    """解析日志行首时间戳为 epoch 秒; 解析失败返回 None. 仅支持完整/当日时间."""
+    m = _LINE_TS_RE.match(line)
+    if not m:
+        return None
+    date_part = m.group("date") or datetime.now().strftime("%Y-%m-%d")
+    try:
+        return datetime.strptime(f"{date_part} {m.group('time')}", "%Y-%m-%d %H:%M:%S").timestamp()
+    except ValueError:
+        return None
 
 PYTHON_EXE = Path("D:/code/environment/conda/envs/gaf/python.exe")
 REDIS_CLI_EXE = Path("D:/code/environment/redis/redis-cli.exe")
@@ -271,13 +294,20 @@ def service_log_paths(name: str) -> list[Path]:
     return [p for p in paths + _native_log_paths(name) if p.exists()]
 
 
-def scan_log_errors(name: str) -> dict:
+def scan_log_errors(name: str, window_seconds: int | None = None) -> dict:
     """扫描服务日志文件中的报错行, 返回 {count, latest, files}.
 
-    - count: 报错行总数 (最多 _SCAN_CAP_LINES 行防拖慢)
-    - latest: 最后一条报错行的文本 (截断 _LATEST_MAX_CHARS)
+    - count: 时间窗口内报错行总数 (最多 _SCAN_CAP_LINES 行防拖慢)
+    - latest: 窗口内最后一条报错行的文本 (截断 _LATEST_MAX_CHARS)
     - files: 实际扫描到内容的文件列表
+
+    时间窗口默认 _ERROR_WINDOW_SECONDS (近 1 小时), 用于避免历史残留
+    (测试痕迹/重启抖动/已修复事件) 污染"当前状态"计数; 历史报错仍可在
+    服务管理页 "仅报错" 日志中追溯. 无时间戳的行 (Traceback 续行等) 沿用
+    文件流中前一行解析到的时间戳归入事件时间.
     """
+    window = _ERROR_WINDOW_SECONDS if window_seconds is None else window_seconds
+    now = time.time()
     total = 0
     latest: str | None = None
     files: list[str] = []
@@ -288,13 +318,22 @@ def scan_log_errors(name: str) -> dict:
         except OSError:
             continue
         capped = lines[-_SCAN_CAP_LINES:]
-        for line in capped:
-            stripped = line.rstrip("\r\n")
-            if _is_error_line(stripped):
-                total += 1
-                latest = stripped[:_LATEST_MAX_CHARS]
         if capped:
             files.append(str(path))
+        last_ts: float | None = None  # 文件流内最近时间戳, 无时间戳行沿用 (Traceback 续行归入事件时间)
+        for line in capped:
+            stripped = line.rstrip("\r\n")
+            ts = _parse_line_ts(stripped)
+            if ts is not None:
+                last_ts = ts
+            if not _is_error_line(stripped):
+                continue
+            line_ts = ts if ts is not None else last_ts
+            # window=0 表示禁用时间窗口 (全量历史); 默认近 1 小时
+            if window > 0 and line_ts is not None and now - line_ts > window:
+                continue  # 窗口外历史报错: 不进入当前状态计数
+            total += 1
+            latest = stripped[:_LATEST_MAX_CHARS]
     return {"count": total, "latest": latest, "files": files}
 
 

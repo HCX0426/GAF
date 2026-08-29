@@ -121,6 +121,11 @@ export async function reportFrontendError(
 export function installGlobalErrorHandlers(): void {
   // window.onerror: 捕获同步错误 + 资源加载错误
   window.addEventListener('error', (event) => {
+    // 跨域匿名错误 ("Script error." 且无 filename/stack) 无诊断价值,
+    // 过滤掉避免污染服务日志与报错计数 (历史噪音治理).
+    if (event.message === 'Script error.' && !event.filename) {
+      return;
+    }
     void reportFrontendError({
       message: event.message || 'Unknown error',
       source: event.filename || undefined,

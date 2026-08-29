@@ -26,7 +26,7 @@ vi.mock('@/utils/traceId', () => ({
   generateTraceId: vi.fn().mockReturnValue('11111111-2222-4333-8444-555555555555'),
 }));
 
-import { reportFrontendError } from '@/utils/reportFrontendError';
+import { installGlobalErrorHandlers, reportFrontendError } from '@/utils/reportFrontendError';
 import { getPageSlug } from '@/utils/pageSlug';
 import { getLastTraceId } from '@/utils/traceId';
 
@@ -114,5 +114,32 @@ describe('reportFrontendError — C3 trace_id + page_slug 自动附加', () => {
 
     const [url] = axiosPostMock.mock.calls[0];
     expect(url).toContain('/logs/frontend-errors/');
+  });
+});
+
+describe('installGlobalErrorHandlers — 跨域匿名 Script error. 过滤', () => {
+  let axiosPostMock: ReturnType<typeof vi.fn>;
+  let consoleWarnSpy: MockInstance;
+
+  beforeEach(() => {
+    axiosPostMock = axios.post as unknown as ReturnType<typeof vi.fn>;
+    axiosPostMock.mockClear();
+    axiosPostMock.mockResolvedValue({ status: 204 });
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    installGlobalErrorHandlers();
+  });
+
+  afterEach(() => {
+    consoleWarnSpy.mockRestore();
+  });
+
+  it('Script error. 且无 filename (跨域匿名) → 不上报', () => {
+    window.dispatchEvent(new ErrorEvent('error', { message: 'Script error.' }));
+    expect(axiosPostMock).not.toHaveBeenCalled();
+  });
+
+  it('普通 error 事件 → 正常上报', () => {
+    window.dispatchEvent(new ErrorEvent('error', { message: 'TypeError: boom', filename: 'http://127.0.0.1:5173/src/main.tsx' }));
+    expect(axiosPostMock.mock.calls.length).toBeGreaterThanOrEqual(1);
   });
 });
