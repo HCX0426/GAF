@@ -6,22 +6,11 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import { Card, Tag, Spin, Empty, Typography, Space, theme as antTheme } from 'antd';
-import { ClockCircleOutlined, LoadingOutlined, CheckCircleFilled, CalendarOutlined } from '@ant-design/icons';
 import { fetchTodaySchedule } from '@/api/scheduler';
 import type { TodayScheduleResponse } from '@/types/models';
+import { SCHEDULE_STATUS_META, resolveScheduleStatus } from './scheduleStatusMeta';
 
 const { Text } = Typography;
-
-const STATUS_META: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
-  // N219: 今日日程 = 计划排期 (引擎推导, 非已派发) — planned 展示为"计划中",
-  // 不能回落成 pending"待执行"误导用户以为任务在排队.
-  planned: { color: 'default', icon: <CalendarOutlined />, label: '计划中' },
-  pending: { color: 'default', icon: <ClockCircleOutlined />, label: '待执行' },
-  running: { color: 'processing', icon: <LoadingOutlined />, label: '进行中' },
-  completed: { color: 'success', icon: <CheckCircleFilled />, label: '已完成' },
-  failed: { color: 'error', icon: <CheckCircleFilled />, label: '失败' },
-  skipped: { color: 'warning', icon: <ClockCircleOutlined />, label: '已跳过' },
-};
 
 function formatTime(isoStr: string): string {
   try {
@@ -83,7 +72,7 @@ export function ExecutionQueuePreview() {
         // antd6 弃用 List — 迁移为原生 map 渲染, 复刻 List.Item 的分割线样式
         <div className="gaf-mt-sm">
           {preview.map((item) => {
-            const meta = STATUS_META[item.status] || STATUS_META.pending;
+            const meta = SCHEDULE_STATUS_META[resolveScheduleStatus(item.status)];
             return (
               <div
                 key={`${item.device_name}-${item.task_chain_name}-${item.scheduled_time || ''}`}
@@ -93,7 +82,7 @@ export function ExecutionQueuePreview() {
                   <Text type="secondary" className="gaf-text-xs">
                     {item.scheduled_time ? formatTime(item.scheduled_time) : '—'}
                   </Text>
-                  <Tag color={meta.color} icon={meta.icon} style={{ fontSize: 10, lineHeight: '16px' }}>
+                  <Tag color={meta.tagColor} icon={meta.icon} style={{ fontSize: 10, lineHeight: '16px' }}>
                     {meta.label}
                   </Tag>
                   <Text className="gaf-text-sm">

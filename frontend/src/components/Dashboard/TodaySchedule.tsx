@@ -8,56 +8,12 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Card, Timeline, Tag, Typography, Progress, Space, Spin, Empty, theme as antTheme } from 'antd';
-import type { GlobalToken } from 'antd/es/theme/interface';
-import {
-  CalendarOutlined,
-  CheckCircleFilled,
-  ClockCircleFilled,
-  ExclamationCircleFilled,
-  MinusCircleFilled,
-  LoadingOutlined,
-} from '@ant-design/icons';
 import type { TodayScheduleResponse, TodayScheduleItem } from '@/types/models';
 import { fetchTodaySchedule } from '@/api/scheduler';
 import { classifyError } from '@/utils/errorHandler';
+import { SCHEDULE_STATUS_META, resolveScheduleStatus, tokenColorForStatus } from './scheduleStatusMeta';
 
 const { Text } = Typography;
-
-// TD-294 Phase 1: STATUS_CONFIG moved to function so it can resolve antd theme tokens.
-function getStatusConfig(token: GlobalToken) {
-  return {
-    planned: {
-      color: token.colorTextQuaternary,
-      icon: <CalendarOutlined style={{ color: token.colorTextQuaternary }} />,
-      label: '计划中',
-    },
-    pending: {
-      color: token.colorTextQuaternary,
-      icon: <ClockCircleFilled style={{ color: token.colorTextQuaternary }} />,
-      label: '待执行',
-    },
-    running: {
-      color: token.colorPrimary,
-      icon: <LoadingOutlined style={{ color: token.colorPrimary }} />,
-      label: '进行中',
-    },
-    completed: {
-      color: token.colorSuccess,
-      icon: <CheckCircleFilled style={{ color: token.colorSuccess }} />,
-      label: '已完成',
-    },
-    failed: {
-      color: token.colorError,
-      icon: <ExclamationCircleFilled style={{ color: token.colorError }} />,
-      label: '失败',
-    },
-    skipped: {
-      color: token.colorWarning,
-      icon: <MinusCircleFilled style={{ color: token.colorWarning }} />,
-      label: '已跳过',
-    },
-  } as const;
-}
 
 function formatDisplayTime(isoStr: string): string {
   try {
@@ -82,7 +38,6 @@ function getWeekDayStr(): string {
 
 export function TodaySchedule() {
   const { token } = antTheme.useToken();
-  const STATUS_CONFIG = getStatusConfig(token);
   const [data, setData] = useState<TodayScheduleResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -171,10 +126,16 @@ export function TodaySchedule() {
     >
       <Timeline
         items={scheduleItems.map((item) => {
-          const config = STATUS_CONFIG[item.status] || STATUS_CONFIG.pending;
+          const status = resolveScheduleStatus(item.status);
+          const meta = SCHEDULE_STATUS_META[status];
+          const color = tokenColorForStatus(token, status);
           return {
-            icon: config.icon,
-            color: config.color,
+            icon: (
+              <span style={{ color }}>
+                {meta.icon}
+              </span>
+            ),
+            color,
             content: (
               <div>
                 <div className="gaf-flex-between gaf-mb-xs">
@@ -182,8 +143,8 @@ export function TodaySchedule() {
                     <Text className="gaf-text-xs" style={{ color: token.colorTextTertiary }}>
                       {item.scheduled_time ? formatDisplayTime(item.scheduled_time) : '—'}
                     </Text>
-                    <Tag color={config.color} style={{ fontSize: 10, lineHeight: '18px' }}>
-                      {config.label}
+                    <Tag color={color} style={{ fontSize: 10, lineHeight: '18px' }}>
+                      {meta.label}
                     </Tag>
                   </Space>
                 </div>
