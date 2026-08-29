@@ -232,3 +232,62 @@ how_to_use: >
 14. **子文档死路径/计数矛盾（S1-S11）**：是否一次性修 overview/子文档的内部不一致（纯文档，低风险）？
 
 > 范围说明：`docs/analysis/` 下 `evaluation-zxcvbn-replacement.md` 与 `GAF-vs-*` 为对比/评估类文档，非架构概念定义，未纳入本次概念命名盘点。
+
+## 10. 架构层拍板（2026-08-29 — 用户授权，不拘改动量）
+
+> 决策原则（归一化总纲）：**代码模型名为唯一权威词源**；文档/UI/字段/i18n 一律对齐代码；
+> 消除一切"同词异义"与"幽灵符号"（文档引用但代码不存在/名不符）；**死代码删除而非保留**。
+> 用户明确"不在乎改动多少"，故重命名/迁移/跨端改动均可落地。
+
+### 10.1 执行引擎与"四 chain"归一（P0）
+
+- **`ChainManager` → 重命名 `StateMachineEngine`**（文件 `agent/src/engine/chain_manager.py` → `state_machine_engine.py`，注册键 `task_type='chain'`→`'state_machine'` 同步改）。文档明确：用户"链式任务"=`TaskChain`（后端持久序列），与 agent 的 `StateMachineEngine`（状态机驱动，非链式）**无关**。
+- **四 chain 收敛口径**：
+  - `TaskChain`：编排序列（保留，用户"链式任务"）。
+  - `chain mode`：已废弃 agent 线性 step runner，文档标注 **DEPRECATED**，不与 `TaskChain` 混用。
+  - `ChainManager`：→ `StateMachineEngine`。
+  - `ActionChain`：恢复引擎的失败恢复动作链（保留），文档加"恢复"定语，避免与 `TaskChain` 错认。
+- **删除死代码 `graph.py` 的 `DAGExecutor`/`ParallelExecutor`**（全仓非测试零 import；`PipelineGraph` 已在 `parser.py`）。overview.md:529 / dispatch-flow.md:609 删除对其引用；活路径只有 `PipelineEngine`（线性）。未来若需 DAG 并行，作为新 feature 设计，不复活死代码。
+
+### 10.2 任务分类口径（用户视角，P1）
+
+- 采纳 **线性 / 链式 / 循环** 为 overview.md 官方任务分类章，映射：`Task`(单 Pipeline) / `TaskChain`(序列) / `LoopNode`(pipeline 内迭代)；`loop_rotation`（UnattendedSession 布尔）属"无人值守账户轮询"，**单列**不与循环节点混。
+- 引擎层"三模式"改写为 `PipelineEngine` / `StateMachineEngine`，不与用户分类共用"chain"词。
+
+### 10.3 字段/模型重命名消除双关（P0/P1）
+
+| 现符号（代码） | 决策改名 | 理由 |
+|----|----|----|
+| `Device.emulator`（品牌自由文本，`agents/models.py:323`） | → **`emulator_brand`** | 消除与 `device_type='emulator'` 双义 |
+| `GameProfile.default_routine`（FK→TaskChain，`gamestate/models.py:53`） | → **`default_task_chain`**；端点 `default-routine`→`default-task-chain` | "Routine"=默认 TaskChain 别名，归一为"默认任务链" |
+| `tasks.TaskStep`（`tasks/models.py:441`，定义期步骤） | → **`PipelineStep`** | 与运行期 `ExecutionStep`(`tasks/models.py:745`) 区分（两模型均真实存在） |
+| `tasks.ExecutionStep` | 保留（运行期步骤） | — |
+| `protocol.AgentSession`（`protocol/models.py:6`） | → **`AgentConnection`**（WS agent 会话） | 与 LLM 会话模型同名异物 |
+| `gaf_ai.agent.AgentSession`（`gaf_ai/agent/models.py:6`） | → **`LLMAgentSession`** | 同上 |
+| 前端 TS `PerformanceMonitor`（`concurrency-design.md:L485`） | → **`FrontendPerformanceMonitor`** | 与后端 `PerformanceMonitor`(Python) 同名异物 |
+| `resources.Tag`（`resources/models.py:166`，唯一 Tag 模型） | 保留；文档取消"tasks.Tag"说法 | tasks 复用 `resources.Tag`，统一单一 `Tag` |
+
+### 10.4 轮换策略对齐代码（P1，已核实）
+
+- 代码 `GameAccountRotation.rotation_strategy` 实为 **4 选**：`sequential`/`random`/`by_stamina`/`by_last_executed`（见 `scheduler/migrations/0001_initial.py:58`）。
+- overview 的"3 种（按时间/按任务完成/按失败次数）"**错误**；features 的"4"数量对但缺 `by_last_executed`。
+- **决策**：文档统一为代码 4 选 + 正确中文；术语用 `GameAccountRotation`（弃用 "RotationRule" 标签）。`loop_rotation`（UnattendedSession 布尔）单列"无人值守账户轮询"，不并入 `GameAccountRotation`。
+
+### 10.5 死概念 / 幽灵符号 / 文档内部不一致（P0/P2）
+
+- **`TraceSpan`**：代码已删（`gaf_core/tracing/middleware.py:8`），文档删除该概念，改 `trace_id`（ContextVar）链路追踪。
+- **`AgentToken`**：文档说明其为 `Agent.agent_token_hash` 字段 + 端点（`AgentTokenViewSet`/`Serializer`/`Authentication`），非实体。
+- **`BackupRecord`/`BackupJob`**：代码**两均无 ORM 模型**（备份为文件系统快照，见 deployment-design §backup）；文档统一术语为 `BackupJob`（概念），删除 `BackupRecord` 引用并注明"无独立 ORM 模型"。
+- 子文档 S1–S11（死 hour-bucket 路径、PNG `_status` 缺失、post-commit 1 vs 2 hook、`ScreenshotCache` 50ms vs 100ms、SQLite 配置带 Postgres 字段、坐标转换③ `get_unified_logical_rect` vs `publish_match_pos`、`task.assign`(点) vs `task_assign`(蛇形)、`GafDaemon`/`gaf_daemon.py`/`gaf_services.ps1` 三渲染）：**全部修文档**。
+- **`GafDaemon`** 为权威名（`gaf_daemon.py` 守护进程）；`gaf_services.ps1` 是 Windows 一键启停封装（委托 daemon），文档明确层级。
+- **`overview.md` §9 模型清单补齐** features 独有的 9 概念：UnattendedStrategy / NotificationPreferences / MarketplaceReview / SkillMarketReview / PluginHook / GameAccountGroup / TemplateEffectiveness / RecognizerBenchmark / AnomalyPattern（注明前端-only，后端由 `LLMAnalysisResult` 支撑）。
+
+### 10.6 UI / 目录收敛（P3）
+
+- TaskChain UI 收敛到 `pages/Ops/TaskChains/` 单目录（`DagEditorPage`/`TaskChainsTab`/`TaskDependencyGraph` 归并）。
+- `ScanModal.tsx` → `pages/Devices/`。
+- 设备发现：`DeviceDiscoveryRegistry` 为权威；`EmulatorDiscovery`/`WindowDiscovery` 作为 registry 的 adapter（行为不变，仅路由归一）。
+
+### 10.7 未决（需用户最终确认的小项）
+
+- 无。上述 10.1–10.6 为本稿推荐终态；实现时若某重命名影响第三方/序列化兼容，按"代码名权威 + 文档/UI 同步"原则处理，不做下游 workaround。
