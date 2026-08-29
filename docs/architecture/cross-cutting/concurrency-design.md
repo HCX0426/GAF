@@ -32,6 +32,8 @@ last_updated: 2026-08-02
 2. 通过 `ConcurrencyController.can_assign(agent_id)` 过滤掉已达并发上限的 Agent（`tasks.py:109-110`）— 全部 Agent 都满载时将 execution 置为 PENDING 并调度重试（`tasks.py:111-122`）
 3. 优先选空闲 Agent，空闲中选心跳最新鲜的；非空闲选 cpu 最低的（`AgentSelector.select_by_load`）
 4. 通过 `task.assign` WebSocket 消息下发
+
+> **WS 帧名规范（命名归一化 C-5, 2026-08-29 锁定）**: 规范帧名 = `task.assign`（canonical）；`task.dispatch` 保留为 **deprecated alias**（历史兼容，映射同一 handler `handle_task_assign`）。后端方法名 `handle_task_assign`（下划线）保持不变——帧名与内部方法名不强求一致，wire-contract 级对齐通过本文档保证。alias 计划在未来大版本移除。
 5. Agent 标记 BUSY 后调用 `ConcurrencyController.assign(agent_id, execution_id)` 占用并发槽位（`tasks.py:156`）
 
 > **心跳协议安全余量** (TD-340, 2026-07-23): agent 端 `heartbeat_interval=10s` (原 30s), backend `HEARTBEAT_OFFLINE_SECONDS=30s`. AgentSelector 依赖 `last_heartbeat` 判断 agent 健康, 30s/30s 临界会导致 status 在 ONLINE/OFFLINE 间抖动, 进而让 `select_by_load` 选到刚被标 offline 的 agent. 10s 间隔提供 3x 安全余量, 消除抖动.

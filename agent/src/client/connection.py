@@ -865,8 +865,9 @@ class AgentConnection:
 
         handler_map = {
             "agent.status": handler.handle_status_update,
-            # Server uses MessageType.TASK_DISPATCH ("task.dispatch"). Keep
-            # "task.assign" as an alias for back-compat with older servers.
+            # WS 帧名规范（命名归一化 C-5, 2026-08-29 锁定）:
+            # 规范帧名 = "task.assign" (canonical); "task.dispatch" 保留为 deprecated
+            # alias（历史兼容, 映射同一 handler）. 后端方法名 handle_task_assign 不变.
             "task.assign": handler.handle_task_assign,
             "task.dispatch": handler.handle_task_assign,
             "task.cancel": handler.handle_task_cancel,

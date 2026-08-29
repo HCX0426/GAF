@@ -1,7 +1,7 @@
 ---
 spec: 2026-08-29-naming-c-task-assign
 title: 命名归一化 C-5：WS 帧 task.assign 统一（协议层）+ alias 兼容
-status: active
+status: completed
 created: 2026-08-29
 estimated_effort: 0.5 day
 risk: high
@@ -38,9 +38,9 @@ source: docs/analysis/concept-naming-normalization.md §1/§4(D23①)/§7
 
 | 阶段 | 内容 | 状态 |
 |------|------|------|
-| P1 | 确认规范帧名 + 路由表 alias | ⏳ |
-| P2 | 协议文档更新 | ⏳ |
-| P3 | 测试（双帧名兼容） | ⏳ |
+| P1 | 确认规范帧名 + 路由表 alias | ✅ |
+| P2 | 协议文档更新 | ✅ |
+| P3 | 测试（双帧名兼容） | ✅ |
 
 #### Task P1.1: 路由表
 
