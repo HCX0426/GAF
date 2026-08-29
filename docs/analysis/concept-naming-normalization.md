@@ -1,7 +1,7 @@
 ---
 summary: GAF 概念关系与命名归一化评估（迭代评估稿；结论稳定后驱动 spec + overview.md 更新 + 代码重命名）
 applies_to: ['architecture', 'naming', 'concept', 'evaluation']
-status: draft | 创建: 2026-08-29 | 扩展盘点: 2026-08-29（全架构概念 + doc-vs-code 全量核对）| 重新整理: 2026-08-29（代码复核对拍板复核，分离"已锁定决策"与"未决开放问题"）
+status: draft | 创建: 2026-08-29 | 扩展盘点: 2026-08-29 | 重新整理: 2026-08-29 | 决策采纳: 2026-08-29（OQ-1~OQ-5 采纳建议, OQ-6 不改; 新增 F1 循环≠监控任务 / F2 系统运行标志=复合指标, OQ-7/OQ-8 待定）
 how_to_use: >
   本文档是"评估稿"，非最终规范。用户将多次与之交流评估；结论稳定后：
   (1) 拆为 docs/specs/active/ 下的归一化 spec（含阶段表）；
@@ -159,6 +159,12 @@ how_to_use: >
 11. **overview §9 补 9 概念**（AnomalyPattern 注前端-only）。
 12. **UI/目录收敛**：TaskChain UI→`pages/Ops/TaskChains/`；`ScanModal`→`pages/Devices/`；设备发现 `DeviceDiscoveryRegistry` 为权威。
 
+13. **（OQ-1~OQ-5 已采纳 §7 建议）**：`graph.py` 删除（OQ-1）；`ChainManager`→`StateMachineEngine`+`task_type` 别名 shim（OQ-2）；`ExecutionStep` 为权威、`TaskStep` 弃用合并（OQ-3）；两 `AgentSession`→`AgentConnection`/`LLMAgentSession`（OQ-4）；全量代码归一化分阶段 A→D（OQ-5）；`rotation_rule` 不改（OQ-6）。
+
+14. **新发现 F1 — "循环任务" ≠ "监控任务"**：代码无"监控任务"任务类型。"监控"在 GAF 指三处不同关切：(a) `monitors` 子系统（`MonitorRule`/`MonitorEvent`/`AlertRule`/`SLAMetric`，运维监控告警）；(b) agent `MonitorManager`（执行期监控线程，`cancel-design.md:22`）；(c) Pipeline 节点"监控触发"（`NodeTypeLibrary.tsx:121`）。循环任务 = `LoopNode` + `loop_rotation`(UnattendedSession) + TaskChain 循环依赖检测，与"监控"不同域。文档需加"概念速查"澄清边界（见 OQ-7）。
+
+15. **新发现 F2 — "系统运行标志"非"服务全部在线"**：Header "系统运行状态/运行中"（`HeaderStatusIndicator.tsx`）反映 `system_status_view`（`monitors/views.py:305`）聚合的 `overall`：`running` 当且仅当 (a) 全部服务健康（`_load_service_health`，任一不健康→降级 `warning`）**且** (b) ≥1 Agent/Device `online`/`idle`（`devices_online>0` 或 `devices_idle>0`）**且** (c) 无 `RecoveryLog` 失败/系统级恢复错误。即"服务全在线"只是必要条件之一。另有两块独立健康面：`InfraHealthPanel`（`/accounts/init/health/`，DB/Redis/Celery/disk/memory）与 `ServicesPage`（服务管理，逐服务 daemon/agent/redis/backend/frontend）。建议文档明确三块"运行/健康"语义（见 OQ-8）。
+
 ## 6. 严重度总览
 
 | 级 | 项 |
@@ -167,24 +173,23 @@ how_to_use: >
 | **P1 清晰度** | D5/D7/D9/D11/D13/D15/D19 + §3.1 双关 |
 | **P2 UI/i18n/文档** | D3/D12/D16/D17/D20–D24/X1 + §3.4 |
 
-## 7. 未决开放问题（需你拍板 — 代码复查看出的真问题）
+## 7. 开放问题状态（OQ-1~OQ-6 已采纳/已决；新增 OQ-7/OQ-8）
 
-> 这些是代码复核对"已锁定决策"的修正与真正需要你判断的点。**在以下未决前不写代码**。
+> OQ-1~OQ-5 用户已采纳建议（见 §5 决策 13），进入 spec 实现阶段；OQ-6 已决不改。OQ-7/OQ-8 为本次代码复核新发现，待你定。
 
-- **OQ-1 `graph.py` DAG 能力如何处置？** `PipelineGraph`（`parser.py`）是活图模型，被 validator/pipeline_engine 广泛使用；`graph.py` 的 `DAGExecutor`/`ParallelExecutor` + DAG 工具（`topological_sort`/`get_critical_path` 等）**生产零引用、仅测试**。选项：(a) 删除 `graph.py`（归一化，但丢失"休眠的 DAG 并行"能力）；(b) 保留并标 DEPRECATED（不实线接）；(c) 真正接进 `PipelineEngine`（设计工作量，把 DAG 并行变为可用特性）。这是能力取舍，非纯命名。
+- **OQ-1 `graph.py`** — ✅ 已采纳：删 `graph.py`+测试，文档改指 `PipelineGraph`(`parser.py`)。
+- **OQ-2 `ChainManager`** — ✅ 已采纳：类→`StateMachineEngine`，`task_type` `'chain'`→`'state_machine'`+别名 shim。
+- **OQ-3 `TaskStep`/`ExecutionStep`** — ✅ 已采纳：`ExecutionStep` 为权威，`TaskStep` 弃用合并（实现前先 grep 二者 writer/reader 确认使用面）。
+- **OQ-4 两 `AgentSession`** — ✅ 已采纳：`protocol.AgentSession`→`AgentConnection`，`gaf_ai.agent.AgentSession`→`LLMAgentSession`。
+- **OQ-5 范围** — ✅ 已采纳：全量代码归一化，分阶段 A→D（见 §5/§6）。
+- **OQ-6 `rotation_rule`** — ✅ 已决：不改（字段 `rotation_rule`→`GameAccountRotation` related_name `rotation_rules` 自洽）。
 
-- **OQ-2 `ChainManager` 改名范围？** 类是 `StateMachine` 封装（改名 `StateMachineEngine` 无误）。但它经 `task_type='chain'` 注册（`executor.py`），现有任务定义若写 `"task_type": "chain"` 会失效。选项：(a) 仅改类名，保留 `task_type='chain'`（最小破坏）；(b) 类名+`task_type`→`'state_machine'` 并迁移既有任务定义/数据。**你倾向哪种？**
+- **OQ-7 "监控任务"是否作为任务分类？** 代码无"监控任务"类型；"监控"=monitors 子系统 + agent `MonitorManager` + 节点"监控触发"，与循环任务(`LoopNode`/`loop_rotation`)不同域（见 F1）。选项：(a) 不新增，文档加"概念速查"澄清循环≠监控；(b) 若你认为"无人值守循环"本质是一种"监控任务"，则在任务分类中增列"监控任务"并定义其与 `LoopNode`/无人值守的关系。**需你定。**
 
-- **OQ-3 `TaskStep` vs `ExecutionStep` 双运行期模型如何归一？** 两者均 FK→`TaskExecution`、字段几乎一致（`ExecutionStep` 多 `node_id`）。真实性技术债：需先查各自被谁写/读（疑似一是旧实现、一是新实现）。选项：(a) 合并为单 `ExecutionStep`（吸收 `node_id`），弃 `TaskStep`；(b) 保留双模型并明确分工（定义期 vs 运行期——但 `TaskStep` 文档写的是"运行期"，需核实是否误用）。**需先量化使用面再定，不能仅凭命名拍板。**
-
-- **OQ-4 两个 `AgentSession` 模型如何归一？** `protocol.AgentSession`(WS agent 会话) 与 `gaf_ai.agent.AgentSession`(LLM 会话) 同名异物，且都有 ViewSet/Serializer。选项：(a) 改名二者（`AgentConnection`/`LLMAgentSession`）；(b) 合并为单模型+`type` 字段（跨域合并有风险）；(c) 仅文档强标注"两个独立模型"，不改代码（最小改动，但命名冲突留在代码）。**API 契约影响，需你定。**
-
-- **OQ-5 整体归一化范围：全量代码重命名 vs 文档+i18n 优先？** 你已说"不在乎改动多少"，但"别急写"。建议先确认：本轮是否**只整理文档/UI 文案/i18n**（代码符号暂不动，避免迁移与 API 契约震荡），把 `ChainManager`/`AgentSession`/`TaskStep` 等重命名留作后续大 spec？还是现在就全量重命名？
-
-- **OQ-6（次要）`rotation_rule` 字段名 vs `GameAccountRotation` 模型** — `UnattendedSession.rotation_rule`(FK) 指向 `GameAccountRotation`（related_name `rotation_rules`）。字段名 `rotation_rule` 与模型 `GameAccountRotation` 略不一致，是否一并对齐（如字段→`rotation_policy`）？影响小，可并入 OQ-5 范围。
+- **OQ-8 "系统运行标志"语义是否拆分/澄清？** Header "系统运行状态/运行中"是 `overall` 复合指标（服务全健康 ∧ ≥1 设备在线 ∧ 无恢复错误），非"服务全在线"单侧；另有 `InfraHealthPanel` 与 `ServicesPage` 两块独立健康面（见 F2）。选项：(a) 仅文档澄清三块语义（最小改动）；(b) 重命名 Header 指标为"系统综合状态"避免与"服务健康"混淆；(c) 拆分 `overall` 为"服务健康/设备活跃/恢复健康"三灯。**需你定。**
 
 ## 8. 下一步
 
-1. 你回复 OQ-1~OQ-5（尤其 OQ-2/OQ-3/OQ-4/OQ-5 的取舍）。
-2. 结论稳定后拆 `docs/specs/active/` 归一化 spec（按 P0→P2 排期），逐阶段实现并提交。
+1. 你回复 OQ-7/OQ-8（概念分类与状态指标语义）。
+2. 结论稳定后拆 `docs/specs/active/` 归一化 spec（按 P0→P2 排期，含 OQ-1~OQ-5 采纳项 + F1/F2 文档澄清），逐阶段实现并提交。
 3. 本稿随结论更新，最终随 spec 归档。
