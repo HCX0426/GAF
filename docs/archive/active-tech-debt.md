@@ -1,7 +1,7 @@
 ---
 summary: 活跃技术债务清单 — 🔧 待修/待办/待决 和 🚧 进行中 条目 (完整详情)
 applies_to: [project]
-last_updated: "2026-08-29 (TD-415 登记: log_rotation 弹窗; TD-416~419 登记: 日志体系评估)"
+last_updated: "2026-08-29 (TD-415 登记: log_rotation 弹窗; TD-416~419 登记: 日志体系评估; TD-420/421 登记: 通知链路)"
 ---
 
 # Active Tech Debts (待修 / 进行中)
@@ -153,6 +153,40 @@ last_updated: "2026-08-29 (TD-415 登记: log_rotation 弹窗; TD-416~419 登记
 - **何时修**: 下轮 E2E 补全批次 (与 TD-416/417 可同批文档化)
 - **三维根因评估**: 代码 (e2e 未覆盖新页) + 工作流 (spec 未强制新页 e2e) + 规则 (新前端页必带 e2e 的清单项缺失)
 - **修复方案验证**: ✅ glob 确认 frontend/e2e 无 services 相关 spec; 服务终端日志路径 grep 确认无统一入口 (2026-08-29)
+
+---
+
+## TD-420: MonitorRule 模型被游戏 UI 规则占用, "监控/告警规则"概念空缺 (🔧)
+
+- **状态**: 🔧 (登记 2026-08-29, 通知中心巡检)
+- **优先级**: P2
+- **登记时间**: 2026-08-29
+- **来源**: 通知中心巡检 (2026-08-29) — MonitorRule 4 条全为 `story_skip`/`popup_handler` (剧情跳过/弹窗点击, template→action), 属 agent 游戏 UI 处理规则
+- **症状**: 通知中心升级链路的"监控规则"名不副实 — MonitorRule 表存储的并非告警规则; 真正 MonitorEvent 输入来自 monitors/bus.py 事件总线 (OCR mismatch 等), 与 MonitorRule 无关联
+- **根因**: MonitorRule 模型被游戏规则借用 (2026 前历史设计), 未拆分; 导致用户/开发者误以为"配置了监控规则"
+- **影响**: 监控告警概念缺失; 通知中心上游依赖隐式打点 (bus), 规则配置无法驱动告警
+- **修复方案**: 方案 A — agent 游戏 UI 规则迁移到独立模型 (如 tasks/或 resources), MonitorRule 恢复纯监控语义; 方案 B — MonitorRule 增加 `rule_kind` 字段区分 monitor/game_ui, 展示过滤; 推荐 A (长期)
+- **验证标准**: ① MonitorRule 只含监控语义规则; ② 游戏规则悬停到目标模型; ③ 文档 (features-overview monitors 段) 同步
+- **何时修**: 架构演进批次 (涉及模型迁移, 需规划)
+- **三维根因评估**: 代码 (模型复用未隔离) + 工作流 (无监控规则创建入口) + 规则 (模型语义约束缺失)
+- **修复方案验证**: ✅ DB 查询 MonitorRule 4 条 rule_definition 全部为 game template→action; grep 无"创建监控规则"UI (2026-08-29)
+
+---
+
+## TD-421: 通知中心输入侧缺口 — dev 环境 MonitorEvent 几乎无新事件, 升级链路空转 (🔧)
+
+- **状态**: 🔧 (登记 2026-08-29, 通知中心巡检)
+- **优先级**: P2
+- **登记时间**: 2026-08-29
+- **来源**: 通知中心巡检 (2026-08-29)
+- **症状**: 通知中心 20h+ 无新通知; MonitorEvent 仅 3 条 (08-28 e2e 遗留, P0×2+P2×1); 手动运行 escalate_unhandled_alerts 正常 (0 候选 no-op)
+- **根因**: 通知链路 (bus→MonitorEvent→escalate(5min)→Notification) 引擎全正常, 但**上游打点缺失**: agent/业务侧几乎不向 EventBus 发布监控事件 (OCR mismatch 等); dev 场景无真实触发源
+- **影响**: 通知中心形同"空壳" (链路可用但无输入); 用户无法判断"是没告警还是告警线路断了"
+- **修复方案**: ① 补齐 agent 事件发布 (badge: OCR/模板匹配/执行失败向 EventBus 打点, 开关默认开); ② 通知中心加"链路健康"展示 (升级任务最近运行时间/事件计数趋势, 空态说明); ③ README 说明 eager/APScheduler 下升级已注册运行
+- **验证标准**: ① dev 环境触发一次 OCR 失败 → MonitorEvent 新增 + escalate 后 Notification 出现; ② 通知中心空态可区分"无告警"与"链路异常"
+- **何时修**: 下轮监控/通知功能迭代
+- **三维根因评估**: 代码 (上游打点缺失) + 工作流 (无监控验收场景) + 规则 (无"通知链路健康"检查项)
+- **修复方案验证**: ✅ DB 查询 MonitorEvent 仅 3 条历史; 手动 escalate apply 成功返回 0 候选 (2026-08-29)
 
 ---
 
