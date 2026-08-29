@@ -15,12 +15,14 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models import Avg, Count, Q
 from django.utils import timezone
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from gaf_core.audit_constants import AuditAction, AuditResourceType, get_client_ip
 from gaf_core.error_codes import ErrorCode
 from gaf_core.responses import unified_response
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -1320,6 +1322,15 @@ class TaskExecutionViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = TaskExecutionSerializer
     permission_classes = [IsAuthenticated, RoleBasedPermission]
     required_permission = "view"
+    # N218 (2026-08-29): 补回 status/task/device 过滤 — 此前无 filter_backends,
+    # ``?status=running`` 被静默忽略, 工作台"运行任务"恒显示全表 count (91).
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = [
+        "status", "task", "device", "game_account",
+        "triggered_by",
+    ]
+    search_fields = ["error_message", "result_data"]
+    ordering_fields = ["created_at", "started_at", "completed_at", "duration"]
     # 使用全局默认分页 (PageNumberPagination, PAGE_SIZE=20)
 
     def get_queryset(self):

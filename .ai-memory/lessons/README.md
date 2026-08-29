@@ -12,7 +12,7 @@ related_files:
 created_by: AI
 priority: high
 # lessons_count: counts all lesson files in lessons/ root (excludes README.md + archived-early/; includes archived N30 in root); synced by sync_ai_memory.py
-lessons_count: 71
+lessons_count: 72
 active_n_count: 37
 # retired_n_count: M0.M 闭环 N## (硬约束沉淀到 rules/skills, 在 failure-modes.md §Retired; 2026-08-28 校准: 实测 §Retired 索引行 26 条, 旧注释值 43 计错(含家族子条目数误加)已修正)
 retired_n_count: 26
@@ -20,8 +20,8 @@ retired_n_count: 26
 archived_n_count: 3
 # dormant_n_count: family-merged sub-entries in failure-modes.md §Dormant (15 N## across 10 family-merged rows; TD-315 2026-07-21)
 dormant_n_count: 15
-# next_n_id: 下一个可用的 N 编号 (spec §6.2 P1-8 新增; AI 写新 lesson 时原子递增 + 文件锁; 2026-08-28 校准: N209-N216 均已分配, 新 lesson 从 N217 起; 2026-08-29: N217 已分配)
-next_n_id: 218
+# next_n_id: 下一个可用的 N 编号 (spec §6.2 P1-8 新增; AI 写新 lesson 时原子递增 + 文件锁; 2026-08-28 校准: N209-N216 均已分配, 新 lesson 从 N217 起; 2026-08-29: N217/N218 已分配)
+next_n_id: 219
 ---
 
 # AI Lessons — Topic 分类索引（N132 文档治理）
@@ -57,7 +57,7 @@ next_n_id: 218
 | `version-compat` | 版本兼容 (TS/Django/库升级坑/antd 弃用) | N137, N144 | 2 | — |
 | `agent-platform` | Agent 平台层 (COM/Win32/ctypes + 窗口设备动态绑定/失效重连) | N138, N146, N211 | 3 | — |
 | `doc-governance` | 文档职责分离 + 教训分类 + skill 漂移 | N132 | 2 (1 active + 1 archived N30, 文件在 lessons/ 根目录) | — |
-| `api-design` | API 设计问题 + URL 拼接归一化 (L0 硬约束, 无独立 lesson) + DRF 装饰器顺序 | N136, N197, N213 | 2 (+1 early unnumbered archived in `archived-early/`) | — |
+| `api-design` | API 设计问题 + URL 拼接归一化 (L0 硬约束, 无独立 lesson) + DRF 装饰器顺序 + DRF ViewSet 缺失过滤静默忽略 query 参数 | N136, N197, N213, N218 | 3 (+1 early unnumbered archived in `archived-early/`) | — |
 | `agent-protocol` | Agent 协议问题 (消息路由/consumer/heartbeat/僵尸连接假离线) | N145, N148, N216 | 3 (+3 early unnumbered archived in `archived-early/`) | — |
 | `platform-env` | 平台环境问题 (Vite proxy/ADB 风暴/黑屏/agent 单例锁/venv 依赖漂移/conda gaf 环境规则未生效/环境归一化 L0) | N139, N154+N155, N186, N187, N188, N199 | 5 | N154+N155 |
 | `command-errors` | 命令使用错误 + 反思纪律 (pre-commit stash/上下文预算/命令防错/PowerShell heredoc/git commit -m vs -F) | N150+N153, N160+N162, N165, N190 | 4 (N170 spec-36 撤销分发) | N150+N153, N160+N162 |
