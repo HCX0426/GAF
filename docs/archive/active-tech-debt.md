@@ -1,7 +1,7 @@
 ---
 summary: 活跃技术债务清单 — 🔧 待修/待办/待决 和 🚧 进行中 条目 (完整详情)
 applies_to: [project]
-last_updated: "2026-08-29 (TD-415 登记: log_rotation 跨天轮转 _stream=None)"
+last_updated: "2026-08-29 (TD-415 登记: log_rotation 弹窗; TD-416~419 登记: 日志体系评估)"
 ---
 
 # Active Tech Debts (待修 / 进行中)
@@ -85,6 +85,74 @@ last_updated: "2026-08-29 (TD-415 登记: log_rotation 跨天轮转 _stream=None
 - **何时修**: 下一轮 L3 循环 (agent 日志可靠性, 涉及 agent+scripts 两处 import 同一 handler)
 - **三维根因评估**: 代码 (emit 无 None 守卫) + 工作流 (跨天场景长期未测) + 规则 (无跨天轮转测试用例)
 - **修复方案验证**: ✅ grep `log_rotation.py` emit/None/rotate 三处确认缺口; 复现命令 `python scripts/gaf_daemon.py status --json` → Logging error (2026-08-29 实测复现)
+
+---
+
+## TD-416: 消息帧日志 MessageFrameLog 无生产写入点，日志中心 tab 恒空 (🔧)
+
+- **状态**: 🔧 (登记 2026-08-29, 日志体系 meta_audit 检出)
+- **优先级**: P1
+- **登记时间**: 2026-08-29
+- **来源**: 日志体系评估 (2026-08-29) — `MessageFrameLog` 表 total=0
+- **症状**: 日志中心"消息帧日志"tab 恒空; DB 实证 `protocol.models.MessageFrameLog` total=0 且 `060 /logs/timeline/` 无 MessageFrameLog 条目
+- **根因**: `backend/protocol/views.py` 只有查询 ViewSet, **全仓无任何 `MessageFrameLog.objects.create` 生产写入点** (仅测试引用) — 协议层帧记录从未实现或实现被删
+- **影响**: agent↔backend 协议帧不可回溯 (N216 僵尸连接排查等需帧日志); 日志中心 8 tab 中 2 个恒空
+- **修复方案**: protocol consumer/handler (AgentConsumer 收发帧路径) 补 `MessageFrameLog` 记录 (开关默认开; 复用 trace_id; 方向 inbound/outbound; payload 截断保护)
+- **验证标准**: ① agent 连接后发 1 帧 → 表新增 1 条; ② 日志中心消息帧 tab 可查; ③ timeline 出现 MessageFrameLog ref_type
+- **何时修**: 下一轮日志体系复盘 (与 TD-417 同批)
+- **三维根因评估**: 代码 (记录逻辑缺失) + 工作流 (UI 先于数据源落地) + 规则 (日志中心 tab 无"数据源为空"校验)
+- **修复方案验证**: ✅ grep `MessageFrameLog.objects` 全仓仅 views.py 查询 + tests; DB 查询 total=0 (2026-08-29 实证)
+
+---
+
+## TD-417: 应用日志数据源断层 — LogEntry 停写，/logs/ 恒空 + timeline 缺应用日志 (🔧)
+
+- **状态**: 🔧 (登记 2026-08-29, 日志体系 meta_audit 检出)
+- **优先级**: P1
+- **登记时间**: 2026-08-29
+- **来源**: 日志体系评估 (2026-08-29) — `/api/v2/logs/` 返回 0 条
+- **症状**: 日志中心"应用日志"tab 恒空 (刷新即无数据); "统一时间线"UNION 6 类中 LogEntry 分区冻结 (0 条); 仅 WS 实时推送 (id=None 不持久化)
+- **根因**: spec §2.2 (2026-07-28 N194 归一化) 把 DatabaseLogHandler → FileLogHandler (写文件, LogEntry 表改只读), 但前端 `/api/v2/logs/` 查询端点 + timeline UNION 未同步收口 → UI 层仍读空表
+- **影响**: 用户感知"应用日志没了"; AI 无法按 LogEntry 追溯应用日志 (需改查文件)
+- **修复方案**: 二选一 — (a) 前端应用日志 tab 数据源改为文件级 API (新端点读 `debug/YYYYMMDD/backend/system/*/django.log`) + timeline 增加文件日志 ref_type; (b) 恢复 LogEntry 写 DB (仅 ERROR+ 落库控制量级); 推荐 (a) 与文件层归一化一致
+- **验证标准**: ① 应用日志 tab 显示最近文件日志行; ② timeline 含应用日志近期条目; ③ 后端产生一条 ERROR → tab/时间线出现
+- **何时修**: 下一轮日志体系复盘 (与 TD-416 同批)
+- **三维根因评估**: 代码 (前端未收口) + 工作流 (归一化只改写入侧没改读侧) + 规则 (日志中心 tab 缺"数据源异常"检查)
+- **修复方案验证**: ✅ DB 查询 LogEntry total=0 (近 24h 新增 0); `/api/v2/logs/` 实测返回 0 条 (2026-08-29)
+
+---
+
+## TD-418: 审计日志双入口重复 — /system/audit-log 与 /ops/logs 审计 tab 同源 (🔧)
+
+- **状态**: 🔧 (登记 2026-08-29, 日志体系 meta_audit 检出)
+- **优先级**: P3
+- **登记时间**: 2026-08-29
+- **来源**: 日志体系评估 (2026-08-29)
+- **症状**: 系统页签"审计日志"页与日志中心"审计日志"tab 调用同一 API (`/accounts/audit-logs/`), 功能完全重复 (AuditLog 291 条正常写入)
+- **根因**: I-26 前端归一化时审计日志从 /ops 移入系统分组 (管理入口), 但日志中心聚合 tab 未删除
+- **影响**: 两个入口观感重复; 维护成本双份; 新功能 (审计过滤/导出) 需同步两处
+- **修复方案**: 收敛为单一入口 — 日志中心审计 tab 移除 (审计属系统管理功能, 保留 /system/audit-log + 统一时间线聚合即可); 或系统页改为对日志中心 tab 的重定向
+- **验证标准**: ① 审计日志只在一个菜单导航可达 (或另一处明确跳转); ② 页面跳转无 404; ③ 统一时间线仍含 AuditLog
+- **何时修**: 前端页面收敛批次
+- **三维根因评估**: 代码 (两页面同数据源) + 工作流 (归一化未收敛重复入口) + 规则 (菜单 page 去重检查缺失)
+- **修复方案验证**: ✅ grep 确认 AuditLogPage.tsx 与 SpecialtyLogTabs.tsx 均 import fetchAuditLogs → /accounts/audit-logs/ (2026-08-29)
+
+---
+
+## TD-419: 服务管理页 e2e 缺失 + 服务终端日志未入统一查看入口 (🔧)
+
+- **状态**: 🔧 (登记 2026-08-29, 日志体系 meta_audit 检出)
+- **优先级**: P3
+- **登记时间**: 2026-08-29
+- **来源**: 日志体系评估 (2026-08-29)
+- **症状**: (1) 新功能"服务管理页" (/system/services) 无 Playwright e2e 用例 (仅浏览器手动实测); (2) 服务终端日志 (debug/system/services/*.log, 文件层) 与 DB 应用日志两套体系并存, 无统一入口/文档边界说明
+- **根因**: (1) spec 2026-08-29-services-management-monitor P4 未列 e2e; (2) 文件层 (进程日志) 与 DB 层 (应用事件) 分属两类视图, 尚无 README/文档界定
+- **影响**: (1) 页面回归无自动化保障; (2) 用户需在两处 (运维/日志中心 + 系统/服务管理) 分别查日志, 认知成本
+- **修复方案**: (1) e2e 补 /system/services 用例 (卡片渲染+日志 Drawer+过滤切换); (2) docs/health/procedure.md 或 overview 增"日志体系分界"段: DB 层=业务事件审计, 文件层=进程终端/执行日志, 服务管理=健康+终端
+- **验证标准**: ① e2e 用例落地并全过; ② 文档明确两套体系边界与协同方式
+- **何时修**: 下轮 E2E 补全批次 (与 TD-416/417 可同批文档化)
+- **三维根因评估**: 代码 (e2e 未覆盖新页) + 工作流 (spec 未强制新页 e2e) + 规则 (新前端页必带 e2e 的清单项缺失)
+- **修复方案验证**: ✅ glob 确认 frontend/e2e 无 services 相关 spec; 服务终端日志路径 grep 确认无统一入口 (2026-08-29)
 
 ---
 

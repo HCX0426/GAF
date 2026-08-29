@@ -379,6 +379,7 @@ npx tsc -b --noEmit   # 类型检查 (修改 .tsx 后必跑)
 | 后端 conftest | `backend/conftest.py` |
 | 服务管理页 (系统页签) | `/system/services` → `frontend/src/pages/System/ServicesPage.tsx` (API: `backend/monitors/views.py` `services_view`/`service_logs_view`) |
 | 服务终端日志 | `debug/system/services/<name>.log` (daemon 捕获, 5MB 轮转 `.log.1`) + 各服务原生日志 `debug/YYYYMMDD/<app>/system/` |
+| 统一文件日志检索 | `GET /api/v2/logs/files/?service=backend&filter=error` (服务终端+原生日志 tail/报错过滤, 日志中心"应用日志"tab + AI 调试共用) |
 | 服务健康快照 | `debug/health-status.json` (services/processes/log_errors, daemon 每 15s 写) |
 
 ---

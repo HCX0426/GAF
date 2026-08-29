@@ -431,3 +431,39 @@ class TestFrontendErrorReportC3Persistence:
         # and a persistence failure must not turn into a 500 (which would
         # mask the original frontend crash).
         assert resp.status_code == 204
+
+
+class TestCrashReportPersistence:
+    """spec 2026-08-29-logging-system-consolidation P1-2: 前端错误同时落
+    CrashReport 表 (日志中心"崩溃报告" tab 数据源), 保留 resolved 工作流。"""
+
+    url = "/api/v2/logs/frontend-errors/"
+
+    def test_populates_crash_report(self, anon_client: APIClient) -> None:
+        from debug.models import CrashReport
+
+        with patch("gaf_core.views.frontend_error_logger"):
+            resp = anon_client.post(
+                self.url,
+                {
+                    "message": "TypeError: x is undefined",
+                    "trigger": "error_boundary",
+                    "error_type": "TypeError",
+                    "stack": "TypeError: x is undefined\n    at Foo (a.js:1:2)",
+                    "page_url": "http://localhost:5173/dashboard",
+                    "trace_id": "11111111-2222-4333-8444-555555555555",
+                    "page_slug": "dashboard",
+                    "session_id": "fsess-crash-1",
+                },
+                format="json",
+            )
+        assert resp.status_code == 204
+
+        crash = CrashReport.objects.filter(component="dashboard").latest("created_at")
+        assert crash.error_type == "TypeError"
+        assert crash.stack_trace.startswith("TypeError")
+        assert crash.system_info["message"] == "TypeError: x is undefined"
+        assert crash.system_info["trace_id"] == "11111111-2222-4333-8444-555555555555"
+        assert crash.system_info["session_id"] == "fsess-crash-1"
+        assert crash.system_info["trigger"] == "error_boundary"
+        assert crash.resolved is False

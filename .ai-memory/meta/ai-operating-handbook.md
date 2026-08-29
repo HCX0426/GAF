@@ -93,6 +93,21 @@
 - ✅ 按 task_type 主动加载 (new_feature→workflow+cross-layer-sync; bug_fix→hook-failure+honest-status); 按场景主动 grep 对应 N##; 反思时按 topic 章节读 yn-matrices; bug 修复先 `sync_ai_memory.py --query <symptom>`
 - ❌ 禁止跳过 L1/L2 硬加载 (gaf_init.sh + 本文件必读); ❌ 禁止凭印象写代码 (写前必跑 L3 query 找相关教训)
 
+### 日志查询指引 (spec 2026-08-29-logging-system-consolidation, AI 调试必读)
+
+| 我要查什么 | 去哪里 |
+|-----------|--------|
+| 应用级最近日志 (服务终端+原生日志) | `GET /api/v2/logs/files/?service=backend&filter=error` (service ∈ backend/agent/daemon/frontend/redis) — 读 `debug/system/services/*.log` + `debug/YYYYMMDD/...` |
+| 服务健康/报错计数 | `debug/health-status.json` (daemon 每 15s 写, 含 services/processes/log_errors) 或 `/api/v2/monitors/services/` |
+| 业务事件 (审计/恢复/消息帧/LLM/崩溃) | `/api/v2/logs/timeline/` (UNION 6 模型) 或日志中心 7 tab |
+| agent↔backend 消息帧 | `MessageFrameLog` 表 (协议层收发帧) — 日志中心"消息帧"tab |
+| 前端崩溃 | `CrashReport` 表 (前端 error_boundary 上报) — 日志中心"崩溃报告"tab + 控制台 JSONL |
+| 任务执行级日志 | `debug/<YYYYMMDD>/<task>/<HHMMSS>_<exec_id>/` (run.log + structured.jsonl + screenshots 同目录) |
+
+分工: **DB 层 = 业务事件** (审计/恢复/消息帧/LLM/崩溃), **文件层 = 进程终端/执行日志**.
+`LogEntry` 表已停写 (spec §2.2), 应用日志以文件层为准 — 不要在 `/api/v2/logs/` 找新日志.
+审计日志单入口 = 系统页 `/system/audit-log` (日志中心审计 tab 已移除).
+
 ---
 
 ## Part 2: AI 行为红线

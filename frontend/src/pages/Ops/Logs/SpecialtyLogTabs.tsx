@@ -4,6 +4,9 @@
  * Each tab is a minimal read-only table for one specialized log model.
  * The Archive tab also supports upload (log archive management).
  * LLM analysis of archives is handled by /ai/log-analysis (LogAnalysisPanel).
+ *
+ * TD-418 (spec 2026-08-29-logging-system-consolidation): AuditLog tab 已移除,
+ * 审计单入口收敛到系统页 /system/audit-log.
  */
 import { useEffect, useState, useCallback } from 'react';
 import { Table, Tag, Space, Button, Typography, Input, Upload, App, Alert, Select, theme } from 'antd';
@@ -14,7 +17,6 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 
-import { fetchAuditLogs } from '@/api/accounts';
 import { fetchRecoveryLogs, type RecoveryLogEntry } from '@/api/scheduler';
 import {
   fetchMessageFrameLogs,
@@ -26,7 +28,7 @@ import {
 } from '@/api/logs';
 import { fetchDebugLogs, uploadDebugLog, fetchAnalysisResults } from '@/api/debug';
 import { useTranslation, getLocale } from '@/i18n';
-import type { AuditLog, DebugLogArchive, LLMAnalysisResult, AnalysisStatus } from '@/types/models';
+import type { DebugLogArchive, LLMAnalysisResult, AnalysisStatus } from '@/types/models';
 
 const { Text } = Typography;
 
@@ -34,116 +36,6 @@ const { Text } = Typography;
 function formatDateTime(val: string | null | undefined): string {
   if (!val) return '-';
   return dayjs(val).locale(getLocale()).format('YYYY-MM-DD HH:mm:ss');
-}
-
-// ─────────────────────────────────────────────
-// AuditLog Tab
-// ─────────────────────────────────────────────
-
-const ACTION_COLOR_MAP: Record<string, string> = {
-  login: 'green',
-  logout: 'blue',
-  create: 'cyan',
-  update: 'orange',
-  delete: 'red',
-  execute: 'purple',
-  import: 'geekblue',
-  export: 'volcano',
-};
-
-export function AuditLogTab() {
-  const t = useTranslation();
-  const [data, setData] = useState<AuditLog[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState('');
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params: Record<string, unknown> = { page: 1, page_size: 50 };
-      if (search.trim()) params.search = search.trim();
-      const res = await fetchAuditLogs(params);
-      // fetchAuditLogs returns untyped payload — coerce to AuditLog[]
-      const rows = (res?.results ?? res ?? []) as AuditLog[];
-      setData(rows);
-    } catch {
-      // axios interceptor surfaces the error
-    } finally {
-      setLoading(false);
-    }
-  }, [search]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const columns: ColumnsType<AuditLog> = [
-    {
-      title: t('logCenter.col_occurred_at'),
-      dataIndex: 'created_at',
-      key: 'created_at',
-      width: 180,
-      render: (v: string) => formatDateTime(v),
-    },
-    {
-      title: t('logCenter.col_user'),
-      dataIndex: 'username',
-      key: 'username',
-      width: 120,
-      render: (v: string | null) => <Text>{v ?? '-'}</Text>,
-    },
-    {
-      title: t('logCenter.col_action'),
-      dataIndex: 'action',
-      key: 'action',
-      width: 110,
-      render: (v: string) => <Tag color={ACTION_COLOR_MAP[v] || 'default'}>{v}</Tag>,
-    },
-    {
-      title: t('logCenter.col_resource'),
-      key: 'resource',
-      width: 200,
-      render: (_: unknown, r: AuditLog) => (
-        <Text code>
-          {r.resource_type}/{r.resource_id}
-        </Text>
-      ),
-    },
-    {
-      title: t('logCenter.col_log_message'),
-      dataIndex: 'details',
-      key: 'details',
-      ellipsis: true,
-      render: (d: Record<string, unknown>) => <Text type="secondary">{JSON.stringify(d)}</Text>,
-    },
-  ];
-
-  return (
-    <div>
-      <Space className="gaf-mb-md">
-        <Input.Search
-          allowClear
-          placeholder={t('logCenter.search_placeholder')}
-          style={{ width: 240 }}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onSearch={() => load()}
-        />
-        <Button icon={<ReloadOutlined />} onClick={() => load()}>
-          {t('logCenter.btn_refresh')}
-        </Button>
-      </Space>
-      <Table<AuditLog>
-        rowKey="id"
-        columns={columns}
-        dataSource={data}
-        loading={loading}
-        scroll={{ x: 800 }}
-        size="small"
-        pagination={{ pageSize: 20, showSizeChanger: false }}
-      />
-    </div>
-  );
 }
 
 // ─────────────────────────────────────────────

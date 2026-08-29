@@ -38,10 +38,12 @@ class ServiceApiBase(TestCase):
         # 隔离 debug 目录, 不触碰真实 debug/
         self._tmp = tempfile.mkdtemp(prefix='gaf-svc-test-')
         self.debug_root = Path(self._tmp)
-        svc_patch = patch('monitors.views._SERVICE_LOG_DIR', self.debug_root / 'system' / 'services')
-        root_patch = patch('monitors.views._DEBUG_ROOT', self.debug_root)
+        # 文件定位逻辑已委托 gaf_core.log_files (spec P2-1), patch 公共模块根路径
+        root_patch = patch('gaf_core.log_files._DEBUG_ROOT', self.debug_root)
+        svc_patch = patch('gaf_core.log_files._SERVICE_LOG_DIR', self.debug_root / 'system' / 'services')
+        mon_root_patch = patch('monitors.views._DEBUG_ROOT', self.debug_root)
         pid_patch = patch('monitors.views._DAEMON_PID_FILE', self.debug_root / 'gaf_daemon.pid')
-        self._patches = [svc_patch, root_patch, pid_patch]
+        self._patches = [root_patch, svc_patch, mon_root_patch, pid_patch]
         for p in self._patches:
             p.start()
             self.addCleanup(p.stop)

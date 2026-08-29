@@ -57,6 +57,10 @@ export const logCenter: LocaleMessages = {
     'logCenter.level_critical': '严重',
     'logCenter.tab_unified': '统一时间线',
     'logCenter.tab_app_log': '应用日志',
+    'logCenter.tab_app_hint': '应用日志以文件层为准（服务终端捕获 + 原生日志），支持按服务与报错过滤；实时推送来自 /ws/logs/',
+    'logCenter.no_file_logs': '暂无文件日志（daemon 未运行或目录为空）',
+    'logCenter.filter_all': '全部日志',
+    'logCenter.filter_error': '仅报错',
     'logCenter.tab_audit_log': '审计日志',
     'logCenter.tab_recovery_log': '恢复日志',
     'logCenter.tab_message_frame': '消息帧日志',
@@ -87,7 +91,7 @@ export const logCenter: LocaleMessages = {
     'logCenter.ws_connected': '实时推送已连接',
     'logCenter.ws_disconnected': '实时推送未连接',
     'logCenter.unified_empty': '暂无统一时间线数据',
-    'logCenter.tab_unified_hint': '聚合 6 类日志模型（应用 / 审计 / 恢复 / 消息帧 / LLM / 崩溃），按时间倒序统一展示',
+    'logCenter.tab_unified_hint': '聚合 6 类日志模型（审计 / 恢复 / 消息帧 / LLM / 崩溃 / 历史应用日志），按时间倒序统一展示；最新应用日志已迁文件层，请用「应用日志」tab',
   },
   'en-US': {
     'logCenter.page_title': 'Log Center',
@@ -176,7 +180,7 @@ export const logCenter: LocaleMessages = {
     'logCenter.ws_disconnected': 'Real-time stream disconnected',
     'logCenter.unified_empty': 'No unified timeline data',
     'logCenter.tab_unified_hint':
-      'Aggregates 6 log models (app / audit / recovery / message / LLM / crash) into a single chronological view',
+      'Aggregates 6 log models (audit / recovery / message / LLM / crash / historic app logs) chronologically; latest app logs moved to the file layer — use the "App Logs" tab',
   },
   'ja-JP': {
     'logCenter.page_title': 'ログセンター',
@@ -234,6 +238,10 @@ export const logCenter: LocaleMessages = {
     'logCenter.level_critical': '重大',
     'logCenter.tab_unified': '統一タイムライン',
     'logCenter.tab_app_log': 'アプリケーションログ',
+    'logCenter.tab_app_hint': 'アプリケーションログはファイル層（サービス端末 + ネイティブログ）を基準とします。サービス/エラーでフィルタ、/ws/logs/ でリアルタイム配信',
+    'logCenter.no_file_logs': 'ファイルログなし（デーモン未実行またはディレクトリが空）',
+    'logCenter.filter_all': '全ログ',
+    'logCenter.filter_error': 'エラーのみ',
     'logCenter.tab_audit_log': '監査ログ',
     'logCenter.tab_recovery_log': '復旧ログ',
     'logCenter.tab_message_frame': 'メッセージフレーム',
@@ -323,6 +331,10 @@ export const logCenter: LocaleMessages = {
     'logCenter.level_critical': '치명적',
     'logCenter.tab_unified': '통합 타임라인',
     'logCenter.tab_app_log': '애플리케이션 로그',
+    'logCenter.tab_app_hint': '애플리케이션 로그는 파일 레이어(서비스 터미널 + 네이티브 로그) 기준입니다. 서비스/오류 필터, /ws/logs/ 실시간 푸시',
+    'logCenter.no_file_logs': '파일 로그 없음(데몬 미실행 또는 디렉토리 비어 있음)',
+    'logCenter.filter_all': '전체 로그',
+    'logCenter.filter_error': '오류만',
     'logCenter.tab_audit_log': '감사 로그',
     'logCenter.tab_recovery_log': '복구 로그',
     'logCenter.tab_message_frame': '메시지 프레임',
@@ -354,6 +366,6 @@ export const logCenter: LocaleMessages = {
     'logCenter.ws_disconnected': '실시간 스트림 미연결',
     'logCenter.unified_empty': '통합 타임라인 데이터 없음',
     'logCenter.tab_unified_hint':
-      '6 종류의 로그 모델(앱 / 감사 / 복구 / 메시지 / LLM / 크래시)을 시간 역순으로 통합 표시',
+      '6 종류의 로그 모델(감사 / 복구 / 메시지 / LLM / 크래시 / 과거 앱 로그)을 시간 역순으로 통합 표시; 최신 앱 로그는 파일 레이어로 이동 — "애플리케이션 로그" 탭 사용',
   },
 };

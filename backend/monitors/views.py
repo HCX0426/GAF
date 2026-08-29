@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import re
 from pathlib import Path
 
 from asgiref.sync import async_to_sync
@@ -11,6 +10,15 @@ from django.utils import timezone  # noqa: I001
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from gaf_core.audit_constants import AuditAction, AuditResourceType
+from gaf_core.log_files import (
+    collect_error_lines,
+)
+from gaf_core.log_files import (
+    read_log_tail as _read_log_tail,
+)
+from gaf_core.log_files import (
+    resolve_service_log_files as _resolve_service_log_files,
+)
 from gaf_core.mixins import AuditMixin, audit_action, build_diff_details
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
@@ -416,75 +424,14 @@ def system_status_view(request):
 
 # ===========================================================================
 # spec 2026-08-29-services-management-monitor P3: 服务管理 API
+# 文件定位/报错过滤逻辑委托 gaf_core.log_files (spec 2026-08-29-logging-
+# system-consolidation P2-1 统一检索层, 消除跨 app 双份漂移)
 # ===========================================================================
 
 _DEBUG_ROOT = Path(__file__).resolve().parents[2] / "debug"
-_SERVICE_LOG_DIR = _DEBUG_ROOT / "system" / "services"
 _DAEMON_PID_FILE = _DEBUG_ROOT / "gaf_daemon.pid"
 
-# 报错行匹配 (与 scripts/services/health.py _ERROR_PATTERNS 保持语义一致)
-_ERROR_PATTERNS = (
-    re.compile(r"\b(ERROR|CRITICAL|FATAL)\b"),
-    re.compile(r"Traceback \(most recent call last\)"),
-    re.compile(r"(?:Exception|Error)[:(]"),
-)
-
 SERVICE_ORDER = ["redis", "backend", "agent", "frontend"]
-
-
-def _latest_day_dir(debug_root: Path) -> Path | None:
-    """返回 debug/ 下日期最大的目录 (YYYYMMDD)."""
-    if not debug_root.is_dir():
-        return None
-    from datetime import datetime as dt
-
-    for entry in sorted(debug_root.iterdir(), reverse=True):
-        if not entry.is_dir():
-            continue
-        try:
-            dt.strptime(entry.name, "%Y%m%d")
-        except ValueError:
-            logger.debug("跳过非日期目录: %s", entry.name)
-            continue
-        return entry
-    return None
-
-
-def _resolve_service_log_files(name: str) -> list[Path]:
-    """定位服务日志文件列表 (终端捕获优先, 原生日志 fallback)."""
-    candidates = [
-        _SERVICE_LOG_DIR / f"{name}.log",
-        _SERVICE_LOG_DIR / f"{name}.log.1",
-    ]
-    day = _latest_day_dir(_DEBUG_ROOT)
-    if day is not None:
-        if name == "backend":
-            system_dir = day / "backend" / "system"
-            if system_dir.is_dir():
-                logs = sorted(
-                    system_dir.rglob("*.log"),
-                    key=lambda p: p.stat().st_mtime,
-                    reverse=True,
-                )[:2]
-                candidates.extend(logs)
-        elif name == "agent":
-            candidates.append(day / "agent" / "system" / "agent.log")
-        elif name == "daemon":
-            candidates.append(day / "backend" / "system" / "daemon.log")
-    return [p for p in candidates if p.exists()]
-
-
-def _read_log_tail(files: list[Path], max_lines: int) -> list[str]:
-    """读取列表首个存在文件的尾部 max_lines 行 (主捕获文件即为最新输出)."""
-    if not files:
-        return []
-    path = files[0]
-    try:
-        with open(path, encoding="utf-8", errors="replace") as fh:
-            lines = fh.readlines()
-    except OSError:
-        return []
-    return [ln.rstrip("\r\n") for ln in lines[-max_lines:]]
 
 
 @extend_schema(
@@ -598,23 +545,7 @@ def service_logs_view(request):
     filter_errors = request.query_params.get('filter', 'all').lower() == 'error'
 
     files = _resolve_service_log_files(service)
-    if filter_errors:
-        # 跨所有日志文件收集报错行 (含原生日志历史错误, 便于统一排查)
-        error_lines: list[str] = []
-        for path in files:
-            try:
-                with open(path, encoding="utf-8", errors="replace") as fh:
-                    for ln in fh.readlines()[-(max_lines * 2):]:
-                        if any(p.search(ln) for p in _ERROR_PATTERNS):
-                            error_lines.append(ln.rstrip("\r\n"))
-            except OSError as exc:
-                logger.warning("读取服务日志失败 (%s): %s", path, exc)
-                continue
-            if len(error_lines) >= max_lines:
-                break
-        lines = error_lines[:max_lines]
-    else:
-        lines = _read_log_tail(files, max_lines)
+    lines = collect_error_lines(files, max_lines) if filter_errors else _read_log_tail(files, max_lines)
 
     return Response({
         'service': service,

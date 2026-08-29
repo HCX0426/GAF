@@ -4,6 +4,7 @@ import asyncio
 import contextlib
 import json
 import logging
+import os
 import time
 from typing import Any
 
@@ -43,6 +44,14 @@ from protocol.services import (
 
 logger = logging.getLogger(__name__)
 
+# spec 2026-08-29-logging-system-consolidation P1-1: 消息帧日志开关.
+# 记录 agent↔backend 每帧 (inbound/outbound) 到 MessageFrameLog, 供日志中心
+# "消息帧日志" tab + AI 调试回溯. 高帧率截图场景可设 0 关闭.
+PROTOCOL_FRAME_LOG_ENABLED = os.getenv("PROTOCOL_FRAME_LOG_ENABLED", "1") == "1"
+# 截图/大 payload 帧: 只记元信息不存 body (防表膨胀)
+_FRAME_LOG_SKIP_BODY_TYPES = {"screenshot.frame", "screenshot.control", "device.action_result", "device.action"}
+_FRAME_LOG_MAX_PAYLOAD_CHARS = 2048
+
 
 HEARTBEAT_WARNING_SECONDS = 15
 HEARTBEAT_OFFLINE_SECONDS = 30
@@ -69,6 +78,21 @@ def clear_agent_device_id_cache() -> None:
     stale mappings do not persist after device configuration changes.
     """
     _AGENT_DEVICE_ID_CACHE.clear()
+
+
+def _normalize_frame_payload(message_type: str, frame: dict) -> dict:
+    """收起/截断帧 payload 生成日志体 (纯函数, 便于单测).
+
+    - 截图/大 payload 帧: 只记元信息不存 body (防表膨胀)
+    - 普通帧: payload 超过 _FRAME_LOG_MAX_PAYLOAD_CHARS 截断为 preview
+    """
+    if message_type in _FRAME_LOG_SKIP_BODY_TYPES:
+        return {"_skipped": True, "message_type": message_type}
+    payload = dict(frame)
+    rendered = json.dumps(payload, ensure_ascii=False, default=str)
+    if len(rendered) > _FRAME_LOG_MAX_PAYLOAD_CHARS:
+        payload = {"_truncated": True, "preview": rendered[: _FRAME_LOG_MAX_PAYLOAD_CHARS]}
+    return payload
 
 
 class AgentConsumer(AsyncWebsocketConsumer):
@@ -224,6 +248,10 @@ class AgentConsumer(AsyncWebsocketConsumer):
             return
 
         self._seq = max(self._seq, frame.get("seq", 0))
+
+        # spec 2026-08-29-logging-system-consolidation P1-1: 记录 inbound 帧
+        if PROTOCOL_FRAME_LOG_ENABLED:
+            await self._log_frame(frame["type"], "inbound", frame)
 
         msg_type = frame["type"]
 
@@ -1438,6 +1466,14 @@ class AgentConsumer(AsyncWebsocketConsumer):
             text_data: JSON-serialized frame string (from serialize_frame).
             bytes_data: Raw bytes (passed through unchanged; used by tests).
         """
+        # spec 2026-08-29-logging-system-consolidation P1-1: 记录 outbound 帧
+        if PROTOCOL_FRAME_LOG_ENABLED and text_data is not None:
+            try:
+                out_frame = json.loads(text_data)
+                await self._log_frame(str(out_frame.get("type", "unknown")), "outbound", out_frame)
+            except (json.JSONDecodeError, TypeError) as exc:
+                logger.debug("outbound 帧无法解析, 跳过记录: %s", exc)
+
         if (
             text_data is not None
             and self._compression_negotiated
@@ -1455,6 +1491,28 @@ class AgentConsumer(AsyncWebsocketConsumer):
                 )
                 # Fall through to default text_data send.
         await super().send(text_data=text_data, bytes_data=bytes_data)
+
+    async def _log_frame(self, message_type: str, direction: str, frame: dict) -> None:
+        """写消息帧日志 (best-effort: 失败仅 debug, 不阻塞消息处理).
+
+        spec 2026-08-29-logging-system-consolidation P1-1. 截图/大 payload 帧
+        只记元信息; 普通帧 payload 截断到 _FRAME_LOG_MAX_PAYLOAD_CHARS.
+        """
+        try:
+            from protocol.models import MessageFrameLog
+
+            payload = _normalize_frame_payload(message_type, frame)
+
+            trace_id_val = frame.get("trace_id")
+            await database_sync_to_async(MessageFrameLog.objects.create)(
+                message_type=message_type[:50],
+                direction=direction,
+                trace_id=trace_id_val or None,
+                payload=payload,
+                agent_session_id=self._agent_session_id or None,
+            )
+        except Exception as exc:
+            logger.debug("消息帧日志写入失败 (忽略): %s", exc)
 
     async def _handle_llm_call(self, frame):
         """Handle LLM call from agent via WebSocket RPC (Task 2.1).

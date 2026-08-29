@@ -70,6 +70,28 @@ export async function fetchUnifiedTimeline(params?: {
   return res.data;
 }
 
+/** File log line queried from /logs/files/ (spec 2026-08-29-logging-system-consolidation P2-1). */
+export interface FileLogLine {
+  service: string;
+  date: string | null;
+  path: string | null;
+  files: string[];
+  filter: 'all' | 'error';
+  lines: string[];
+  error_count: number | null;
+}
+
+/** GET /logs/files/ — 统一文件日志检索 (服务终端 + 原生日志 tail / 报错过滤). */
+export async function fetchFileLogs(params: {
+  service: string;
+  lines?: number;
+  filter?: 'all' | 'error';
+  date?: string;
+}): Promise<FileLogLine> {
+  const res = await client.get<FileLogLine>('/logs/files/', { params });
+  return res.data;
+}
+
 // ─────────────────────────────────────────────
 // C.5: Specialty log list APIs (minimal read-only access for LogCenterPage tabs)
 // ─────────────────────────────────────────────

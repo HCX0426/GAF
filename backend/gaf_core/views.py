@@ -11,6 +11,10 @@ CrashReport) for the LogCenterPage "统一时间线" Tab.
 FrontendErrorReportView — POST endpoint receiving browser-side crashes
 (window.onerror / unhandledrejection / React ErrorBoundary) so AI
 debugging can correlate frontend failures with backend/agent errors.
+
+FileLogQueryView — GET /api/v2/logs/files/ 统一文件日志检索 (spec
+2026-08-29-logging-system-consolidation P2-1): 服务终端 + 原生日志文件
+tail / 报错过滤, 前端日志中心 + 服务管理 + AI 调试共用.
 """
 import logging
 
@@ -19,13 +23,15 @@ from django.conf import settings
 from django.db.models import Case, CharField, F, Value, When
 from django.db.models.functions import Concat
 from django.http import HttpResponse
-from drf_spectacular.utils import OpenApiTypes, extend_schema
-from rest_framework import viewsets
+from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
+from rest_framework import status, viewsets
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.permissions import RoleBasedPermission
+from gaf_core import log_files
 from gaf_core.frontend_logger import FrontendConsoleLogger, _sanitize_page_slug
 from gaf_core.models import LogEntry
 from gaf_core.serializers import LogEntrySerializer
@@ -565,6 +571,31 @@ class FrontendErrorReportView(APIView):
         else:
             frontend_error_logger.error(header)
 
+        # spec 2026-08-29-logging-system-consolidation P1-2: 结构化入库
+        # CrashReport (日志中心"崩溃报告"tab + resolved 工作流数据源).
+        # Best-effort: 失败不回滚 204.
+        try:
+            from debug.models import CrashReport
+
+            CrashReport.objects.create(
+                component=page_slug_safe,
+                error_type=error_type or trigger,
+                stack_trace=stack or 'N/A',
+                system_info={
+                    'message': message,
+                    'source': source,
+                    'url': page_url,
+                    'user_agent': user_agent,
+                    'session_id': session_id,
+                    'trace_id': trace_id,
+                    'trigger': trigger,
+                    'lineno': lineno,
+                    'colno': colno,
+                },
+            )
+        except Exception as exc:
+            logger.warning("前端错误入库 CrashReport 失败: %s", exc)
+
         # C3 (spec 2026-07-30): persist as JSONL under
         # <debug_root>/<YYYYMMDD>/frontend/<page_slug>/<HH>/console.jsonl
         # so AI debugging can browse frontend crashes by page alongside
@@ -609,3 +640,57 @@ class FrontendErrorReportView(APIView):
         # and have nothing to say back" signal. Frontend code (reportFrontendError.ts)
         # awaits the promise but does not inspect the response.
         return HttpResponse(status=204)
+
+
+@extend_schema(
+    tags=['logs'],
+    summary='Unified file log query (service terminal + native logs)',
+    responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT},
+    parameters=[
+        OpenApiParameter('service', type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, required=True),
+        OpenApiParameter('date', type=OpenApiTypes.DATE, location=OpenApiParameter.QUERY),
+        OpenApiParameter('lines', type=OpenApiTypes.INT, location=OpenApiParameter.QUERY),
+        OpenApiParameter('filter', type=OpenApiTypes.STR, location=OpenApiParameter.QUERY),
+    ],
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, RoleBasedPermission])
+def file_log_query_view(request):
+    """统一文件日志检索 API (spec 2026-08-29-logging-system-consolidation P2-1).
+
+    GET /api/v2/logs/files/?service=backend&date=2026-08-29&lines=300&filter=all|error
+    读取文件层日志 (服务终端捕获 debug/system/services/<name>.log + 原生日志),
+    AI 调试与前端日志中心共用同一检索层.
+    """
+    service = request.query_params.get('service', '').strip()
+    if not service:
+        return Response({'detail': 'service 参数必填'}, status=status.HTTP_400_BAD_REQUEST)
+    if service not in log_files.SERVICE_ORDER:
+        return Response(
+            {'detail': f'service 必须是 {log_files.SERVICE_ORDER}'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    try:
+        max_lines = min(int(request.query_params.get('lines', 300)), 2000)
+    except ValueError:
+        max_lines = 300
+    filter_errors = request.query_params.get('filter', 'all').lower() == 'error'
+    date = request.query_params.get('date') or None
+
+    files = log_files.resolve_service_log_files(service, date=date)
+    if filter_errors:
+        lines = log_files.collect_error_lines(files, max_lines)
+        error_count = len(lines)
+    else:
+        lines = log_files.read_log_tail(files, max_lines)
+        error_count = None
+
+    return Response({
+        'service': service,
+        'date': date,
+        'path': str(files[0]) if files else None,
+        'files': [str(f) for f in files],
+        'filter': 'error' if filter_errors else 'all',
+        'lines': lines,
+        'error_count': error_count,
+    })

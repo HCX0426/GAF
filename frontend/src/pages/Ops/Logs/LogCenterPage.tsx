@@ -1,51 +1,51 @@
 /**
- * Log Center Page — unified log viewer with 8 specialized tabs (C.5).
+ * Log Center Page — unified log viewer with 7 specialized tabs (C.5; 审计
+ * tab 移除, 收敛到系统页 /system/audit-log — TD-418).
  *
  * Tabs:
  *  1. 统一时间线 — UNION query across 6 log models via /api/v2/logs/timeline/
- *  2. 应用日志 — LogEntry records (DatabaseLogHandler persistence layer)
- *  3. 审计日志 — AuditLog (user actions: login/create/update/delete/...)
- *  4. 恢复日志 — RecoveryLog (5-layer recovery mechanism history)
- *  5. 消息帧日志 — MessageFrameLog (agent ↔ backend protocol frames)
- *  6. LLM 调用日志 — LLMUsageLog (token usage + cost per LLM call)
- *  7. 崩溃报告 — CrashReport (component crashes with stack traces)
- *  8. 日志归档 — DebugLogArchive (upload + browse; LLM analysis in /ai/log-analysis)
+ *  2. 应用日志 — file-layer logs via /api/v2/logs/files/ (spec 2026-08-29
+ *     logging-system-consolidation P2-2: LogEntry 表已停写, 应用日志以文件层为准)
+ *  3. 恢复日志 — RecoveryLog (5-layer recovery mechanism history)
+ *  4. 消息帧日志 — MessageFrameLog (agent ↔ backend protocol frames)
+ *  5. LLM 调用日志 — LLMUsageLog (token usage + cost per LLM call)
+ *  6. 崩溃报告 — CrashReport (component crashes with stack traces)
+ *  7. 日志归档 — DebugLogArchive (upload + browse; LLM analysis in /ai/log-analysis)
  *
  * The "应用日志" tab subscribes to /ws/logs/ (LogStreamConsumer) for
- * real-time push of new entries — they are prepended to the table
+ * real-time push of new entries — they are prepended to the file log view
  * without a manual refresh.
  *
  * Route: /ops/logs
  */
 import { useEffect, useState, useCallback, useRef } from 'react';
 import {
-  Table,
+  Alert,
   Button,
-  Space,
-  Tag,
-  Drawer,
+  DatePicker,
+  Empty,
   Input,
   Select,
-  Typography,
-  DatePicker,
+  Space,
+  Spin,
+  Table,
   Tabs,
-  Alert,
+  Tag,
   Tooltip,
+  Typography,
   theme,
 } from 'antd';
-import { ReloadOutlined, EyeOutlined, SearchOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { ReloadOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 
-import { fetchLogEntries, fetchUnifiedTimeline, type UnifiedLogEntry } from '@/api/logs';
-import type { LogEntry } from '@/types/models';
+import { fetchFileLogs, fetchUnifiedTimeline, type UnifiedLogEntry } from '@/api/logs';
 import { useTranslation, getLocale } from '@/i18n';
 import PageWrapper from '@/components/Common/PageWrapper';
 import { useLogStream, type LogStreamEntry } from '@/hooks/useLogStream';
 import {
-  AuditLogTab,
   RecoveryLogTab,
   MessageFrameTab,
   LLMUsageTab,
@@ -71,7 +71,7 @@ const LEVEL_OPTIONS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'];
 /** Cap on real-time entries cached client-side before older ones are dropped. */
 const MAX_REALTIME_BUFFER = 200;
 
-type LogCenterTabKey = 'unified' | 'app' | 'audit' | 'recovery' | 'message' | 'llm' | 'crash' | 'archive';
+type LogCenterTabKey = 'unified' | 'app' | 'recovery' | 'message' | 'llm' | 'crash' | 'archive';
 
 export function LogCenterPage() {
   const t = useTranslation();
@@ -97,11 +97,6 @@ export function LogCenterPage() {
             key: 'app',
             label: t('logCenter.tab_app_log'),
             children: <AppLogTab />,
-          },
-          {
-            key: 'audit',
-            label: t('logCenter.tab_audit_log'),
-            children: <AuditLogTab />,
           },
           {
             key: 'recovery',
@@ -276,67 +271,58 @@ function UnifiedTimelineTab() {
 }
 
 // ─────────────────────────────────────────────
-// Application Log Tab (LogEntry) — with WebSocket real-time push
+// Application Log Tab (file-layer) — 统一文件日志检索 + WebSocket 实时推送
+// spec 2026-08-29-logging-system-consolidation P2-2: LogEntry 表已停写,
+// 应用日志以文件层为准 (服务终端捕获 + 原生日志), 通过 /logs/files/ 查询.
 // ─────────────────────────────────────────────
+
+const SERVICE_LOG_OPTIONS = [
+  { value: 'backend', label: 'backend' },
+  { value: 'agent', label: 'agent' },
+  { value: 'daemon', label: 'daemon' },
+  { value: 'frontend', label: 'frontend' },
+  { value: 'redis', label: 'redis' },
+];
+
+/** 文件日志行报错高亮 (与 backend/scripts 语义一致). */
+const FILE_LINE_ERROR_RE =
+  /\b(ERROR|CRITICAL|FATAL)\b|Traceback \(most recent call last\)|(?:Exception|Error)[:(]/;
 
 function AppLogTab() {
   const t = useTranslation();
   const { token } = theme.useToken();
-  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [lines, setLines] = useState<string[]>([]);
+  const [service, setService] = useState('backend');
+  const [filter, setFilter] = useState<'all' | 'error'>('all');
+  const [logPath, setLogPath] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
-
-  // Filters
-  const [levelFilter, setLevelFilter] = useState<string | undefined>(undefined);
-  const [sourceFilter, setSourceFilter] = useState('');
-  const [timeRange, setTimeRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
-  const [searchText, setSearchText] = useState('');
-  const [traceIdFilter, setTraceIdFilter] = useState('');
-
-  // Detail drawer
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
 
   // Real-time push buffer (prepended entries from /ws/logs/)
   const [realtimeCount, setRealtimeCount] = useState(0);
-  const realtimeBuffer = useRef<LogEntry[]>([]);
+  const realtimeBuffer = useRef<string[]>([]);
 
-  const loadLogs = useCallback(async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Parameters<typeof fetchLogEntries>[0] = {
-        page,
-        page_size: pageSize,
-      };
-      if (levelFilter) params.level = levelFilter;
-      if (sourceFilter.trim()) params.source = sourceFilter.trim();
-      if (searchText.trim()) params.search = searchText.trim();
-      if (traceIdFilter.trim()) params.trace_id = traceIdFilter.trim();
-      if (timeRange && timeRange[0]) params.start = timeRange[0].toISOString();
-      if (timeRange && timeRange[1]) params.end = timeRange[1].toISOString();
-
-      const res = await fetchLogEntries(params);
-      setLogs(res.results ?? []);
-      setTotal(res.count ?? 0);
+      const res = await fetchFileLogs({ service, lines: 400, filter });
+      setLines(res.lines ?? []);
+      setLogPath(res.path);
     } catch {
-      // Error message handled silently by axios interceptor
+      // axios interceptor surfaces the error
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, levelFilter, sourceFilter, timeRange, searchText, traceIdFilter]);
+  }, [service, filter]);
 
   useEffect(() => {
-    loadLogs();
-  }, [loadLogs]);
+    load();
+  }, [load]);
 
-  // Subscribe to /ws/logs/ for real-time push. New entries are buffered
-  // and surfaced as a "N new entries" banner; clicking it merges them in.
+  // Subscribe to /ws/logs/ for real-time push — FileLogHandler broadcasts
+  // each emitted line; buffer prepends + banner keeps the file view lively.
   const handleRealtimeEntry = useCallback((entry: LogStreamEntry) => {
-    // LogStreamEntry (无 id) 与 LogEntry (有 id) 字段集不同,
-    // 实时推送无 id, 用 type assertion 兼容存入 buffer (merge 时直接展开)
-    realtimeBuffer.current = [entry as unknown as LogEntry, ...realtimeBuffer.current].slice(0, MAX_REALTIME_BUFFER);
+    const text = entry.message || JSON.stringify(entry);
+    realtimeBuffer.current = [text, ...realtimeBuffer.current].slice(0, MAX_REALTIME_BUFFER);
     setRealtimeCount(realtimeBuffer.current.length);
   }, []);
 
@@ -344,74 +330,19 @@ function AppLogTab() {
 
   const mergeRealtime = () => {
     if (realtimeBuffer.current.length === 0) return;
-    setLogs((prev) => [...realtimeBuffer.current, ...prev].slice(0, MAX_REALTIME_BUFFER));
+    setLines((prev) => [...realtimeBuffer.current, ...prev].slice(0, MAX_REALTIME_BUFFER));
     realtimeBuffer.current = [];
     setRealtimeCount(0);
   };
 
-  const handleViewDetails = (record: LogEntry) => {
-    setSelectedLog(record);
-    setDetailOpen(true);
-  };
-
-  const handleResetPage = () => setPage(1);
-
-  const columns: ColumnsType<LogEntry> = [
-    {
-      title: t('logCenter.col_timestamp'),
-      dataIndex: 'timestamp',
-      key: 'timestamp',
-      width: 180,
-      render: (text: string) => dayjs(text).locale(getLocale()).format('YYYY-MM-DD HH:mm:ss'),
-      sorter: (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-      defaultSortOrder: 'descend',
-    },
-    {
-      title: t('logCenter.col_level'),
-      dataIndex: 'level',
-      key: 'level',
-      width: 100,
-      render: (level: string) => <Tag color={LEVEL_COLOR_MAP[level] || 'default'}>{level}</Tag>,
-      filters: LEVEL_OPTIONS.map((l) => ({ text: l, value: l })),
-      onFilter: (value, record) => record.level === value,
-    },
-    {
-      title: t('logCenter.col_source'),
-      dataIndex: 'source',
-      key: 'source',
-      width: 180,
-      ellipsis: true,
-      render: (source: string) => <Text code>{source}</Text>,
-    },
-    {
-      title: t('logCenter.col_message'),
-      dataIndex: 'message',
-      key: 'message',
-      ellipsis: true,
-      render: (message: string) => <Text>{message}</Text>,
-    },
-    {
-      title: t('logCenter.col_trace_id'),
-      dataIndex: 'trace_id',
-      key: 'trace_id',
-      width: 120,
-      ellipsis: true,
-      render: (v: string | null) => (v ? <Text code>{v.slice(0, 8)}…</Text> : <Text type="secondary">-</Text>),
-    },
-    {
-      title: t('logCenter.col_actions'),
-      key: 'actions',
-      width: 80,
-      render: (_: unknown, record: LogEntry) => (
-        <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetails(record)}>
-          {t('logCenter.btn_view')}
-        </Button>
-      ),
-    },
-  ];
-
   return (
     <div>
+      <Alert
+        type="info"
+        showIcon
+        title={t('logCenter.tab_app_hint')}
+        className="gaf-mb-md"
+      />
       <Space wrap className="gaf-mb-md">
         <Tooltip title={isConnected ? t('logCenter.ws_connected') : t('logCenter.ws_disconnected')}>
           <Tag color={isConnected ? 'green' : 'default'} style={{ margin: 0 }}>
@@ -422,61 +353,28 @@ function AppLogTab() {
           </Tag>
         </Tooltip>
         <Select
-          allowClear
-          placeholder={t('logCenter.filter_level')}
+          value={service}
           style={{ width: 140 }}
-          options={LEVEL_OPTIONS.map((l) => ({ value: l, label: l }))}
-          value={levelFilter}
+          options={SERVICE_LOG_OPTIONS}
           onChange={(val) => {
-            setLevelFilter(val);
-            handleResetPage();
+            setService(val);
+            setRealtimeCount(0);
+            realtimeBuffer.current = [];
           }}
         />
-        <Input
-          allowClear
-          placeholder={t('logCenter.filter_source_placeholder')}
-          style={{ width: 200 }}
-          value={sourceFilter}
-          onChange={(e) => setSourceFilter(e.target.value)}
-          onPressEnter={() => {
-            handleResetPage();
-            loadLogs();
-          }}
+        <Select
+          value={filter}
+          style={{ width: 130 }}
+          options={[
+            { value: 'all', label: t('logCenter.filter_all') },
+            { value: 'error', label: t('logCenter.filter_error') },
+          ]}
+          onChange={(val) => setFilter(val as 'all' | 'error')}
         />
-        <RangePicker
-          showTime
-          value={timeRange}
-          onChange={(range) => {
-            setTimeRange(range as [Dayjs | null, Dayjs | null] | null);
-            handleResetPage();
-          }}
-        />
-        <Input.Search
-          placeholder={t('logCenter.search_placeholder')}
-          allowClear
-          style={{ width: 200 }}
-          prefix={<SearchOutlined />}
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          onSearch={() => {
-            handleResetPage();
-            loadLogs();
-          }}
-        />
-        <Input
-          allowClear
-          placeholder={t('logCenter.filter_trace_id_placeholder')}
-          style={{ width: 200 }}
-          value={traceIdFilter}
-          onChange={(e) => setTraceIdFilter(e.target.value)}
-          onPressEnter={() => {
-            handleResetPage();
-            loadLogs();
-          }}
-        />
-        <Button icon={<ReloadOutlined />} onClick={() => loadLogs()}>
+        <Button icon={<ReloadOutlined />} onClick={() => load()}>
           {t('logCenter.btn_refresh')}
         </Button>
+        {logPath && <Text type="secondary" style={{ fontSize: 12 }}>{logPath}</Text>}
       </Space>
 
       {realtimeCount > 0 && (
@@ -494,94 +392,37 @@ function AppLogTab() {
         />
       )}
 
-      <Table<LogEntry>
-        rowKey="id"
-        columns={columns}
-        dataSource={logs}
-        loading={loading}
-        scroll={{ x: 900 }}
-        size="small"
-        pagination={{
-          current: page,
-          pageSize,
-          total,
-          showSizeChanger: true,
-          showTotal: (count) => t('logCenter.total_count', { count }),
-          onChange: (p, ps) => {
-            setPage(p);
-            setPageSize(ps);
-          },
-        }}
-      />
-
-      <Drawer
-        title={t('logCenter.drawer_title')}
-        open={detailOpen}
-        onClose={() => {
-          setDetailOpen(false);
-          setSelectedLog(null);
-        }}
-        size={560}
-        destroyOnHidden
-      >
-        {selectedLog && (
-          <div className="gaf-text-sm">
-            <div className="gaf-mb-lg">
-              <Text strong>{t('logCenter.lbl_timestamp')}</Text>
-              <Text>{dayjs(selectedLog.timestamp).locale(getLocale()).format('YYYY-MM-DD HH:mm:ss')}</Text>
+      {loading ? (
+        <Spin />
+      ) : lines.length === 0 ? (
+        <Empty description={t('logCenter.no_file_logs')} />
+      ) : (
+        <div
+          style={{
+            background: token.colorBgLayout,
+            borderRadius: 8,
+            padding: 12,
+            maxHeight: 560,
+            overflow: 'auto',
+            fontFamily: "'Consolas', 'Courier New', monospace",
+            fontSize: 12,
+            lineHeight: 1.6,
+          }}
+        >
+          {lines.map((line, idx) => (
+            <div
+              key={idx}
+              style={{
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-all',
+                color: FILE_LINE_ERROR_RE.test(line) ? token.colorError : token.colorText,
+              }}
+            >
+              {line || ' '}
             </div>
-            <div className="gaf-mb-lg">
-              <Text strong>{t('logCenter.lbl_level')}</Text>
-              <Tag color={LEVEL_COLOR_MAP[selectedLog.level] || 'default'}>{selectedLog.level}</Tag>
-            </div>
-            <div className="gaf-mb-lg">
-              <Text strong>{t('logCenter.lbl_source')}</Text>
-              <Text code>{selectedLog.source}</Text>
-            </div>
-            <div className="gaf-mb-lg">
-              <Text strong>{t('logCenter.lbl_message')}</Text>
-              <Text>{selectedLog.message}</Text>
-            </div>
-            {selectedLog.task_id !== null && (
-              <div className="gaf-mb-lg">
-                <Text strong>{t('logCenter.lbl_task_id')}</Text>
-                <Text code>{selectedLog.task_id}</Text>
-              </div>
-            )}
-            {selectedLog.agent_id !== null && (
-              <div className="gaf-mb-lg">
-                <Text strong>{t('logCenter.lbl_agent_id')}</Text>
-                <Text code>{selectedLog.agent_id}</Text>
-              </div>
-            )}
-            {selectedLog.device_id !== null && (
-              <div className="gaf-mb-lg">
-                <Text strong>{t('logCenter.lbl_device_id')}</Text>
-                <Text code>{selectedLog.device_id}</Text>
-              </div>
-            )}
-            {selectedLog.trace_id !== null && (
-              <div className="gaf-mb-lg">
-                <Text strong>{t('logCenter.col_trace_id')}</Text>
-                <Text code>{selectedLog.trace_id}</Text>
-              </div>
-            )}
-            <div>
-              <Text strong>{t('logCenter.lbl_traceback')}</Text>
-              {selectedLog.traceback ? (
-                <pre
-                  className="gaf-mt-sm gaf-p-md gaf-text-xs gaf-radius-sm gaf-overflow-auto"
-                  style={{ background: token.colorFillQuaternary, maxHeight: 400 }}
-                >
-                  {selectedLog.traceback}
-                </pre>
-              ) : (
-                <Text type="secondary">{t('logCenter.no_traceback')}</Text>
-              )}
-            </div>
-          </div>
-        )}
-      </Drawer>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

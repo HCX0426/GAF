@@ -688,6 +688,31 @@ Query：`service`（必填）、`lines`（默认 300，上限 2000）、`filter`
 
 ---
 
+## 19. 统一文件日志检索（logs — spec 2026-08-29-logging-system-consolidation P2-1）
+
+> AI 调试与前端日志中心共用的**文件层**检索端点（服务终端捕获 + 原生日志），
+> 与 DB 层业务事件（timeline）互补。需鉴权（`IsAuthenticated + RoleBasedPermission(view)`）。
+
+### 19.1 `GET /api/v2/logs/files/`
+
+Query：`service`（必填，redis/backend/agent/frontend/daemon）、`date`（YYYY-MM-DD 可选，
+仅原生日志生效）、`lines`（默认 300 上限 2000）、`filter`（all | error 默认 all）
+
+- `filter=all`：主捕获文件尾部（`debug/system/services/<name>.log` 优先，原生日志 fallback）
+- `filter=error`：跨所有候选文件收集报错行（正则与 §18 一致），`error_count` 返回命中数
+
+```json
+{
+  "service": "backend", "date": "2026-08-29", "filter": "error",
+  "path": "debug/system/services/backend.log", "files": ["..."],
+  "lines": ["2026-08-29 10:25:16 [ERROR] boom"], "error_count": 1
+}
+```
+
+- `service` 缺失/非法 → 400；文件不存在 → `files: []` / `lines: []` / `path: null`
+
+---
+
 **维护者**：AI（不人工维护）
 **变更触发**：修改任何 API → 检查本规范 + 后端 model + 前端类型同步 → 同步 `last_updated`
 **验证**：
