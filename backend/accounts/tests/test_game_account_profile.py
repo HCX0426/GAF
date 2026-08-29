@@ -46,31 +46,30 @@ class GameAccountProfileBindingTest(APITestCase):
         acc = GameAccount.objects.get(username='acc1')
         self.assertEqual(acc.game_profile_id, profile.id)
         # 展示输出跟随 profile 名
-        self.assertEqual(body.get('game_name'), 'BD2')
         self.assertEqual(body.get('game_name_display'), 'BD2')
 
-    def test_create_with_game_name_resolves_profile(self):
+    def test_create_binds_profile_and_stays_unique(self):
+        """创建时传 game_profile id → 绑定且全局 profile 不重复."""
+        profile = GameProfile.objects.create(game_name='BD2')
         res = self.client.post('/api/v2/accounts/game-accounts/', {
-            'game_name': 'BD2',
+            'game_profile': profile.id,
             'username': 'acc2',
             'password': 'p',
         }, format='json')
-        if res.status_code != status.HTTP_201_CREATED:
+        assert_code = status.HTTP_201_CREATED
+        if res.status_code != assert_code:
             print('DBG-CREATE-ERR', res.status_code, res.data)
-        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res.status_code, assert_code)
         acc = GameAccount.objects.get(username='acc2')
         self.assertIsNotNone(acc.game_profile)
-        self.assertEqual(acc.game_profile.game_name, 'BD2')
-        # 同名 profile 全局唯一: 不因多次创建而重复
+        self.assertEqual(acc.game_profile_id, profile.id)
         self.assertEqual(GameProfile.objects.filter(game_name='BD2').count(), 1)
-        # 字符串字段同步为 profile 名 (P2 前保持非空)
-        self.assertEqual(acc.game_name, 'BD2')
 
     def test_update_sets_profile(self):
         old_profile = GameProfile.objects.create(game_name='OldGame')
         acc = GameAccount.objects.create(
             owner=self.user, game_profile=old_profile,
-            game_name='OldGame', username='acc3',
+            username='acc3',
             encrypted_password='e',
         )
         new_profile = GameProfile.objects.create(game_name='BD2')
@@ -94,7 +93,7 @@ class GameAccountDisplayTest(APITestCase):
         self.client.force_authenticate(user=self.user)
         self.profile = GameProfile.objects.create(game_name='BD2')
         GameAccount.objects.create(
-            owner=self.user, game_profile=self.profile, game_name='BD2',
+            owner=self.user, game_profile=self.profile,
             username='accx', encrypted_password='e',
         )
 
@@ -110,7 +109,7 @@ class GameAccountDisplayTest(APITestCase):
     def test_filter_game_name_matches_profile(self):
         other = GameProfile.objects.create(game_name='ZZZ')
         GameAccount.objects.create(
-            owner=self.user, game_profile=other, game_name='ZZZ',
+            owner=self.user, game_profile=other,
             username='accy', encrypted_password='e',
         )
         res = self.client.get('/api/v2/accounts/game-accounts/', {'game_name': 'BD2'})

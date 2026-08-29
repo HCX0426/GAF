@@ -48,7 +48,6 @@ def _get_or_create_default_account(user, resource_pack):
     username = f"{game_name} 默认测试账号"
     return GameAccount.objects.create(
         owner=user,
-        game_name=game_name,
         game_profile=game_profile,
         username=username,
         encrypted_password="",  # 无密码, 用户已登录

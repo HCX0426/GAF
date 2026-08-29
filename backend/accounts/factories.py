@@ -43,12 +43,11 @@ class GameAccountFactory(factory.django.DjangoModelFactory):
         skip_postgeneration_save = True
 
     owner = factory.SubFactory(UserFactory)
-    game_name = factory.Sequence(lambda n: f"Game {n}")
-    # window-centric 唯一游戏维度 (P2 后必填): 复用同名全局 profile
-    game_profile = factory.LazyAttribute(
-        lambda o: GameProfile.objects.get_or_create(game_name=o.game_name)[0]
-    )
     username = factory.Sequence(lambda n: f"game_user_{n}")
+    # P3: game_name 字段已退役 — 唯一游戏维度 = game_profile (profile 名由 username 派生, 避免中间属性污染 kwargs)
+    game_profile = factory.LazyAttribute(
+        lambda o: GameProfile.objects.get_or_create(game_name=f"Game {o.username}")[0]
+    )
     encrypted_password = factory.Sequence(lambda n: f"encrypted_{n}")
     login_method = "password"
     server_region = "CN"

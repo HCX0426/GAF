@@ -187,125 +187,6 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         return data
 
 
-class GameAccountCreateSerializer(serializers.ModelSerializer):
-    """
-    游戏账户创建序列化器
-    接收明文密码，自动 AES-256-GCM 加密后存储到 encrypted_password
-    """
-
-    password = serializers.CharField(write_only=True, min_length=1, max_length=255)
-    # spec 2026-08-29-game-account-game-name-retirement P1: game_profile 成为唯一
-    # 游戏维度; game_name 仅作兼容输入 (自动 get_or_create 解析), P3 后退役写路径.
-    game_name = serializers.CharField(required=False, allow_blank=False, max_length=200)
-    game_profile_id = serializers.PrimaryKeyRelatedField(
-        queryset=GameProfile.objects.all(),
-        source='game_profile',
-        required=False,
-        allow_null=False,
-        write_only=True,
-    )
-
-    class Meta:
-        model = GameAccount
-        fields = [
-            'id', 'game_profile_id', 'game_name', 'username', 'password',
-            'server_region', 'login_method', 'created_at',
-        ]
-        read_only_fields = ['id', 'created_at']
-
-    def _resolve_profile(self, validated_data):
-        """把 game_profile_id / game_name 解析并写入 validated (profile 优先)."""
-        profile = validated_data.pop('game_profile', None)
-        raw_name = validated_data.pop('game_name', None)
-        if profile is None and raw_name:
-            profile, _ = GameProfile.objects.get_or_create(game_name=raw_name)
-        if profile is not None:
-            validated_data['game_profile'] = profile
-            validated_data['game_name'] = profile.game_name  # P3 drop 前同步字符串快照
-        elif raw_name:
-            validated_data['game_name'] = raw_name
-        return validated_data
-
-    def create(self, validated_data):
-        """创建游戏账户，对密码进行加密存储。"""
-        plain_password = validated_data.pop('password')
-        encrypted = crypto.encrypt_password(plain_password)
-        validated_data['encrypted_password'] = encrypted
-        validated_data['owner'] = self.context['request'].user
-        self._resolve_profile(validated_data)
-        return super().create(validated_data)
-
-
-class GameAccountListSerializer(serializers.ModelSerializer):
-    """
-    游戏账户列表序列化器
-    密码字段脱敏显示为 ******，不暴露加密后的密码
-    """
-
-    password_display = serializers.SerializerMethodField()
-    # P1: 展示层游戏名统一来自 game_profile (profile 缺失时 fallback 旧字符串, P2 回填后恒 new)
-    game_name = serializers.SerializerMethodField()
-
-    class Meta:
-        model = GameAccount
-        fields = [
-            'id', 'game_name', 'username', 'password_display',
-            'server_region', 'login_method', 'is_active',
-            'status', 'last_login_at', 'login_count', 'execution_count',
-            'created_at', 'updated_at',
-        ]
-        read_only_fields = ['id', 'status', 'last_login_at', 'login_count', 'execution_count', 'created_at', 'updated_at']
-
-    def get_password_display(self, obj):
-        """返回脱敏密码，始终显示 ********。"""
-        return '********'
-
-    def get_game_name(self, obj):
-        return obj.game_profile.game_name if obj.game_profile_id else obj.game_name
-
-
-class GameAccountUpdateSerializer(serializers.ModelSerializer):
-    """
-    游戏账户更新序列化器
-    password 字段可选：留空不修改密码，有值则重新加密存储
-    """
-
-    password = serializers.CharField(
-        write_only=True, required=False, allow_blank=True, max_length=255
-    )
-    # P1: 更新同样以 game_profile 为游戏维度 (game_name 仅兼容输入)
-    game_name = serializers.CharField(required=False, allow_blank=False, max_length=200)
-    game_profile_id = serializers.PrimaryKeyRelatedField(
-        queryset=GameProfile.objects.all(),
-        source='game_profile',
-        required=False,
-        allow_null=False,
-        write_only=True,
-    )
-
-    class Meta:
-        model = GameAccount
-        fields = [
-            'id', 'game_profile_id', 'game_name', 'username', 'password',
-            'server_region', 'login_method', 'is_active',
-        ]
-        read_only_fields = ['id']
-
-    def update(self, instance, validated_data):
-        """更新游戏账户，若密码字段有值则重新加密存储。"""
-        plain_password = validated_data.pop('password', None)
-        if plain_password:
-            instance.encrypted_password = crypto.encrypt_password(plain_password)
-        profile = validated_data.pop('game_profile', None)
-        raw_name = validated_data.pop('game_name', None)
-        if profile is None and raw_name:
-            profile, _ = GameProfile.objects.get_or_create(game_name=raw_name)
-        if profile is not None:
-            validated_data['game_profile'] = profile
-            validated_data['game_name'] = profile.game_name
-        return super().update(instance, validated_data)
-
-
 class LoginResponseSerializer(serializers.Serializer):
     """登录响应序列化器，包含令牌和用户信息。"""
 
@@ -594,13 +475,11 @@ class GameAccountSerializer(serializers.ModelSerializer):
 
     password = serializers.CharField(write_only=True, required=False, min_length=1)
     group_name = serializers.SerializerMethodField(read_only=True)
-    # spec 2026-08-29-game-account-game-name-retirement P1:
-    # - game_name 保留为兼容写字段 (字符串输入 → get_or_create profile 并绑定)
-    # - game_name_display 为权威展示 (始终 = game_profile.game_name), 前端 P3 切换
-    game_name = serializers.CharField(required=False, allow_blank=False, max_length=200)
+    # spec 2026-08-29-game-account-game-name-retirement P3: 唯一游戏维度 = game_profile;
+    # game_name 字符串字段已 drop, 权威展示恒来自 game_profile.game_name.
     game_name_display = serializers.SerializerMethodField(read_only=True)
-    # 覆盖 ModelSerializer 自动 FK (null=False → required=True): 写路径同时在
-    # create/update 的 _resolve_profile 注入, 固 required=False (POST game_name 也可解析)
+    # 显式 PrimaryKeyRelatedField (required=False): 写路径 = game_profile id (此前自动 FK 因
+    # null=False 生成 required=True, 会阻塞 create; P1 起显式覆盖)
     game_profile = serializers.PrimaryKeyRelatedField(
         queryset=GameProfile.objects.all(),
         required=False,
@@ -617,7 +496,7 @@ class GameAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = GameAccount
         fields = [
-            'id', 'owner', 'game_name', 'game_name_display', 'game_profile', 'username', 'password',
+            'id', 'owner', 'game_name_display', 'game_profile', 'username', 'password',
             'server_region', 'login_method', 'group', 'group_name',
             'resource_pack', 'resource_pack_detail',
             'status', 'last_login_at', 'last_check_at',
@@ -648,21 +527,8 @@ class GameAccountSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(OpenApiTypes.STR)
     def get_game_name_display(self, obj):
-        """权威展示: 游戏名恒来自 game_profile (P2 回填前对未绑定数据 fallback 字符串)."""
-        return obj.game_profile.game_name if obj.game_profile_id else obj.game_name
-
-    def _resolve_profile(self, validated_data):
-        """game_profile 优先, 兼容字符串 game_name → get_or_create 绑定 (P1 双轨)."""
-        profile = validated_data.pop('game_profile', None)
-        raw_name = validated_data.pop('game_name', None)
-        if profile is None and raw_name:
-            profile, _ = GameProfile.objects.get_or_create(game_name=raw_name)
-        if profile is not None:
-            validated_data['game_profile'] = profile
-            validated_data['game_name'] = profile.game_name  # P3 drop 前同步字符串快照
-        elif raw_name:
-            validated_data['game_name'] = raw_name
-        return validated_data
+        """权威展示: 游戏名恒来自 game_profile (P2 回填后 profile 不可空)."""
+        return obj.game_profile.game_name
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)
@@ -670,14 +536,12 @@ class GameAccountSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'password': '密码不能为空'})
         validated_data['owner'] = self.context['request'].user
         validated_data['encrypted_password'] = crypto.encrypt_password(password)
-        self._resolve_profile(validated_data)
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
         if password:
             instance.encrypted_password = crypto.encrypt_password(password)
-        self._resolve_profile(validated_data)
         return super().update(instance, validated_data)
 
 

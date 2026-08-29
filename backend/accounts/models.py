@@ -95,14 +95,8 @@ class GameAccount(models.Model):
         verbose_name='所有者',
         help_text='账号所属的用户',
     )
-    # TD-259 #23: game_name is deprecated — prefer game_profile FK (Window-centric).
-    # game_name kept for backwards compat with legacy BD2 import + report grouping;
-    # new code should read game_profile.name when game_profile_id is set.
-    game_name = models.CharField(
-        max_length=200,
-        verbose_name='游戏名称',
-        help_text='[Deprecated TD-259 #23] 优先用 game_profile FK; 此字段仅作历史兼容',
-    )
+    # TD-259 #23 → spec 2026-08-29-game-account-game-name-retirement: game_name 字符串
+    # 弱关联已退役 (P3 迁移 drop), 唯一游戏维度 = game_profile FK.
     game_profile = models.ForeignKey(
         'gamestate.GameProfile',
         on_delete=models.PROTECT,
@@ -211,7 +205,7 @@ class GameAccount(models.Model):
         unique_together = [('owner', 'game_profile', 'username')]
 
     def __str__(self):
-        return f'{self.game_name} - {self.username}'
+        return f'{self.game_profile.game_name} - {self.username}'
 
 
 class GameAccountGroup(models.Model):

@@ -55,7 +55,7 @@ class TestGameAccountAPI(TestCase):
             role=User.Role.VIEWER,
         )
         self.create_payload = {
-            'game_name': '原神',
+            'game_profile': GameProfile.objects.get_or_create(game_name='原神')[0].id,
             'username': 'genshin_player',
             'password': 'mygenshinpass',
             'server_region': '官服',
@@ -77,7 +77,7 @@ class TestGameAccountAPI(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         body = _unwrap(response)
         self.assertIn('id', body)
-        self.assertEqual(body['game_name'], '原神')
+        self.assertEqual(body['game_name_display'], '原神')
         # 验证密码不为明文存储
         account = GameAccount.objects.get(pk=body['id'])
         self.assertIsNotNone(account.encrypted_password)
@@ -90,7 +90,6 @@ class TestGameAccountAPI(TestCase):
             GameAccount.objects.create(
                 owner=self.user,
                 game_profile=_profile('游戏'),
-                game_name=f'游戏{i}',
                 username=f'player{i}',
                 encrypted_password=encrypt_password(f'pass{i}'),
             )
@@ -104,7 +103,6 @@ class TestGameAccountAPI(TestCase):
         account = GameAccount.objects.create(
             owner=self.user,
             game_profile=_profile('星穹铁道'),
-            game_name='星穹铁道',
             username='sr_player',
             encrypted_password=encrypt_password('testpass'),
             server_region='B服',
@@ -113,7 +111,7 @@ class TestGameAccountAPI(TestCase):
         response = self.client.get(f'/api/v2/accounts/game-accounts/{account.pk}/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         body = _unwrap(response)
-        self.assertEqual(body['game_name'], '星穹铁道')
+        self.assertEqual(body['game_name_display'], '星穹铁道')
         self.assertNotIn('password', body)
         self.assertNotIn('encrypted_password', body)
 
@@ -123,7 +121,6 @@ class TestGameAccountAPI(TestCase):
         account = GameAccount.objects.create(
             owner=self.user,
             game_profile=_profile('原神'),
-            game_name='原神',
             username='old_name',
             encrypted_password=encrypt_password('oldpass'),
         )
@@ -145,7 +142,6 @@ class TestGameAccountAPI(TestCase):
         account = GameAccount.objects.create(
             owner=self.user,
             game_profile=_profile('原神'),
-            game_name='原神',
             username='player1',
             encrypted_password=encrypt_password('original'),
         )
@@ -165,7 +161,6 @@ class TestGameAccountAPI(TestCase):
         account = GameAccount.objects.create(
             owner=self.user,
             game_profile=_profile('测试游戏'),
-            game_name='测试游戏',
             username='test_player',
             encrypted_password=encrypt_password('testpass'),
         )
@@ -179,7 +174,6 @@ class TestGameAccountAPI(TestCase):
         other_account = GameAccount.objects.create(
             owner=self.other_user,
             game_profile=_profile('别人的游戏'),
-            game_name='别人的游戏',
             username='other_player',
             encrypted_password=encrypt_password('otherpass'),
         )
@@ -192,7 +186,6 @@ class TestGameAccountAPI(TestCase):
         other_account = GameAccount.objects.create(
             owner=self.other_user,
             game_profile=_profile('别人的游戏'),
-            game_name='别人的游戏',
             username='other_player',
             encrypted_password=encrypt_password('otherpass'),
         )
@@ -209,7 +202,6 @@ class TestGameAccountAPI(TestCase):
         other_account = GameAccount.objects.create(
             owner=self.other_user,
             game_profile=_profile('别人的游戏'),
-            game_name='别人的游戏',
             username='other_player',
             encrypted_password=encrypt_password('otherpass'),
         )
@@ -222,14 +214,12 @@ class TestGameAccountAPI(TestCase):
         GameAccount.objects.create(
             owner=self.user,
             game_profile=_profile('我的游戏'),
-            game_name='我的游戏',
             username='my_player',
             encrypted_password=encrypt_password('mypass'),
         )
         GameAccount.objects.create(
             owner=self.other_user,
             game_profile=_profile('别人的游戏'),
-            game_name='别人的游戏',
             username='other_player',
             encrypted_password=encrypt_password('otherpass'),
         )

@@ -24,9 +24,9 @@ class UserAdmin(BaseUserAdmin):
 class GameAccountAdmin(admin.ModelAdmin):
     """游戏账号管理后台配置。"""
 
-    list_display = ('id', 'owner', 'game_name', 'username', 'server_region', 'login_method', 'status', 'is_active', 'created_at')
-    list_filter = ('is_active', 'game_name', 'login_method')
-    search_fields = ('game_name', 'username', 'server_region')
+    list_display = ('id', 'owner', 'game_profile', 'username', 'server_region', 'login_method', 'status', 'is_active', 'created_at')
+    list_filter = ('is_active', 'game_profile', 'login_method')
+    search_fields = ('game_profile__game_name', 'username', 'server_region')
     readonly_fields = ('created_at', 'updated_at')
 
 

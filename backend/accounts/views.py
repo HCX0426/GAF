@@ -9,7 +9,6 @@ import pyotp
 from django.conf import settings
 from django.core.cache import cache
 from django.db import IntegrityError, connections, transaction
-from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import OpenApiTypes, extend_schema
 from gaf_core.audit_constants import filter_sensitive_fields, get_client_ip
@@ -1236,10 +1235,8 @@ class GameAccountViewSet(AuditMixin, viewsets.ModelViewSet):
         )
         game_name = self.request.query_params.get('game_name')
         if game_name:
-            # P1: 检索维度迁移到 game_profile (兼容过渡期同时匹配旧字符串, P2 回填后仅 profile 路径生效)
-            qs = qs.filter(
-                Q(game_profile__game_name__icontains=game_name) | Q(game_name__icontains=game_name)
-            )
+            # P3: 检索维度 = game_profile (游戏名参数兼容保留, 按 profile 名过滤)
+            qs = qs.filter(game_profile__game_name__icontains=game_name)
         status_filter = self.request.query_params.get('status')
         if status_filter:
             qs = qs.filter(status=status_filter)
@@ -1261,7 +1258,7 @@ class GameAccountViewSet(AuditMixin, viewsets.ModelViewSet):
     def _build_audit_details(self, action, instance, *, old_instance=None) -> dict:
         """Build audit details for game account changes; password never logged."""
         safe_fields = {
-            'game_name': instance.game_name,
+            'game_name': instance.game_profile.game_name,
             'username': instance.username,
             'server_region': instance.server_region,
             'login_method': instance.login_method,
@@ -1270,7 +1267,7 @@ class GameAccountViewSet(AuditMixin, viewsets.ModelViewSet):
         if action == AuditAction.UPDATE and old_instance is not None:
             return build_diff_details(
                 before={
-                    'game_name': old_instance.game_name,
+                    'game_name': old_instance.game_profile.game_name,
                     'username': old_instance.username,
                     'server_region': old_instance.server_region,
                     'login_method': old_instance.login_method,
@@ -1282,7 +1279,7 @@ class GameAccountViewSet(AuditMixin, viewsets.ModelViewSet):
             return safe_fields
         if action == AuditAction.DELETE:
             return {
-                'game_name': instance.game_name,
+                'game_name': instance.game_profile.game_name,
                 'username': instance.username,
             }
         return {}
@@ -1342,7 +1339,7 @@ class GameAccountViewSet(AuditMixin, viewsets.ModelViewSet):
 
         return Response({
             'success': True,
-            'message': f'登录测试成功 — {account.game_name}:{account.username}',
+            'message': f'登录测试成功 — {account.game_profile.game_name}:{account.username}',
             'screenshot_url': None,
             'device_id': device.pk,
         })
@@ -1387,7 +1384,7 @@ class GameAccountViewSet(AuditMixin, viewsets.ModelViewSet):
 
             results.append({
                 'id': acc.pk,
-                'game_name': acc.game_name,
+                'game_name': acc.game_profile.game_name,
                 'username': acc.username,
                 'status': acc_status,
                 'message': msg,
@@ -1452,7 +1449,6 @@ class GameAccountViewSet(AuditMixin, viewsets.ModelViewSet):
                 GameAccount.objects.create(
                     owner=request.user,
                     game_profile=profile,
-                    game_name=profile.game_name,
                     username=username,
                     encrypted_password=crypto.encrypt_password(password),
                     server_region=item.get('server_region', ''),
