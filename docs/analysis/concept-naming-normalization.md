@@ -231,6 +231,27 @@ verified_baseline: >
 - **D 批(文档收口)**：overview/features/子文档按 §4 修正(D4/D7/D12/D14/X1/章节号) + 概念速查(OQ-7) + 三健康面澄清(OQ-8) + 三层节点区分(TaskChainNode/PipelineNode) + `get_unified_logical_rect`/`publish_match_pos` 文档说明(D23②) + **Worker/Agent(AI) 术语区分章(OQ-10)**。
 - **F 批(中低危, device_bridge + Device 抽象命名)**：`DeviceInfoView`→`DeviceDetailView` + DTO 文档区分(F-1)；`device_bridge.discovery.*` 单一扫描源 + 两层发现文档(F-2)；`GAME_PROCESS_NAMES` 去重(F-3)；device_bridge docstring 修正(F-4)；`consumers.py`→`worker_consumers.py` + 路由 + 校正(F-5)；service 形态/私有方法迁出/F-8/F-9 一致性(F-6~F-9)；F-10 双发现权威为设计决策单独立项(OQ-9)。
 
+## 7.1 执行顺序（spec 级，N167 自决后落地）
+
+> 分批原则见 §7。以下将 11 个 spec 落到单条执行序列；高危批必带迁移 + 前端类型重生成。
+
+| 序 | 批 | spec | 风险 | 说明 |
+|----|----|------|------|------|
+| P1 | 低危（零 API/迁移/前端） | `A` | 低 | 删 `graph.py`(死代码) + 去 `TaskDispatcher` 框 + `GafDaemon` 归一 + `TraceSpan` 残骸 |
+| P2 | 中危（agent/后端内部或仅文档） | `B` | 中 | `ChainManager`→`StateMachineEngine` + `task_type` 别名 shim；`PerformanceMonitor` 后端类名；`loop_rotation` 文档标注 |
+| P3 | 高危（迁移+前端类型） | `C-device-emulator` | 高 | `Device.emulator`→`emulator_brand` |
+| P3 | 高危 | `C-default-routine` | 高 | `default_routine`→`default_task_chain` + 端点 |
+| P3 | 高危 | `C-taskstep-merge` | 高 | `TaskStep` 合并入 `ExecutionStep` |
+| P3 | 高危 | `C-task-assign` | 高 | `task.assign` 帧名统一 + alias |
+| P4 | 最高危（Agent→Worker 全量） | `G`（含 `C-agentsession` 的 `WorkerSession` 改名 + `E` 概念落地） | 高 | `Agent` 模型/`backend/agents`→`backend/workers`/`agent/`→`worker/` + 全部 `Agent*` 符号 + 前端类型重生成 |
+| P5 | 文档收口（反映最终命名） | `D`, `F`（可并行） | 中/低 | D: overview/features/子文档修正 + Worker/Agent 术语章；F: device_bridge + Device 抽象命名 |
+
+**依赖与合并说明**：
+- `G` depends_on `C-agentsession` + `E`（序列中已满足）。
+- `C-agentsession` 的 `protocol.AgentSession`→`WorkerSession` 与 `G` 改同一模型，**合并进 G 一次迁移**，不单独跑；`gaf_ai.agent.AgentSession` 保留不改名。
+- `E` 为概念总纲，实际符号改名全部在 `G`，`G` 完成即标记 `E` 完成。
+- `D`/`F` 不互相依赖，可在 P4 后并行；建议最后做以反映最终符号名。
+
 ## 8. 七维评估（最优方案，N167）
 
 > 三方案打分(1-5)：**A 现状不动** / **B 仅改名不合并步骤** / **C 最优**(改名 + 合并 TaskStep + 保留轮换双模型 + 删 graph.py + 文档澄清 + task.assign 协议统一 + Worker/Agent 拆分)。自决阈值：总分≥19 且领先次优≥5。
