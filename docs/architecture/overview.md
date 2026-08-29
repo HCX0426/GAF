@@ -530,8 +530,7 @@ agent/src/
 │   ├── nodes/             # 35+ 节点类型 (click/swipe/ocr/template_match/loop/branch/...)
 │   ├── pipeline_engine.py # 主执行器 (PipelineEngine)
 │   ├── executor.py        # TaskExecutor 统一执行入口
-│   ├── graph.py           # DAG 图执行 (ParallelExecutor, DAGExecutor)
-│   ├── parser.py          # Pipeline JSON 解析
+│   ├── parser.py          # Pipeline JSON 解析 + PipelineGraph (DAG 结构/拓扑校验)
 │   ├── validator.py       # 循环检测/死节点/类型校验
 │   └── context.py         # 执行上下文
 ├── devices/               # 设备抽象层

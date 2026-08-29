@@ -1,7 +1,7 @@
 ---
 spec: 2026-08-29-naming-a-low-risk
 title: 命名归一化 A 批：低危删除与文档归一（graph.py / TaskDispatcher / GafDaemon / TraceSpan 残骸）
-status: active
+status: completed
 created: 2026-08-29
 estimated_effort: 0.5 day
 risk: low
@@ -37,10 +37,10 @@ A 批为**零 API 契约 / 零 DB 迁移 / 零前端类型**冲击的改动（�
 
 | 阶段 | 内容 | 状态 |
 |------|------|------|
-| P1 | 删 graph.py + 测试 | ⏳ |
-| P2 | concurrency-design 去 TaskDispatcher 框 | ⏳ |
-| P3 | GafDaemon 文档归一 | ⏳ |
-| P4 | TraceSpan 残骸清理 | ⏳ |
+| P1 | 删 graph.py + 测试 | ✅ |
+| P2 | concurrency-design 去 TaskDispatcher 框 | ✅ |
+| P3 | GafDaemon 文档归一 | ✅ |
+| P4 | TraceSpan 残骸清理 | ✅ (复核：仅存于迁移文件/注释/归档文档，无功能影响，按"不碰 migration"原则无需改动) |
 
 #### Task P1.1: 删 graph.py
 

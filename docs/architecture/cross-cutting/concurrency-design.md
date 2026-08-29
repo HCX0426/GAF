@@ -67,7 +67,7 @@ GAF 需要支持多 Agent 并发执行任务、高效截图传输、实时状态
 │  Server (Django)                                         │
 │                                                          │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │  TaskDispatcher (Celery Worker)                   │   │
+│  │  dispatch_task (AgentSelector 选 Worker)          │   │
 │  │  - 任务分配                                       │   │
 │  │  - Agent 选择                                     │   │
 │  │  - 负载均衡                                       │   │

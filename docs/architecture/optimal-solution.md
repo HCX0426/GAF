@@ -142,7 +142,7 @@ last_updated: 2026-07-12
 | 8 | OCR 引擎注册表+竞速 | 多引擎注册+基准测试自动选择 | registry.py | ✅ 存在 |
 | 9 | OCR 结果缓存 (pHash) | 感知哈希去重，避免重复识别 | cache.py | ✅ 存在 |
 | 10 | StateMachine 执行引擎 | 状态机模式+卡顿检测 | state_machine.py | ✅ 存在(**373行**完整实现) |
-| 11 | PipelineGraph 图执行引擎 | DAG 图结构执行，超越 MaaFramework 的线性状态机 | engine/graph.py | ✅ 存在 (agent/src/engine/graph.py, DAG 执行) |
+| 11 | PipelineGraph 图执行引擎 | DAG 图结构执行，超越 MaaFramework 的线性状态机 | parser.py (PipelineGraph) | ⚠️ DAG 并行执行未接线 (OQ-1 已删 graph.py；执行由 PipelineEngine 线性驱动) |
 | 12 | LLM 集成 | DeepSeek/OpenAI/本地模型，智能分析+脚本生成 | backend/gaf_ai/ + AILab/ | ✅ 已完成(Phase 15: 后端6API+llm_service.py+anomaly_detection, 前端7Tab) |
 
 ---

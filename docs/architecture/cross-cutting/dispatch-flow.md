@@ -606,7 +606,7 @@ with self._lock:
 - 无自定义 timeout 的节点放弃超时保护，依赖节点内部自身超时机制
 - `executor.shutdown(wait=False)` 不等待后台线程，挂起的线程在进程退出时清理
 - JSONL 缓存句柄在进程异常退出时可能丢失最后几行（与 `flush()` 间隔有关），但通常不影响 LLM 诊断
-- `PipelineEngine` 不支持 DAG 并行执行（`ParallelExecutor` 在 `graph.py` 中独立实现，供需要并行分支的 pipeline 使用）
+- `PipelineEngine` 不支持 DAG 并行执行（`ParallelExecutor` 原在 `agent/src/engine/graph.py`，OQ-1 已删除，未接入生产热路径）
 
 ---
 
