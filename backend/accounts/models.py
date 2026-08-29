@@ -105,12 +105,10 @@ class GameAccount(models.Model):
     )
     game_profile = models.ForeignKey(
         'gamestate.GameProfile',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        on_delete=models.PROTECT,
         related_name='game_accounts',
         verbose_name='所属游戏档案',
-        help_text='Window-centric: 明确归属，替代 game_name 字符串弱关联',
+        help_text='Window-centric 唯一游戏维度 (spec 2026-08-29-game-account-game-name-retirement 后非空)',
     )
     username = models.CharField(
         max_length=200,
@@ -208,7 +206,9 @@ class GameAccount(models.Model):
         ordering = ['-created_at']
         verbose_name = '游戏账号'
         verbose_name_plural = '游戏账号'
-        unique_together = [('owner', 'game_name', 'username')]
+        # spec 2026-08-29-game-account-game-name-retirement: 唯一性由字符串 game_name
+        # 收敛到 game_profile FK (P2 迁移); game_name 字段 P3 drop.
+        unique_together = [('owner', 'game_profile', 'username')]
 
     def __str__(self):
         return f'{self.game_name} - {self.username}'

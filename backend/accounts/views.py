@@ -1422,6 +1422,7 @@ class GameAccountViewSet(AuditMixin, viewsets.ModelViewSet):
         created = 0
         skipped = 0
         errors = []
+        from gamestate.models import GameProfile  # 函数内 lazy import, 与 game-options 同模式
 
         for item in accounts_data:
             game_name = item.get('game_name', '')
@@ -1431,9 +1432,16 @@ class GameAccountViewSet(AuditMixin, viewsets.ModelViewSet):
                 errors.append({'item': item, 'error': '缺少必填字段'})
                 continue
 
+            # P2: 游戏维度收敛到 game_profile (find_or_create 同名全局 profile)
+            try:
+                profile, _ = GameProfile.objects.get_or_create(game_name=game_name)
+            except Exception:
+                errors.append({'item': item, 'error': '游戏维度解析失败'})
+                continue
+
             exists = GameAccount.objects.filter(
                 owner=request.user,
-                game_name=game_name,
+                game_profile=profile,
                 username=username,
             ).exists()
             if exists:
@@ -1443,7 +1451,8 @@ class GameAccountViewSet(AuditMixin, viewsets.ModelViewSet):
             try:
                 GameAccount.objects.create(
                     owner=request.user,
-                    game_name=game_name,
+                    game_profile=profile,
+                    game_name=profile.game_name,
                     username=username,
                     encrypted_password=crypto.encrypt_password(password),
                     server_region=item.get('server_region', ''),

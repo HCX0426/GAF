@@ -11,8 +11,14 @@ from rest_framework.test import APIClient
 
 from accounts.crypto import DecryptionError, decrypt_password, encrypt_password
 from accounts.models import GameAccount, User
+from gamestate.models import GameProfile
 
 pytestmark = pytest.mark.integration
+
+
+def _profile(game_name):
+    """按游戏名 find_or_create 全局 profile (P2 后 game_profile 必填)."""
+    return GameProfile.objects.get_or_create(game_name=game_name)[0]
 
 
 def _unwrap(resp):
@@ -83,6 +89,7 @@ class TestGameAccountAPI(TestCase):
         for i in range(2):
             GameAccount.objects.create(
                 owner=self.user,
+                game_profile=_profile('游戏'),
                 game_name=f'游戏{i}',
                 username=f'player{i}',
                 encrypted_password=encrypt_password(f'pass{i}'),
@@ -96,6 +103,7 @@ class TestGameAccountAPI(TestCase):
         self._auth()
         account = GameAccount.objects.create(
             owner=self.user,
+            game_profile=_profile('星穹铁道'),
             game_name='星穹铁道',
             username='sr_player',
             encrypted_password=encrypt_password('testpass'),
@@ -114,6 +122,7 @@ class TestGameAccountAPI(TestCase):
         self._auth()
         account = GameAccount.objects.create(
             owner=self.user,
+            game_profile=_profile('原神'),
             game_name='原神',
             username='old_name',
             encrypted_password=encrypt_password('oldpass'),
@@ -135,6 +144,7 @@ class TestGameAccountAPI(TestCase):
         self._auth()
         account = GameAccount.objects.create(
             owner=self.user,
+            game_profile=_profile('原神'),
             game_name='原神',
             username='player1',
             encrypted_password=encrypt_password('original'),
@@ -154,6 +164,7 @@ class TestGameAccountAPI(TestCase):
         self._auth()
         account = GameAccount.objects.create(
             owner=self.user,
+            game_profile=_profile('测试游戏'),
             game_name='测试游戏',
             username='test_player',
             encrypted_password=encrypt_password('testpass'),
@@ -167,6 +178,7 @@ class TestGameAccountAPI(TestCase):
         self._auth()
         other_account = GameAccount.objects.create(
             owner=self.other_user,
+            game_profile=_profile('别人的游戏'),
             game_name='别人的游戏',
             username='other_player',
             encrypted_password=encrypt_password('otherpass'),
@@ -179,6 +191,7 @@ class TestGameAccountAPI(TestCase):
         self._auth()
         other_account = GameAccount.objects.create(
             owner=self.other_user,
+            game_profile=_profile('别人的游戏'),
             game_name='别人的游戏',
             username='other_player',
             encrypted_password=encrypt_password('otherpass'),
@@ -195,6 +208,7 @@ class TestGameAccountAPI(TestCase):
         self._auth()
         other_account = GameAccount.objects.create(
             owner=self.other_user,
+            game_profile=_profile('别人的游戏'),
             game_name='别人的游戏',
             username='other_player',
             encrypted_password=encrypt_password('otherpass'),
@@ -207,12 +221,14 @@ class TestGameAccountAPI(TestCase):
         self._auth()
         GameAccount.objects.create(
             owner=self.user,
+            game_profile=_profile('我的游戏'),
             game_name='我的游戏',
             username='my_player',
             encrypted_password=encrypt_password('mypass'),
         )
         GameAccount.objects.create(
             owner=self.other_user,
+            game_profile=_profile('别人的游戏'),
             game_name='别人的游戏',
             username='other_player',
             encrypted_password=encrypt_password('otherpass'),

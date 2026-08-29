@@ -3,6 +3,7 @@
 import factory
 
 from accounts.models import GameAccount, User
+from gamestate.models import GameProfile
 
 
 class UserFactory(factory.django.DjangoModelFactory):
@@ -43,6 +44,10 @@ class GameAccountFactory(factory.django.DjangoModelFactory):
 
     owner = factory.SubFactory(UserFactory)
     game_name = factory.Sequence(lambda n: f"Game {n}")
+    # window-centric 唯一游戏维度 (P2 后必填): 复用同名全局 profile
+    game_profile = factory.LazyAttribute(
+        lambda o: GameProfile.objects.get_or_create(game_name=o.game_name)[0]
+    )
     username = factory.Sequence(lambda n: f"game_user_{n}")
     encrypted_password = factory.Sequence(lambda n: f"encrypted_{n}")
     login_method = "password"

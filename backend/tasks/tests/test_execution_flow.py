@@ -8,6 +8,7 @@ from rest_framework.test import APIClient
 
 from accounts.models import User
 from agents.models import Agent
+from gamestate.models import GameProfile
 from tasks.models import Task, TaskExecution
 from tasks.tasks import dispatch_task
 
@@ -293,6 +294,7 @@ class DispatchTaskResourcePackTest(TestCase):
         )
         account = GameAccount.objects.create(
             owner=owner,
+            game_profile=GameProfile.objects.get_or_create(game_name='BD2')[0],
             username='test-acct',
             game_name='BD2',
             encrypted_password='encrypted-blob',
@@ -373,7 +375,9 @@ class DispatchTaskResourcePackTest(TestCase):
             username='priority-test-owner', password='test123456',
         )
         account = GameAccount.objects.create(
-            owner=owner, username='priority-test-acct',
+            owner=owner,
+            game_profile=GameProfile.objects.get_or_create(game_name='BD2')[0],
+            username='priority-test-acct',
             game_name='BD2', encrypted_password='encrypted-blob',
             resource_pack=account_pack,  # should NOT be used
         )

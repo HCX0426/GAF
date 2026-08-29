@@ -55,6 +55,8 @@ class GameAccountProfileBindingTest(APITestCase):
             'username': 'acc2',
             'password': 'p',
         }, format='json')
+        if res.status_code != status.HTTP_201_CREATED:
+            print('DBG-CREATE-ERR', res.status_code, res.data)
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         acc = GameAccount.objects.get(username='acc2')
         self.assertIsNotNone(acc.game_profile)
@@ -65,17 +67,19 @@ class GameAccountProfileBindingTest(APITestCase):
         self.assertEqual(acc.game_name, 'BD2')
 
     def test_update_sets_profile(self):
+        old_profile = GameProfile.objects.create(game_name='OldGame')
         acc = GameAccount.objects.create(
-            owner=self.user, game_name='BD2', username='acc3',
+            owner=self.user, game_profile=old_profile,
+            game_name='OldGame', username='acc3',
             encrypted_password='e',
         )
-        profile = GameProfile.objects.create(game_name='BD2')
+        new_profile = GameProfile.objects.create(game_name='BD2')
         res = self.client.patch(f'/api/v2/accounts/game-accounts/{acc.id}/', {
-            'game_profile': profile.id,
+            'game_profile': new_profile.id,
         }, format='json')
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         acc.refresh_from_db()
-        self.assertEqual(acc.game_profile_id, profile.id)
+        self.assertEqual(acc.game_profile_id, new_profile.id)
 
 
 class GameAccountDisplayTest(APITestCase):

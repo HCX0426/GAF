@@ -599,6 +599,13 @@ class GameAccountSerializer(serializers.ModelSerializer):
     # - game_name_display 为权威展示 (始终 = game_profile.game_name), 前端 P3 切换
     game_name = serializers.CharField(required=False, allow_blank=False, max_length=200)
     game_name_display = serializers.SerializerMethodField(read_only=True)
+    # 覆盖 ModelSerializer 自动 FK (null=False → required=True): 写路径同时在
+    # create/update 的 _resolve_profile 注入, 固 required=False (POST game_name 也可解析)
+    game_profile = serializers.PrimaryKeyRelatedField(
+        queryset=GameProfile.objects.all(),
+        required=False,
+        allow_null=False,
+    )
     # spec-29f (TD-266 Phase 3a): nested ResourcePack summary so the
     # frontend GameAccountEditor can render the bound pack name/version
     # without a second round-trip to /api/v2/resources/resource-packs/{id}/.
