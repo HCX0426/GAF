@@ -120,15 +120,30 @@ def _remove_pid_file():
         pass
 
 
+def _no_console_flags() -> int:
+    """Windows 下给控制台子进程加 CREATE_NO_WINDOW, 防 detached daemon 弹窗.
+
+    daemon 以 DETACHED_PROCESS 启动 (无控制台), 若再 spawn 控制台程序
+    (redis-cli/tasklist/taskkill) 而不指定 flag, Windows 会为其分配一个
+    可见的空白终端窗口一闪而过.
+    """
+    if sys.platform == "win32":
+        return subprocess.CREATE_NO_WINDOW
+    return 0
+
+
 def _is_process_alive(pid: int) -> bool:
     """检查指定 PID 是否存活."""
     if sys.platform == "win32":
         try:
             proc = subprocess.run(
                 ["tasklist", "/FI", f"PID eq {pid}"],
-                capture_output=True, text=True, encoding="utf-8", timeout=5,
+                capture_output=True, timeout=5,
+                creationflags=_no_console_flags(),
             )
-            return str(pid) in proc.stdout
+            # tasklist 输出可能为本地化编码 (GBK), 用 bytes 判定避免解码崩溃
+            out = proc.stdout or b""
+            return str(pid).encode("ascii") in out
         except (subprocess.TimeoutExpired, OSError):
             return False
     else:
@@ -387,9 +402,10 @@ def _redis_ping(port: int) -> bool:
     try:
         result = subprocess.run(
             [str(REDIS_CLI_EXE), "-p", str(port), "ping"],
-            capture_output=True, text=True, encoding="utf-8", timeout=5,
+            capture_output=True, timeout=5,
+            creationflags=_no_console_flags(),
         )
-        return result.stdout.strip() == "PONG"
+        return (result.stdout or b"").strip() == b"PONG"
     except (subprocess.TimeoutExpired, OSError):
         return False
 
@@ -831,9 +847,12 @@ def stop_daemon_process(pid: int):
         try:
             result = subprocess.run(
                 ["taskkill", "/PID", str(pid), "/T", "/F"],
-                capture_output=True, text=True, encoding="utf-8", timeout=10,
+                capture_output=True, timeout=10,
+                creationflags=_no_console_flags(),
             )
-            if "SUCCESS" in result.stdout or "成功" in result.stdout:
+            out = result.stdout or b""
+            # taskkill 成功输出可能为中文本地化 (GBK), bytes 匹配两种编码的"成功"
+            if b"SUCCESS" in out or "成功".encode("utf-8") in out or "成功".encode("gbk") in out:
                 logger.info("daemon 进程树已终止 (PID=%d)", pid)
                 return True
             else:

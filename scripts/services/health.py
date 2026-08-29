@@ -106,11 +106,15 @@ def _load_ports() -> dict:
 
 def _redis_ping(port: int) -> bool:
     try:
+        # detached daemon (无控制台) 下 spawn redis-cli 必须加 CREATE_NO_WINDOW,
+        # 否则每个 PING 会弹出空白终端窗口一闪而过.
+        flags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
         result = subprocess.run(
             [str(REDIS_CLI_EXE), "-p", str(port), "ping"],
-            capture_output=True, text=True, encoding="utf-8", timeout=5,
+            capture_output=True, timeout=5,
+            creationflags=flags,
         )
-        return result.stdout.strip() == "PONG"
+        return (result.stdout or b"").strip() == b"PONG"
     except (subprocess.TimeoutExpired, OSError):
         return False
 

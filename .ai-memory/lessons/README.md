@@ -12,7 +12,7 @@ related_files:
 created_by: AI
 priority: high
 # lessons_count: counts all lesson files in lessons/ root (excludes README.md + archived-early/; includes archived N30 in root); synced by sync_ai_memory.py
-lessons_count: 68
+lessons_count: 69
 active_n_count: 37
 # retired_n_count: M0.M 闭环 N## (硬约束沉淀到 rules/skills, 在 failure-modes.md §Retired; 2026-08-28 校准: 实测 §Retired 索引行 26 条, 旧注释值 43 计错(含家族子条目数误加)已修正)
 retired_n_count: 26
@@ -199,11 +199,12 @@ next_n_id: 217
 - (archived) `early archived lesson (已归档)` — capability mismatch
 - (archived) `early archived lesson (已归档)` — message frame format
 
-### platform-env (4 files)
+### platform-env (5 files)
 - `platform-env_2026-07-02-n139-vite-proxy-localhost-ws-handshake.md` — Vite dev proxy 必须用 127.0.0.1 (避免 IPv6/IPv4 WS handshake 500)
 - `platform-env_2026-07-11-n154-n155-black-screen-agent-storm.md` — ADB subprocess storm + autoreload 重复启动终端 → 黑屏 ⭐ **家族主条目** (合并 N154 + N155)
 - `platform-env_2026-07-23-n186-agent-standalone-process-no-pid-lock.md` — agent 独立进程无 PID 文件锁单例检测 → 多进程冲突 WS 路由失效 (TD-339)
 - `platform-env_2026-07-23-n187-venv-deploy-dep-drift.md` — venv gaf-agent 部署脚本 requirements.txt 漂移 → rapidocr-onnxruntime 缺失 (TD-337)
+- `platform-env_2026-08-29-windows-detached-subprocess-console.md` — (L0) Windows detached 后台进程 spawn 控制台子进程 (redis-cli/tasklist/taskkill) 必须 CREATE_NO_WINDOW 防弹窗 + GBK 输出勿 text+utf-8, 用 bytes 比较
 
 ### command-errors (3 files)
 - `command-errors_2026-07-08-n150-n153-pre-commit-stash-governance.md` — pre-commit 失败根因修复 + stash 丢失防护 ⭐ **家族主条目** (合并 N150 + N153)
