@@ -19,7 +19,8 @@ from rest_framework import serializers
 class GameAccountDetailSchema(serializers.Serializer):
     """Schema for `TaskSerializer.get_game_account_details` list items."""
     id = serializers.IntegerField(read_only=True)
-    game_name = serializers.CharField(read_only=True)
+    # P3: GameAccount.game_name 已 drop; API 输出恒为 profile 游戏名 / 空串.
+    game_name = serializers.CharField(read_only=True, required=False)
     username = serializers.CharField(read_only=True)
 
 

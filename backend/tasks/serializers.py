@@ -258,7 +258,8 @@ class TaskSerializer(serializers.ModelSerializer):
         for acc in obj.game_accounts.all():
             accounts.append({
                 'id': acc.id,
-                'game_name': acc.game_name,
+                # P3: GameAccount.game_name 已 drop; 游戏名恒取自 game_profile.
+                'game_name': acc.game_profile.game_name if acc.game_profile_id else '',
                 'username': acc.username,
             })
         return accounts
