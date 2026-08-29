@@ -1,7 +1,7 @@
 ---
 summary: GAF 概念关系与命名归一化评估（迭代评估稿；结论稳定后驱动 spec + overview.md 更新 + 代码重命名）
 applies_to: ['architecture', 'naming', 'concept', 'evaluation']
-status: draft | 创建: 2026-08-29 | 扩展盘点: 2026-08-29 | 重新整理: 2026-08-29 | 决策采纳: 2026-08-29 | 二次复核+影响面: 2026-08-29（docs 断言修正 D4/D7/D12/D14/X1/章节号; OQ-7/OQ-8 锁定; 新增 §9 重命名影响面实测）
+status: draft | 创建: 2026-08-29 | 扩展盘点: 2026-08-29 | 重新整理: 2026-08-29 | 决策采纳: 2026-08-29 | 二次复核+影响面: 2026-08-29 | 结构核查+七维: 2026-08-29（OQ-3 MERGE/OQ-6 KEEP 经代码核查确认为最优; 七维评估 §10 总分31 领先次优8）
 how_to_use: >
   本文档是"评估稿"，非最终规范。用户将多次与之交流评估；结论稳定后：
   (1) 拆为 docs/specs/active/ 下的归一化 spec（含阶段表）；
@@ -152,7 +152,7 @@ how_to_use: >
 3. **任务分类采纳线性/链式/循环**（overview 新增章）；引擎层改写 `PipelineEngine`/`StateMachineEngine`。
 4. **字段/类名改名**：`Device.emulator`(模型字段)→`emulator_brand`（注意与 `device_type='emulator'` 字符串值区分，见 §9）；后端 `PerformanceMonitor` 类（`gaf_core/perf_monitor.py` + agent `utils/perf_monitor.py`，**实测为后端类非前端 TS**）统一命名消歧义；`GameProfile.default_routine`→`default_task_chain`（端点 `default-routine`→`default-task-chain`）。三者均高危（API/迁移/前端类型），见 §9 分阶段 C 批。
 5. **轮换策略对齐代码 4 选**（`sequential`/`random`/`by_stamina`/`by_last_executed`）；术语用 `GameAccountRotation`（弃 "RotationRule"）。
-6. **`loop_rotation` 保留**（与 GameAccountRotation 互补，非冗余）。
+6. **`loop_rotation` 保留**（与 GameAccountRotation 互补，非冗余；二次代码核查确认 KEEP 双模型为最优，见 §7 OQ-6）。
 7. **`Tag` 单一 `resources.Tag`**；文档撤销"tasks.Tag"说法。
 8. **备份无 ORM 模型**：文档改称"ZIP 快照 API（`/tasks/backup/`）"，删 `BackupRecord`/`BackupJob` 模型名。
 9. **`TraceSpan` 从文档删除**，改 `trace_id`；`AgentToken` 文档说明为字段+端点。
@@ -180,10 +180,10 @@ how_to_use: >
 
 - **OQ-1 `graph.py`** — ✅ 已采纳：删 `graph.py`+测试，文档改指 `PipelineGraph`(`parser.py`)。
 - **OQ-2 `ChainManager`** — ✅ 已采纳：类→`StateMachineEngine`，`task_type` `'chain'`→`'state_machine'`+别名 shim。
-- **OQ-3 `TaskStep`/`ExecutionStep`** — ✅ 已采纳：`ExecutionStep` 为权威，`TaskStep` 弃用合并（实现前先 grep 二者 writer/reader 确认使用面）。
+- **OQ-3 `TaskStep`/`ExecutionStep`** — ✅ 已采纳：`ExecutionStep` 为权威，`TaskStep` 弃用合并。**二次代码核查(2026-08-29)确认此为最优**：`TaskStep` 为遗留死模型（生产代码无 create 路径，仅 tests/seed；`serializers.py` L46 明文"生产数据走 ExecutionStep"），`ExecutionStep` 字段更全(`node_id`/`error_code`/`trace_id`…)且承载 WS 实时推送，为事实权威。MERGE 无生产数据丢失，仅需补 `retry_count` 字段并迁移 4 处读端点——MERGE 即最优，非权宜。
 - **OQ-4 两 `AgentSession`** — ✅ 已采纳：`protocol.AgentSession`→`AgentConnection`，`gaf_ai.agent.AgentSession`→`LLMAgentSession`。
 - **OQ-5 范围** — ✅ 已采纳：全量代码归一化，分阶段 A→D（见 §5/§6 + §9）。
-- **OQ-6 `rotation_rule`** — ✅ 已决：不改（字段 `rotation_rule`→`GameAccountRotation` related_name `rotation_rules` 自洽）。
+- **OQ-6 `rotation_rule` / 轮换模型** — ✅ 已决：**保留双模型（`GameAccountRotation` 共享配置 + `UnattendedSession.loop_rotation`/`rotation_index` 运行时状态），不合并**。**二次代码核查(2026-08-29)确认此为最优**：`GameAccountRotation` 跨 4 app 复用（`Task.rotation_rule` FK、多会话共享规则），`loop_rotation`+`rotation_index` 是每会话运行时游标（`scheduler/tasks.py` L120/L374 嵌套于 `if rotation_rule:` 块，循环模式禁用 `all_completed`）。合并会破坏"同规则既可用于一次性也可用于循环"的复用语义并丢失会话级游标——故 KEEP 双模型即最优，非权宜。仅可表面改名 `loop_rotation`→`rotation_loop_enabled`（可选，不改结构）。
 
 - **OQ-7 "监控任务"是否作为任务分类？** ✅ 已拍板：**不新增"监控任务"类型**（选项 a）。二次 docs 复核确认无任何文档将"监控任务"作为任务类型；"监控"=monitors 子系统 + agent `MonitorManager` + pipeline 监控触发节点，三者均非任务类型，与循环任务(`LoopNode`/`loop_rotation`)不同域（见 F1）。处置：文档新增"概念速查"小节，澄清 循环任务 ≠ 监控（与 OQ-8 文档澄清一并处理）。
 
@@ -224,3 +224,20 @@ how_to_use: >
 - **B 批(中危, agent/后端内部或仅文档)**：`ChainManager`→`StateMachineEngine`(OQ-2)+`task_type` shim；`PerformanceMonitor` 后端类名归一；`loop_rotation` 文档标注。
 - **C 批(高危, 必带迁移 + 前端类型重生成)**：`Device.emulator`→`emulator_brand`；`default_routine`→`default_task_chain`(+端点)；两 `AgentSession` 改名；`TaskStep` 合并入 `ExecutionStep`。每项：① 后端模型/字段改名 + 生成迁移(带兼容别名或数据迁移)；② serializers/views/urls 更新；③ 前端 `api.generated.ts` + `models/*.ts` 重生成；④ 全仓 import 改写；⑤ 后端+前端测试。
 - **D 批(文档收口)**：overview/features/子文档按 §4 修正(D4/D7/D12/D14/X1/章节号) + 概念速查(OQ-7) + 三健康面澄清(OQ-8)。
+
+## 10. 七维评估（最优方案，N167）
+
+> 对三方案打分(1-5)：**A 现状不动** / **B 仅改名不合并步骤** / **C 最优**(改名 + 合并 TaskStep + 保留轮换双模型 + 删 graph.py + 文档澄清)。自决阈值：总分≥19 且领先次优≥5。
+
+| 维度 | A 现状 | B 最小改名 | C 最优 | 说明 |
+|------|------|------|------|------|
+| 1 架构长远性 | 1 | 3 | 5 | C 消除 P0 歧义、结构更清 |
+| 2 全局归一化 | 1 | 3 | 5 | C 概念单一权威 |
+| 3 命名一致性(消歧义) | 1 | 4 | 5 | C 双 AgentSession/双步骤模型全消 |
+| 4 可维护性 | 2 | 3 | 4 | C 合并遗留步骤模型减债 |
+| 5 可测试性 | 2 | 3 | 4 | C 端点合并后更聚焦 |
+| 6 迁移/兼容风险(越低越高) | 4 | 4 | 3 | C 高危项带迁移有成本，但可控 |
+| 7 长期维护成本(越低越高) | 1 | 3 | 5 | C 债清，长期最低 |
+| **合计** | **12** | **23** | **31** | C 领先 B 8 分 ≥5，且 ≥19 → 自决执行 |
+
+**结论**：C（本评估稿方案）满足 N167 自决阈值，**即最优方案**，无需再交用户选 A/B。执行顺序见 §9 分阶段（先 A/B 批低危，后 C 批高危带迁移）。
