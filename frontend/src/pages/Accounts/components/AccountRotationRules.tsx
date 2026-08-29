@@ -164,7 +164,7 @@ export function AccountRotationRules({ open, onClose }: AccountRotationRulesProp
   /** account multi-select options (label = username + game name) */
   const accountOptions = accounts.map((acc) => ({
     value: acc.id,
-    label: `${acc.username} (${acc.game_name})`,
+    label: `${acc.username} (${acc.game_name_display})`,
   }));
 
   /** column definition */

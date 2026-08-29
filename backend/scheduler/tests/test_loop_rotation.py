@@ -48,7 +48,7 @@ def loop_accounts(db, base_data):
     for name in ('loop-acc-a', 'loop-acc-b'):
         accs.append(GameAccount.objects.create(
             owner=base_data['user'],
-            game_name='LoopGame',
+            game_profile=base_data['profile'],
             username=name,
             server_region='官服',
             login_method='password',

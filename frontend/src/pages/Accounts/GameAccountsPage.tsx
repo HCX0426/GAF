@@ -157,7 +157,7 @@ export function GameAccountsPage() {
    * test login
    */
   const handleTestLogin = (record: GameAccount) => {
-    setLoginTestAccount({ id: record.id, name: `${record.game_name} - ${record.username}` });
+    setLoginTestAccount({ id: record.id, name: `${record.game_name_display} - ${record.username}` });
     setLoginTesterOpen(true);
   };
 
@@ -187,8 +187,8 @@ export function GameAccountsPage() {
   const columns: ColumnsType<GameAccount> = [
     {
       title: t('accounts.col_game_name'),
-      dataIndex: 'game_name',
-      key: 'game_name',
+      dataIndex: 'game_name_display',
+      key: 'game_name_display',
       width: 120,
     },
     {

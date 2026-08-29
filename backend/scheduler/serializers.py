@@ -243,7 +243,9 @@ class GameAccountRotationSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_account_details(self, obj):
         return [
-            {'id': a.id, 'username': a.username, 'game_name': a.game_name}
+            # spec 2026-08-29-game-account-game-name-retirement P3: GameAccount.game_name
+            # 已 drop, 游戏名唯一来源 = game_profile.game_name (P2 后 profile 非空).
+            {'id': a.id, 'username': a.username, 'game_name': a.game_profile.game_name if a.game_profile_id else ''}
             for a in obj.accounts.all()
         ]
 

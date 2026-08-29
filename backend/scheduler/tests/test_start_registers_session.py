@@ -52,7 +52,7 @@ def _make_account(start_user):
     return GameAccount.objects.create(
         owner=start_user,
         game_profile=GameProfile.objects.get_or_create(game_name='StartGame')[0],
-        game_name='StartGame', username='acc-1',
+        username='acc-1',
         server_region='官服', login_method='password', status='ok',
     )
 

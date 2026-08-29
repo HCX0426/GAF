@@ -1289,7 +1289,10 @@ class GameAccountViewSet(AuditMixin, viewsets.ModelViewSet):
         """Return available game list (from GameProfile table)"""
         try:
             from gamestate.models import GameProfile
-            games = GameProfile.objects.values_list('game_name', flat=True).order_by('game_name')
+            games = [
+                {'id': p.id, 'name': p.game_name}
+                for p in GameProfile.objects.order_by('game_name')
+            ]
             return Response({'games': list(games)})
         except Exception as e:
             logger.warning('获取游戏列表失败: %s', e, exc_info=True)

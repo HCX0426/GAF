@@ -14,11 +14,17 @@ export async function fetchGameAccounts(params?: Record<string, unknown>): Promi
   return res.data;
 }
 
+/** 游戏档案选项 — P3 后 GameAccount 唯一游戏维度 = game_profile id */
+export interface GameOption {
+  id: number;
+  name: string;
+}
+
 /**
- * get available game list ( from GameProfile table )
+ * get available game list (from GameProfile table)
  */
-export async function fetchGameOptions(): Promise<{ games: string[] }> {
-  const res = await client.get<{ games: string[] }>('/accounts/game-accounts/game-options/');
+export async function fetchGameOptions(): Promise<{ games: GameOption[] }> {
+  const res = await client.get<{ games: GameOption[] }>('/accounts/game-accounts/game-options/');
   return res.data;
 }
 

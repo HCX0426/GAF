@@ -338,7 +338,7 @@ export function TasksPage({ category }: TasksPageProps) {
         if (accounts.length === 0) return <Tag>{t('tasks.unbound')}</Tag>;
         return (
           <Space size={2} wrap>
-            {accounts.slice(0, 2).map((a: { id: number; game_name: string; username: string }) => (
+            {accounts.slice(0, 2).map((a: { id: number; game_name_display: string; username: string }) => (
               <Tag key={a.id} color="blue">
                 {a.username}
               </Tag>

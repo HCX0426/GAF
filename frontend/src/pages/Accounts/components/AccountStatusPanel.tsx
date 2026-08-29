@@ -91,7 +91,7 @@ export function AccountStatusPanel({ account, open, onClose }: AccountStatusPane
     >
       <Spin spinning={loading}>
         <Descriptions column={1} bordered size="small">
-          <Descriptions.Item label={t('accounts.col_game_name_label')}>{currentAccount.game_name}</Descriptions.Item>
+          <Descriptions.Item label={t('accounts.col_game_name_label')}>{currentAccount.game_name_display}</Descriptions.Item>
           <Descriptions.Item label={t('accounts.col_username_label')}>{currentAccount.username}</Descriptions.Item>
           <Descriptions.Item label={t('accounts.col_server_region_label')}>
             {currentAccount.server_region || '-'}

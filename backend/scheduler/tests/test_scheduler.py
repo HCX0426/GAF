@@ -148,7 +148,6 @@ class TestAccountRotation(TestCase):
         self.account1 = GameAccount.objects.create(
             owner=self.user,
             game_profile=_gp('TestGame'),
-            game_name='TestGame',
             username='account_a',
             server_region='官服',
             login_method='password',
@@ -157,7 +156,6 @@ class TestAccountRotation(TestCase):
         self.account2 = GameAccount.objects.create(
             owner=self.user,
             game_profile=_gp('TestGame'),
-            game_name='TestGame',
             username='account_b',
             server_region='官服',
             login_method='password',
@@ -166,7 +164,6 @@ class TestAccountRotation(TestCase):
         self.account3 = GameAccount.objects.create(
             owner=self.user,
             game_profile=_gp('TestGame'),
-            game_name='TestGame',
             username='account_banned',
             server_region='官服',
             login_method='password',
@@ -1593,7 +1590,6 @@ def test_tick_dispatches_for_idle_device_no_rotation(
     account = GameAccount.objects.create(
         owner=tick_user,
         game_profile=_gp('TickGame'),
-        game_name='TickGame',
         username='tick-acct-1',
         login_method='password',
     )
@@ -1627,7 +1623,6 @@ def test_tick_skips_already_dispatched_account_no_rotation(
     account = GameAccount.objects.create(
         owner=tick_user,
         game_profile=_gp('TickGame'),
-        game_name='TickGame',
         username='tick-acct-2',
         login_method='password',
     )
@@ -1658,7 +1653,6 @@ def test_tick_skips_device_with_active_chain_execution(
     account = GameAccount.objects.create(
         owner=tick_user,
         game_profile=_gp('TickGame'),
-        game_name='TickGame',
         username='tick-acct-3',
         login_method='password',
     )
@@ -1697,7 +1691,6 @@ def test_tick_skips_disabled_chain(
     account = GameAccount.objects.create(
         owner=tick_user,
         game_profile=_gp('TickGame'),
-        game_name='TickGame',
         username='tick-acct-4',
         login_method='password',
     )
@@ -1733,12 +1726,10 @@ def test_tick_dispatches_with_rotation_rule(
 
     acct1 = GameAccount.objects.create(
         owner=tick_user, game_profile=_gp('TickGame'),
-        game_name='TickGame',
         username='rot-acct-1', login_method='password',
     )
     acct2 = GameAccount.objects.create(
         owner=tick_user, game_profile=_gp('TickGame'),
-        game_name='TickGame',
         username='rot-acct-2', login_method='password',
     )
 
@@ -1780,12 +1771,10 @@ def test_tick_rotation_skips_already_dispatched(
     """Rotation: already-dispatched account is skipped, next one is used."""
     acct1 = GameAccount.objects.create(
         owner=tick_user, game_profile=_gp('TickGame'),
-        game_name='TickGame',
         username='rot-acct-3', login_method='password',
     )
     acct2 = GameAccount.objects.create(
         owner=tick_user, game_profile=_gp('TickGame'),
-        game_name='TickGame',
         username='rot-acct-4', login_method='password',
     )
 
@@ -1824,7 +1813,6 @@ def test_tick_rotation_all_dispatched_skips(
     """Rotation: when all accounts already dispatched, no dispatch happens."""
     acct1 = GameAccount.objects.create(
         owner=tick_user, game_profile=_gp('TickGame'),
-        game_name='TickGame',
         username='rot-acct-5', login_method='password',
     )
 
@@ -1863,7 +1851,6 @@ def test_tick_handles_dispatch_error(
 
     account = GameAccount.objects.create(
         owner=tick_user, game_profile=_gp('TickGame'),
-        game_name='TickGame',
         username='tick-acct-err', login_method='password',
     )
     idle_device.game_account = account
@@ -1912,11 +1899,11 @@ def test_tick_continues_after_device_exception(running_session, tick_user):
     )
 
     acct1 = GameAccount.objects.create(
-        owner=tick_user, game_profile=profile, game_name=profile.game_name,
+        owner=tick_user, game_profile=profile,
         username='dev1-acct', login_method='password',
     )
     acct2 = GameAccount.objects.create(
-        owner=tick_user, game_profile=profile, game_name=profile.game_name,
+        owner=tick_user, game_profile=profile,
         username='dev2-acct', login_method='password',
     )
     dev1.game_account = acct1
@@ -1991,7 +1978,6 @@ def test_tick_scopes_devices_by_session_game_profile(
     other_account = GameAccount.objects.create(
         owner=tick_user,
         game_profile=other_profile,
-        game_name='OtherGame',
         username='other-acct',
         login_method='password',
     )
@@ -2002,7 +1988,6 @@ def test_tick_scopes_devices_by_session_game_profile(
     own_account = GameAccount.objects.create(
         owner=tick_user,
         game_profile=running_session.game_profile,
-        game_name=running_session.game_profile.game_name,
         username='own-acct',
         login_method='password',
     )

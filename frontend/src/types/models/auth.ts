@@ -206,7 +206,7 @@ export interface TaskDeviceMapping {
 
 export interface AccountBindingInfo {
   account_ids: number[];
-  accounts: Array<{ id: number; game_name: string; username: string; status: string }>;
+  accounts: Array<{ id: number; game_name_display: string; username: string; status: string }>;
   rotation_rule_id: number | null;
   rotation_rule: string | null;
 }

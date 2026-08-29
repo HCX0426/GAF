@@ -161,7 +161,7 @@ export function TaskFormModal({ open, editingTask, onClose, onSuccess }: TaskFor
                       placeholder={t('tasks.form_game_accounts_placeholder')}
                       allowClear
                       options={gameAccounts.map((ga) => ({
-                        label: `${ga.game_name} - ${ga.username}`,
+                        label: `${ga.game_name_display} - ${ga.username}`,
                         value: ga.id,
                       }))}
                     />

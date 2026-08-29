@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { Modal, Form, Input, Select, App } from 'antd';
 import { createAccount, updateAccount, fetchAccountGroups, fetchGameOptions } from '@/api/accounts';
+import type { GameOption } from '@/api/accounts';
 import { fetchResourcePacks } from '@/api/resources';
 import { useTranslation } from '@/i18n';
 import type { GameAccount, AccountGroup, ResourcePack } from '@/types/models';
@@ -26,7 +27,7 @@ export function GameAccountEditor({ open, account, onClose, onSuccess }: GameAcc
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [groups, setGroups] = useState<AccountGroup[]>([]);
-  const [gameOptions, setGameOptions] = useState<string[]>([]);
+  const [gameOptions, setGameOptions] = useState<GameOption[]>([]);
   const [resourcePacks, setResourcePacks] = useState<ResourcePack[]>([]);
   const isEdit = !!account;
 
@@ -79,7 +80,7 @@ export function GameAccountEditor({ open, account, onClose, onSuccess }: GameAcc
   useEffect(() => {
     if (open && account) {
       form.setFieldsValue({
-        game_name: account.game_name,
+        game_profile: account.game_profile ?? undefined,
         username: account.username,
         password: '',
         server_region: account.server_region,
@@ -101,7 +102,7 @@ export function GameAccountEditor({ open, account, onClose, onSuccess }: GameAcc
       setSubmitting(true);
 
       const payload: Record<string, unknown> = {
-        game_name: values.game_name,
+        game_profile: values.game_profile,
         username: values.username,
         server_region: values.server_region,
         login_method: values.login_method,
@@ -146,11 +147,12 @@ export function GameAccountEditor({ open, account, onClose, onSuccess }: GameAcc
         validateMessages={validateMessages}
         initialValues={{ login_method: 'password', server_region: '官服' }}
       >
-        <Form.Item name="game_name" label={t('accounts.col_game_name')} rules={[{ required: true }]}>
+        <Form.Item name="game_profile" label={t('accounts.col_game_name')} rules={[{ required: true }]}>
           <Select
             placeholder={t('accounts.select_game')}
             showSearch
-            options={gameOptions.map((name) => ({ label: name, value: name }))}
+            optionFilterProp="label"
+            options={gameOptions.map((g) => ({ label: g.name, value: g.id }))}
             notFoundContent={t('accounts.no_games')}
             allowClear
           />

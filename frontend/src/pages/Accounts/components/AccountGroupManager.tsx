@@ -243,7 +243,7 @@ export function AccountGroupManager({ open, onClose, onRefresh }: AccountGroupMa
                     className="gaf-mb-xs gaf-py-sm gaf-px-md gaf-radius-md"
                     style={{ border: `1px solid ${token.colorBorderSecondary}`, cursor: 'grab' }}
                   >
-                    <span>{account.game_name}</span>
+                    <span>{account.game_name_display}</span>
                     <span className="gaf-ml-sm" style={{ color: token.colorTextTertiary }}>
                       {account.username}
                     </span>
