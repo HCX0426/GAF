@@ -37,7 +37,7 @@ next: N/A
 | P2 | 统一文件日志检索 API + 应用日志/时间线收口（前端数据源切换） | TD-417 | ✅ 完成 (log_files.py + /logs/files/; AppLogTab 文件层; 浏览器实测有数据) |
 | P3 | 审计日志双入口收敛（日志中心审计 tab 移除） | TD-418 | ✅ 完成 (8→7 tab; 浏览器实测) |
 | P4 | 服务管理页 e2e + AI 调试文档（日志查询指引/分界段） | TD-419 | ✅ 完成 (e2e spec + handbook 指引) |
-| P5 | 回归（pytest/tsc/vitest/浏览器）+ 文档 + commit + 归档 | — | ⏳ commit 待执行 |
+| P5 | 回归（pytest/tsc/vitest/浏览器）+ 文档 + commit + 归档 | — | ✅ 完成 (72 后端 + tsc 0 + 浏览器实测全过; commit 2fcff72) |
 
 ## 3. 实施设计
 
