@@ -27,7 +27,7 @@ source: docs/analysis/concept-naming-normalization.md §1/§4(D23①)/§7
 
 ## 3. 目标 (Goals)
 
-1. 选定**单一规范帧名**（建议保留 `task.assign` 为规范，因存量客户端已发此帧；或改为 `task.assign_task` 以与方法语义对齐——实施前与用户确认）。
+1. **【已锁定 2026-08-29】规范帧名 = `task.assign`**（存量客户端已发此帧，改名成本最高且收益低；与方法 `handle_task_assign` 语义通过文档对齐，不强求帧名=方法名）。`task.dispatch` 保留为 deprecated alias。
 2. `task.dispatch` 保留为 deprecated alias（过渡期），映射同一 handler。
 3. 协议文档（WS RPC 契约）更新，明确规范帧名 + alias 生命周期。
 4. 零后端方法改名（仅 WS 路由表 + 协议文档）。
@@ -44,8 +44,8 @@ source: docs/analysis/concept-naming-normalization.md §1/§4(D23①)/§7
 
 #### Task P1.1: 路由表
 
-- `agent/src/client/connection.py:870`：明确规范帧（如 `task.assign`）为 primary；`task.dispatch` 保留 alias → `handler.handle_task_assign`（已是）。
-- 若选 `task.assign_task` 为新规范：加 `task.assign` + `task.dispatch` 双 alias 指向 `handle_task_assign`，前端/后端 WS 客户端同步改用新名。
+- **规范帧名锁定为 `task.assign`**（primary）；`task.dispatch` 保留为 deprecated alias → `handler.handle_task_assign`（现有 `connection.py:870` 已满足，仅需在协议文档标注生命周期）。
+- 不改前端/后端 WS 客户端帧名（存量已用 `task.assign`）；仅补充 alias 废弃说明。
 
 #### Task P1.2: 协议文档
 

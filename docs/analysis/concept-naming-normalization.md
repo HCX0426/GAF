@@ -27,6 +27,7 @@ verified_baseline: >
 - **已结合代码核实的结构性决策（最优，非权宜）**：
   - `TaskStep` 为遗留死模型（生产零写入），`ExecutionStep` 为事实权威 → **MERGE**（无生产数据丢失）。
   - `GameAccountRotation`（共享配置）与 `loop_rotation`+`rotation_index`（每会话运行时游标）处不同抽象层 → **KEEP 双模型**（合并会破坏复用语义）。
+  - `protocol.AgentSession` 改名目标须避让 agent 端既有 `AgentConnection`（`connection.py:153`），故用 `AgentWsSession`（服务端 WS 会话），见 §9/OQ-4 与批 E-1。
 - **最优方案七维评分 31（次优 23 / 现状 12），达自决阈值**（§8）。执行顺序 §7 分阶段（先低危 A/B，后高危 C 带迁移 + 前端类型重生成）。
 
 ## 1. 目标态映射表（code + doc 融合，本稿核心）
@@ -40,7 +41,7 @@ verified_baseline: >
 | `graph.py` DAG | 死代码 | "DAG 执行(ParallelExecutor/DAGExecutor)" | **删除** `graph.py`+测试 | 改指 `PipelineGraph`(`parser.py`) | 低 | A | 外部生产 import=0 |
 | `TaskStep` | 遗留死模型（生产零 create） | "TaskStep" | **合并入 `ExecutionStep` 后删** | 执行步骤=`ExecutionStep` | 高 | C | `serializers.py:46` 明文"生产数据走 ExecutionStep" |
 | `ExecutionStep` | 运行时唯一写入方 | "ExecutionStep" | 保留为权威（补 `retry_count`） | 保留 | 高(合并方) | C | `protocol/services.py:785` update_or_create |
-| `protocol.AgentSession`(WS) | WS 会话模型 | 列 gaf_ai/protocol | `AgentConnection` | 代理连接 | 高 | C | 235 命中含 API/迁移/前端类型 |
+| `protocol.AgentSession`(WS) | WS 会话模型(服务端) | 列 gaf_ai/protocol | `AgentWsSession`（**勿用 `AgentConnection`：agent 端 `agent/src/client/connection.py:153` 同名 WS 客户端已占**，审计 E-1） | Agent WS 会话 | 高 | C | 235 命中含 API/迁移/前端类型 |
 | `gaf_ai.agent.AgentSession`(LLM) | LLM 会话模型 | 同上 | `LLMAgentSession` | LLM 会话 | 高 | C | 同上 |
 | `Device.emulator`(字段) | `agents/models.py:323` | 与 `device_type='emulator'` 值混淆 | `emulator_brand` | 模拟器品牌 | 高 | C | 40 命中 + `device_type` 值 26 |
 | `PerformanceMonitor` | **后端类**(`gaf_core`/`agent`) | 误称前端 TS | 消歧义（如 `PerfMonitor`） | 后端性能监视器 | 中 | B | 53 命中后端为主，前端仅 1 |
@@ -156,7 +157,7 @@ verified_baseline: >
 10. **子文档 S1–S11 / D19 / D23② / D24 修文档**；`GafDaemon` 为权威名，`gaf_daemon.py` 实现，`gaf_services.ps1` 标"Windows 启停兼容层"。
 11. **overview §9 补 9 概念**（AnomalyPattern 注前端-only）。
 12. **UI/目录收敛**：TaskChain UI→`pages/Ops/TaskChains/`；`ScanModal`→`pages/Devices/`；设备发现 `DeviceDiscoveryRegistry` 为权威。
-13. **（OQ-1~OQ-5 已采纳）**：`graph.py` 删除（OQ-1）；`ChainManager`→`StateMachineEngine`+`task_type` 别名 shim（OQ-2）；`ExecutionStep` 为权威、`TaskStep` 弃用合并（OQ-3，**代码核实 MERGE 最优**：`TaskStep` 生产零写入，`serializers.py:46` 明文）；两 `AgentSession`→`AgentConnection`/`LLMAgentSession`（OQ-4）；全量代码归一化分阶段 A→D（OQ-5）；`rotation_rule` 不改（OQ-6，**代码核实 KEEP 最优**）。—— OQ-3/OQ-4 为高危（`AgentSession` 235 命中含 API/迁移/前端类型；`TaskStep` 192/`ExecutionStep` 218 含 API/迁移/前端），须按 §7 C 批带迁移 + 前端类型重生成。
+13. **（OQ-1~OQ-5 已采纳）**：`graph.py` 删除（OQ-1）；`ChainManager`→`StateMachineEngine`+`task_type` 别名 shim（OQ-2）；`ExecutionStep` 为权威、`TaskStep` 弃用合并（OQ-3，**代码核实 MERGE 最优**：`TaskStep` 生产零写入，`serializers.py:46` 明文）；两 `AgentSession`→`AgentWsSession`/`LLMAgentSession`（OQ-4）；全量代码归一化分阶段 A→D（OQ-5）；`rotation_rule` 不改（OQ-6，**代码核实 KEEP 最优**）。—— OQ-3/OQ-4 为高危（`AgentSession` 235 命中含 API/迁移/前端类型；`TaskStep` 192/`ExecutionStep` 218 含 API/迁移/前端），须按 §7 C 批带迁移 + 前端类型重生成。
 14. **F1 — "循环任务" ≠ "监控任务"**：代码无"监控任务"类型；"监控"=monitors 子系统 + agent `MonitorManager`（`docs/business/tasks/cancel-design.md:22`）+ pipeline 监控触发节点，与循环任务(`LoopNode`/`loop_rotation`)不同域。文档新增"概念速查"澄清边界（OQ-7）。
 15. **F2 — "系统运行标志"非"服务全部在线"**：Header "系统运行状态/运行中"（`HeaderStatusIndicator.tsx`）反映 `system_status_view`（`monitors/views.py:305`）聚合 `overall`：`running` 当且仅当 (a) 全部服务健康 **且** (b) ≥1 Agent/Device online/idle **且** (c) 无 `RecoveryLog` 失败/系统级恢复错误。另有 `InfraHealthPanel`（`/accounts/init/health/`）与 `ServicesPage` 两块独立健康面。文档明确三块语义；前端 Header 标签"系统运行状态"→"系统综合状态"（纯 UI 文案，零 API/代码冲击）；`overall` 逻辑不动（OQ-8）。
 
@@ -222,7 +223,7 @@ verified_baseline: >
 - **OQ-1 `graph.py`** — ✅ 删 `graph.py`+测试，文档改指 `PipelineGraph`。
 - **OQ-2 `ChainManager`** — ✅ 类→`StateMachineEngine`，`task_type`→`'state_machine'`+别名 shim。
 - **OQ-3 `TaskStep`/`ExecutionStep`** — ✅ MERGE（`TaskStep` 遗留死模型，生产零写入；`ExecutionStep` 权威，无生产数据丢失）。
-- **OQ-4 两 `AgentSession`** — ✅ `protocol.AgentSession`→`AgentConnection`，`gaf_ai.agent.AgentSession`→`LLMAgentSession`。
+- **OQ-4 两 `AgentSession`** — ✅ `protocol.AgentSession`→`AgentWsSession`（服务端 WS 会话；agent 端 `AgentConnection` 同名客户端已占，批 E-1 修正），`gaf_ai.agent.AgentSession`→`LLMAgentSession`。
 - **OQ-5 范围** — ✅ 全量代码归一化，分阶段 A→D（§7）。
 - **OQ-6 `rotation_rule`/轮换模型** — ✅ **KEEP 双模型**（代码核实最优：共享配置 vs 每会话运行时游标，跨层不可合并）。
 - **OQ-7 "监控任务"分类** — ✅ 不新增；文档加"概念速查"澄清循环≠监控。
