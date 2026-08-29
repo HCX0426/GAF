@@ -143,9 +143,14 @@ class GameStateRule(models.Model):
         max_length=255,
         verbose_name='规则名称',
     )
-    game_name = models.CharField(
-        max_length=255,
-        verbose_name='游戏名称',
+    # spec 2026-08-29-game-account-game-name-retirement P5: 游戏维度唯一权威 =
+    # GameProfile; 原 game_name 字符串已收敛为 FK (数据迁移按同名 get_or_create 回填).
+    game_profile = models.ForeignKey(
+        GameProfile,
+        on_delete=models.PROTECT,
+        related_name='state_rules',
+        verbose_name='关联游戏档案',
+        help_text='规则所属的游戏档案 (Window-centric 唯一游戏维度)',
     )
     tracker_type = models.CharField(
         max_length=50,
@@ -186,7 +191,7 @@ class GameStateRule(models.Model):
         verbose_name_plural = '游戏状态规则'
 
     def __str__(self):
-        return f'{self.name} ({self.game_name})'
+        return f'{self.name} ({self.game_profile.game_name})'
 
 
 class GameStateSnapshot(models.Model):
@@ -231,7 +236,15 @@ class GameVersionCheck(models.Model):
     检测游戏客户端更新（EXE/资源文件变化），自动标记受影响的模板为"待验证"。
     用于无人值守场景：游戏更新后自动暂停相关任务，避免使用过期模板。
     """
-    game_name = models.CharField(max_length=100, verbose_name='游戏名称')
+    # spec 2026-08-29-game-account-game-name-retirement P6: 游戏维度唯一权威 =
+    # GameProfile; 原 game_name 字符串已收敛为 FK (数据迁移按同名 get_or_create 回填).
+    game_profile = models.ForeignKey(
+        GameProfile,
+        on_delete=models.PROTECT,
+        related_name='game_version_checks',
+        verbose_name='关联游戏档案',
+        help_text='被检测游戏 (Window-centric 唯一游戏维度)',
+    )
     resource_pack = models.ForeignKey(
         'resources.ResourcePack',
         on_delete=models.CASCADE,
@@ -263,4 +276,4 @@ class GameVersionCheck(models.Model):
         ordering = ['-detected_at']
 
     def __str__(self):
-        return f'{self.game_name} v{self.previous_version_hash[:8]} → v{self.current_version_hash[:8]}'
+        return f'{self.game_profile.game_name} v{self.previous_version_hash[:8]} → v{self.current_version_hash[:8]}'

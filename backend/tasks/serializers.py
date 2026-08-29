@@ -357,12 +357,14 @@ class MarketplaceItemSerializer(serializers.ModelSerializer):
 
     publisher_name = serializers.CharField(source='publisher.username', read_only=True)
     pipeline_name = serializers.CharField(source='pipeline.name', read_only=True, allow_null=True)
+    # P7: 游戏维度唯一权威 = game_profile; 展示名恒来自 profile, 无 profile = '通用'.
+    game_name = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = MarketplaceItem
         fields = [
             'id', 'publisher', 'publisher_name', 'pipeline', 'pipeline_name',
-            'game_name', 'title', 'description', 'screenshot_urls', 'tags',
+            'game_profile', 'game_name', 'title', 'description', 'screenshot_urls', 'tags',
             'status', 'download_count', 'rating_avg', 'rating_count',
             'version', 'created_at', 'updated_at',
         ]
@@ -370,6 +372,10 @@ class MarketplaceItemSerializer(serializers.ModelSerializer):
             'id', 'publisher', 'download_count', 'rating_avg',
             'rating_count', 'created_at', 'updated_at',
         ]
+
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_game_name(self, obj):
+        return obj.game_profile.game_name if obj.game_profile_id else '通用'
 
 
 class MarketplaceReviewSerializer(serializers.ModelSerializer):

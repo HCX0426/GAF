@@ -36,10 +36,14 @@ TD-259 #23 引入 `GameAccount.game_profile` FK（注释约定"替代 game_name 
 
 | 阶段 | 内容 | diff 预估 | 状态 |
 |------|------|----------|:---:|
-| P1 | 后端写入/读取迁移（serializer find_or_create + 展示=profile + 视图过滤） | ~120 行 + 测试 | ⏳ |
-| P2 | 数据回填迁移 + game_profile NOT NULL + unique_together 迁移 | ~40 行 + 迁移 | ⏳ |
-| P3 | 断开字符串写入、drop game_name 字段、前端表单/展示/契约同步 | ~200 行 | ⏳ |
+| P1 | 后端写入/读取迁移（serializer find_or_create + 展示=profile + 视图过滤） | ~120 行 + 测试 | ✅ 已提交 ea663a9 |
+| P2 | 数据回填迁移 + game_profile NOT NULL + unique_together 迁移 | ~40 行 + 迁移 | ✅ 已提交 a116d8e |
+| P3 | 断开字符串写入、drop game_name 字段、前端表单/展示/契约同步 | ~200 行 | ✅ 已提交 187296a + 收尾 77c2e18/5f9d3bc |
 | P4 | 验收：accounts 全量测试 + 账户 e2e + 全量回归 + game_name 引用残留清零 | — | ⏳ |
+| P5 | **扩展(用户 2026-08-29 追加)**: GameStateRule.game_name → game_profile FK | ~120 行 + 迁移 | 🔧 后端完成, 待 commit (随 P6 同迁移 0010) |
+| P6 | **扩展**: GameVersionCheck.game_name → game_profile FK（去冗余字符串） | ~40 行 + 迁移 | 🔧 后端完成, 待 commit (随 P5 同迁移 0010) |
+| P7 | **扩展**: MarketplaceItem.game_name → game_profile FK + 前端去硬编码游戏选项 | ~150 行 + 前端 | 🔧 后端完成 (迁移 0057), **前端 Marketplace.tsx 改造未开始** |
+| P8 | 验收(扩展)：gamestate/tasks 全量测试 + game_name 引用清零 + 归档 | — | ⏳ |
 
 > 每阶段完成 → 更新本表状态 + completed-features；commit 粒度 = 每阶段 1 commit（§4.10 阶段拆分，单阶段 diff < 1500 行）。
 
@@ -49,8 +53,16 @@ TD-259 #23 引入 `GameAccount.game_profile` FK（注释约定"替代 game_name 
 2. **数据迁移键** = `game_name`（全局）`GameProfile.objects.get_or_create(game_name=acc.game_name)`，与 owner 无关。
 3. P2 后 `game_profile` 列 **NOT NULL、blank=False**；P3 移除 `unique_together(owner, game_name, username)` 的 game_name 项，改为 `(owner, game_profile, username)`。
 4. P1 起展示层 `game_name` 输出 = `profile.game_name`（method field，profile 缺省时 fallback 旧值仅到 P2 前）。
-5. `GameProfile.game_name`（model 自带）与其它模型（Device、GameStatusRule、VersionCheck 等）的各自游戏名**不属于本 spec 范围**，不动。
-6. 前端 `api.generated.ts` 在 P3 末通过 `npm run generate:api-types` 再生成（需按先重启 backend 再生成）。
+5. ~~`GameProfile.game_name`（model 自带）与其它模型（Device、GameStatusRule、VersionCheck 等）的各自游戏名**不属于本 spec 范围**，不动。~~ **已废弃 (2026-08-29 用户否决)**: 从架构角度看，`GameStateRule` / `GameVersionCheck` / `MarketplaceItem` 各自持有独立 `game_name` 字符串 = 同一"游戏维度"的多套表示，属未归一化。全部纳入本 spec 扩展阶段 P5-P7 收敛到 game_profile FK。
+6. 前端 `api.generated.ts` 在 P3 末通过 `npm run generate:api-types` 再生成（需按先重启 backend 再生成）。P7 后需再次生成以同步 GameStateRule/MarketplaceItem 契约。
+
+### 扩展范围 P5-P7 映射明细（2026-08-29 用户追加调查）
+
+| 模型 | 现状 | 收敛方案 |
+|------|------|---------|
+| `gamestate.GameStateRule.game_name` | CharField(255)，ViewSet 过滤 `?game_name=`，admin list_filter | 改为 `game_profile` FK（null=True 过渡）→ 数据回填 get_or_create → NOT NULL；serializer 输出 `game_profile` + 展示名；视图过滤改 `game_profile`；admin 同步 |
+| `gamestate.GameVersionCheck.game_name` | CharField(100)，无 API（仅 admin+测试） | 同上收敛到 `game_profile` FK；admin/__str__ 同步 |
+| `tasks.MarketplaceItem.game_name` | CharField(100, default='通用')，publish 接收字符串，前端 GAME_OPTION_KEYS 硬编码 | 改为 `game_profile` FK（null=True 表示"通用"）；publish API 接受 game_profile_id；前端选项改从 GameProfile 拉取（去硬编码）+ 展示用 profile 名 |
 
 ## 风险与限制
 

@@ -35,10 +35,10 @@ def _get_or_create_default_account(user, resource_pack):
     game_profile = resource_pack.game_profile
     game_name = game_profile.game_name if game_profile else resource_pack.name
 
-    # 尝试查找已有的默认账号: 同名 + 同资源包 + 同 owner
+    # 尝试查找已有的默认账号: 同 profile + 同资源包 + 同 owner (P3: game_name 字符串已退)
     existing = GameAccount.objects.filter(
         owner=user,
-        game_name=game_name,
+        game_profile=game_profile,
         resource_pack=resource_pack,
     ).first()
     if existing:

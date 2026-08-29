@@ -288,7 +288,7 @@ class DispatchTaskResourcePackTest(TestCase):
             name='BD2-v1', version='1.0',
             directory_path='resources/BrownDust-II/v1',
         )
-        # GameAccount requires owner, game_name, username, encrypted_password.
+        # GameAccount requires owner, game_profile, username, encrypted_password.
         owner = User.objects.create_user(
             username='rp-test-owner', password='test123456',
         )
@@ -296,7 +296,6 @@ class DispatchTaskResourcePackTest(TestCase):
             owner=owner,
             game_profile=GameProfile.objects.get_or_create(game_name='BD2')[0],
             username='test-acct',
-            game_name='BD2',
             encrypted_password='encrypted-blob',
             resource_pack=pack,
         )
@@ -378,7 +377,7 @@ class DispatchTaskResourcePackTest(TestCase):
             owner=owner,
             game_profile=GameProfile.objects.get_or_create(game_name='BD2')[0],
             username='priority-test-acct',
-            game_name='BD2', encrypted_password='encrypted-blob',
+            encrypted_password='encrypted-blob',
             resource_pack=account_pack,  # should NOT be used
         )
         agent = Agent.objects.create(

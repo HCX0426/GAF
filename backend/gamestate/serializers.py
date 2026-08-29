@@ -1,5 +1,7 @@
 """游戏状态追踪序列化器。"""
 
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from gamestate.models import (
@@ -55,13 +57,22 @@ class GameProfileSerializer(serializers.ModelSerializer):
 class GameStateRuleSerializer(serializers.ModelSerializer):
     """游戏状态规则序列化器。"""
 
+    # spec 2026-08-29-game-account-game-name-retirement P5: 游戏维度唯一权威 =
+    # GameProfile; 输出 game_profile FK + 展示名, game_name 字符串已删除.
+    game_name = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = GameStateRule
         fields = [
-            'id', 'name', 'game_name', 'tracker_type',
+            'id', 'name', 'game_profile', 'game_name', 'tracker_type',
             'ocr_region', 'ocr_regex', 'threshold', 'threshold_direction',
             'trigger_action', 'is_active',
         ]
+        read_only_fields = ['id']
+
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_game_name(self, obj):
+        return obj.game_profile.game_name
 
 
 class GameStateSnapshotSerializer(serializers.ModelSerializer):

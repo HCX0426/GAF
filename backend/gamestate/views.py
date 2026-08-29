@@ -481,8 +481,8 @@ class GameStateRuleViewSet(AuditMixin, viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, RoleBasedPermission]
     required_permission = 'view'
     filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_fields = ['game_name', 'tracker_type', 'is_active']
-    search_fields = ['name', 'game_name']
+    filterset_fields = ['game_profile', 'tracker_type', 'is_active']
+    search_fields = ['name', 'game_profile__game_name']
     audit_resource_type = AuditResourceType.GAME_STATE_RULE
 
     def get_serializer_class(self):
@@ -505,7 +505,7 @@ class GameStateRuleViewSet(AuditMixin, viewsets.ModelViewSet):
         Treat as sensitive to avoid leaking detection logic to anyone
         reading AuditLog rows later.
         """
-        snapshot_keys = ("name", "game_name", "tracker_type", "is_active", "threshold")
+        snapshot_keys = ("name", "game_profile", "tracker_type", "is_active", "threshold")
         sensitive = {"ocr_region", "ocr_regex", "trigger_action", "secret", "token"}
         if action == AuditAction.CREATE:
             return build_diff_details(
@@ -535,7 +535,7 @@ class GameStateSnapshotViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated, RoleBasedPermission]
     required_permission = 'view'
     filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_fields = ['rule', 'rule__game_name', 'triggered']
+    filterset_fields = ['rule', 'rule__game_profile', 'triggered']
 
     def get_serializer_class(self):
         from gamestate.serializers import GameStateSnapshotSerializer

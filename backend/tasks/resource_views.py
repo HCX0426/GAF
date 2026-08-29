@@ -328,7 +328,7 @@ class MarketplaceViewSet(AuditMixin, viewsets.ModelViewSet):
             pipeline=pipeline,
             title=request.data.get("title", pipeline.name),
             description=request.data.get("description", pipeline.description or ""),
-            game_name=request.data.get("game_name", "通用"),
+            game_profile_id=request.data.get("game_profile") or None,
             tags=request.data.get("tags", []),
             screenshot_urls=request.data.get("screenshot_urls", []),
             version=request.data.get("version", "1.0"),

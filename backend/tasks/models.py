@@ -939,11 +939,16 @@ class MarketplaceItem(models.Model):
         verbose_name='关联Pipeline',
         help_text='关联的 Pipeline 记录',
     )
-    game_name = models.CharField(
-        max_length=100,
-        default='通用',
-        verbose_name='游戏名称',
-        help_text='条目所属的游戏名称',
+    # spec 2026-08-29-game-account-game-name-retirement P7: 游戏维度唯一权威 =
+    # GameProfile; 原 game_name 字符串已收敛为 FK. null=True 表示"通用" (无特定游戏).
+    game_profile = models.ForeignKey(
+        'gamestate.GameProfile',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='market_items',
+        verbose_name='所属游戏档案',
+        help_text='条目所属的游戏档案 (Window-centric 唯一游戏维度); null = 通用',
     )
     title = models.CharField(
         max_length=255,

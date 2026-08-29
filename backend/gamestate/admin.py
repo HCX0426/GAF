@@ -17,9 +17,9 @@ class GameProfileAdmin(admin.ModelAdmin):
 class GameStateRuleAdmin(admin.ModelAdmin):
     """游戏状态规则管理后台配置。"""
 
-    list_display = ('id', 'name', 'game_name', 'tracker_type', 'is_active')
-    list_filter = ('game_name', 'tracker_type', 'is_active')
-    search_fields = ('name', 'game_name')
+    list_display = ('id', 'name', 'game_profile', 'tracker_type', 'is_active')
+    list_filter = ('game_profile', 'tracker_type', 'is_active')
+    search_fields = ('name', 'game_profile__game_name')
 
 
 @admin.register(GameStateSnapshot)
@@ -36,8 +36,8 @@ class GameStateSnapshotAdmin(admin.ModelAdmin):
 class GameVersionCheckAdmin(admin.ModelAdmin):
     """游戏版本更新检测管理后台配置。"""
 
-    list_display = ('id', 'game_name', 'resource_pack', 'detected_at')
-    list_filter = ('game_name',)
-    search_fields = ('game_name',)
+    list_display = ('id', 'game_profile', 'resource_pack', 'detected_at')
+    list_filter = ('game_profile',)
+    search_fields = ('game_profile__game_name',)
     readonly_fields = ('detected_at',)
     filter_horizontal = ('affected_templates',)

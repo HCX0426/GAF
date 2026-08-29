@@ -140,25 +140,38 @@ class GameStateRuleViewSetTests(TestCase):
         )
         _login(self.client, 'rule_admin', 'AdminPass123!')
 
+    def _profile(self, name):
+        return GameProfile.objects.create(game_name=name)
+
     def test_list_rules(self):
-        GameStateRule.objects.create(name='R1', game_name='G1', tracker_type='ocr')
+        GameStateRule.objects.create(
+            name='R1', game_profile=self._profile('G1'), tracker_type='ocr',
+        )
         resp = self.client.get(RULE_URL)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(len(_get_results(resp)), 1)
 
     def test_create_rule(self):
+        profile = self._profile('GameX')
         resp = self.client.post(RULE_URL, {
             'name': 'New Rule',
-            'game_name': 'GameX',
+            'game_profile': profile.id,
             'tracker_type': 'ocr',
         }, format='json')
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
         self.assertEqual(_unwrap(resp)['name'], 'New Rule')
+        # P5: 展示名恒来自 profile.game_name
+        self.assertEqual(_unwrap(resp)['game_name'], 'GameX')
 
-    def test_filter_by_game_name(self):
-        GameStateRule.objects.create(name='A', game_name='GameA', tracker_type='ocr')
-        GameStateRule.objects.create(name='B', game_name='GameB', tracker_type='ocr')
-        resp = self.client.get(f'{RULE_URL}?game_name=GameA')
+    def test_filter_by_game_profile(self):
+        GameStateRule.objects.create(
+            name='A', game_profile=self._profile('GameA'), tracker_type='ocr',
+        )
+        GameStateRule.objects.create(
+            name='B', game_profile=self._profile('GameB'), tracker_type='ocr',
+        )
+        game_a = GameProfile.objects.get(game_name='GameA')
+        resp = self.client.get(f'{RULE_URL}?game_profile={game_a.id}')
         results = _get_results(resp)
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]['name'], 'A')
@@ -174,7 +187,8 @@ class GameStateSnapshotViewSetTests(TestCase):
         )
         _login(self.client, 'snap_admin', 'AdminPass123!')
         self.rule = GameStateRule.objects.create(
-            name='Snap Rule', game_name='GameA', tracker_type='ocr',
+            name='Snap Rule', game_profile=GameProfile.objects.create(game_name='GameA'),
+            tracker_type='ocr',
         )
 
     def test_list_snapshots(self):

@@ -54,9 +54,12 @@ class GameProfileModelTests(TestCase):
 class GameStateRuleModelTests(TestCase):
     """GameStateRule model: creation, defaults, __str__, ordering."""
 
+    def setUp(self):
+        self.profile = GameProfile.objects.create(game_name='GameA')
+
     def test_create_with_defaults(self):
         rule = GameStateRule.objects.create(
-            name='HP Check', game_name='GameA', tracker_type='ocr',
+            name='HP Check', game_profile=self.profile, tracker_type='ocr',
         )
         self.assertEqual(rule.ocr_region, {})
         self.assertEqual(rule.ocr_regex, '')
@@ -64,20 +67,30 @@ class GameStateRuleModelTests(TestCase):
         self.assertEqual(rule.threshold_direction, '')
         self.assertEqual(rule.trigger_action, {})
         self.assertTrue(rule.is_active)
+        self.assertEqual(rule.game_profile, self.profile)
 
     def test_str_representation(self):
         rule = GameStateRule.objects.create(
-            name='Mana Rule', game_name='GameX', tracker_type='ocr',
+            name='Mana Rule', game_profile=self.profile, tracker_type='ocr',
         )
-        self.assertEqual(str(rule), 'Mana Rule (GameX)')
+        self.assertEqual(str(rule), 'Mana Rule (GameA)')
+
+    def test_score_requires_game_profile(self):
+        """P5: game_profile 非空, 游戏维度唯一来源 = FK."""
+        from django.db import IntegrityError
+        with self.assertRaises(IntegrityError):
+            GameStateRule.objects.create(
+                name='No Profile', tracker_type='ocr',
+            )
 
 
 class GameStateSnapshotModelTests(TestCase):
     """GameStateSnapshot model: creation, defaults, __str__, FK cascade."""
 
     def setUp(self):
+        profile = GameProfile.objects.create(game_name='GameA')
         self.rule = GameStateRule.objects.create(
-            name='Test Rule', game_name='GameA', tracker_type='ocr',
+            name='Test Rule', game_profile=profile, tracker_type='ocr',
         )
 
     def test_create_with_defaults(self):
@@ -104,33 +117,28 @@ class GameVersionCheckModelTests(TestCase):
 
     def setUp(self):
         self.pack = _make_resource_pack()
+        self.profile = GameProfile.objects.create(game_name='GameA')
+
+    def _make_check(self):
+        return GameVersionCheck.objects.create(
+            game_profile=self.profile,
+            resource_pack=self.pack,
+            previous_version_hash='a' * 64,
+            current_version_hash='b' * 64,
+        )
 
     def test_create_with_defaults(self):
-        check = GameVersionCheck.objects.create(
-            game_name='GameA',
-            resource_pack=self.pack,
-            previous_version_hash='a' * 64,
-            current_version_hash='b' * 64,
-        )
+        check = self._make_check()
         self.assertEqual(check.files_changed, [])
         self.assertIsNotNone(check.detected_at)
+        self.assertEqual(check.game_profile, self.profile)
 
     def test_str_representation(self):
-        check = GameVersionCheck.objects.create(
-            game_name='GameA',
-            resource_pack=self.pack,
-            previous_version_hash='a' * 64,
-            current_version_hash='b' * 64,
-        )
+        check = self._make_check()
         self.assertIn('GameA', str(check))
 
     def test_cascade_delete_pack_deletes_check(self):
-        check = GameVersionCheck.objects.create(
-            game_name='GameA',
-            resource_pack=self.pack,
-            previous_version_hash='a' * 64,
-            current_version_hash='b' * 64,
-        )
+        check = self._make_check()
         check_id = check.id
         self.pack.delete()
         self.assertFalse(GameVersionCheck.objects.filter(id=check_id).exists())
