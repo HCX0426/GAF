@@ -26,6 +26,7 @@ import {
   fetchTaskMarketItemDetail,
 } from '@/api/skills';
 import { listPipelines, type PipelineSummary } from '@/api/pipelines';
+import { fetchGameProfiles } from '@/api/gameProfiles';
 import { useTranslation } from '@/i18n';
 import PageWrapper from '@/components/Common/PageWrapper';
 
@@ -34,6 +35,7 @@ interface MarketItem {
   publisher_name: string;
   pipeline_name: string;
   game_name: string;
+  game_profile?: number | null;
   title: string;
   description: string;
   tags: string[];
@@ -43,15 +45,6 @@ interface MarketItem {
   version: string;
   created_at: string;
 }
-
-/** Game options — i18n keys */
-const GAME_OPTION_KEYS: Array<{ value: string; labelKey: string }> = [
-  { value: '', labelKey: 'marketplace.game_all' },
-  { value: 'genshin', labelKey: 'marketplace.game_genshin' },
-  { value: 'starrail', labelKey: 'marketplace.game_starrail' },
-  { value: 'zzz', labelKey: 'marketplace.game_zzz' },
-  { value: 'nikke', labelKey: 'marketplace.game_nikke' },
-];
 
 /** Tag options — i18n keys */
 const TAG_OPTION_KEYS: Array<{ value: string; labelKey: string }> = [
@@ -74,7 +67,11 @@ const SORT_OPTION_KEYS: Array<{ value: string; labelKey: string }> = [
 export function MarketplacePage() {
   const { token: designToken } = antTheme.useToken();
   const t = useTranslation();
-  const gameOptions = useMemo(() => GAME_OPTION_KEYS.map((o) => ({ value: o.value, label: t(o.labelKey) })), [t]);
+  const [profiles, setProfiles] = useState<Array<{ id: number; game_name: string }>>([]);
+  const gameOptions = useMemo(
+    () => [{ value: '', label: t('marketplace.game_all') }, ...profiles.map((p) => ({ value: String(p.id), label: p.game_name }))],
+    [profiles, t],
+  );
   const tagOptions = useMemo(() => TAG_OPTION_KEYS.map((o) => ({ value: o.value, label: t(o.labelKey) })), [t]);
   const sortOptions = useMemo(() => SORT_OPTION_KEYS.map((o) => ({ value: o.value, label: t(o.labelKey) })), [t]);
   const [items, setItems] = useState<MarketItem[]>([]);
@@ -114,6 +111,21 @@ export function MarketplacePage() {
       }
     };
     loadItems();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /** Load GameProfile options for the game filter + publish dropdown (P7: 去硬编码游戏选项) */
+  useEffect(() => {
+    let cancelled = false;
+    fetchGameProfiles({ page_size: 200 })
+      .then((res) => {
+        if (!cancelled) setProfiles(res.results ?? []);
+      })
+      .catch(() => {
+        /* profiles optional — publish still works with an empty selection */
+      });
     return () => {
       cancelled = true;
     };
@@ -190,7 +202,7 @@ export function MarketplacePage() {
       const published = await publishTaskToMarket({
         pipeline_id: values.pipeline,
         title: values.title,
-        game_name: values.game || 'genshin',
+        game_profile: values.game ? Number(values.game) : null,
         description: values.description,
         tags: values.tags || [],
       });
@@ -283,7 +295,7 @@ export function MarketplacePage() {
                           {item.title}
                         </Typography.Text>
                         <Tag color="blue" className="gaf-text-xxs">
-                          {gameOptions.find((g) => g.value === item.game_name)?.label || item.game_name}
+                          {item.game_name}
                         </Tag>
                       </div>
                     }
@@ -351,7 +363,7 @@ export function MarketplacePage() {
             <div>
               <Typography.Title level={5}>{detailItem.title}</Typography.Title>
               <div className="gaf-toolbar-group gaf-mb-sm">
-                <Tag color="blue">{gameOptions.find((g) => g.value === detailItem.game_name)?.label}</Tag>
+                <Tag color="blue">{detailItem.game_name}</Tag>
                 {detailItem.tags.map((tag) => (
                   <Tag key={tag} color="green">
                     {tag}

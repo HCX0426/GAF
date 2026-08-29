@@ -127,6 +127,7 @@ export interface TaskMarketplaceItem {
   publisher_name: string;
   pipeline_name: string;
   game_name: string;
+  game_profile?: number | null;
   title: string;
   description: string;
   tags: string[];
