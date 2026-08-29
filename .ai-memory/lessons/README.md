@@ -12,7 +12,7 @@ related_files:
 created_by: AI
 priority: high
 # lessons_count: counts all lesson files in lessons/ root (excludes README.md + archived-early/; includes archived N30 in root); synced by sync_ai_memory.py
-lessons_count: 69
+lessons_count: 70
 active_n_count: 37
 # retired_n_count: M0.M 闭环 N## (硬约束沉淀到 rules/skills, 在 failure-modes.md §Retired; 2026-08-28 校准: 实测 §Retired 索引行 26 条, 旧注释值 43 计错(含家族子条目数误加)已修正)
 retired_n_count: 26
@@ -191,10 +191,11 @@ next_n_id: 217
 - `misc_2026-08-28_n213-drf-decorator-order.md` — DRF 装饰器顺序 (policy 装饰器必须在 @api_view 之下, 否则 import 期 TypeError 全站 500) ⭐ **N213**
 - (archived) `early archived lesson (已归档)` — API 404 tasks
 
-### agent-protocol (3 files + 3 archived)
+### agent-protocol (4 files + 3 archived)
 - `agent-protocol_2026-07-05-n145-login-poc-agent-no-response.md` — login PoC: agent heartbeat 正常但执行卡 pending, consumer 只 ACK 不更新 DB
 - `agent-protocol_2026-07-06-n148-control-message-routing-and-db-pk-vs-business-id.md` — 双向控制消息缺路由标识被静默丢弃 + Channels group 路由混淆
 - `agent-protocol_2026-08-28_n216-zombie-consumer-false-offline.md` — Agent 假离线 (僵尸 consumer 的 _heartbeat_checker 覆盖心跳状态, status↔offline 抖动; 重启后端即清) ⭐ **N216**
+- `protocol_2026-08-29-message-frame-log-db-writes.md` — (L0) 消息帧 DB 写入三坑 (async sync ORM / thread_sensitive 并发 TMError / FK UUID) + 测试日志污染服务报错 (test.py NullHandler)
 - (archived) `early archived lesson (已归档)` — agent popup bug
 - (archived) `early archived lesson (已归档)` — capability mismatch
 - (archived) `early archived lesson (已归档)` — message frame format

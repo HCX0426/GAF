@@ -70,7 +70,7 @@ describe('ServicesPage', () => {
       </MemoryRouter>,
     );
     await waitFor(() => {
-      expect(screen.getAllByText('2 条报错').length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/2 条报错/).length).toBeGreaterThan(0);
     });
   });
 

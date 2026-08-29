@@ -54,6 +54,16 @@ class TestIsErrorLine:
     def test_non_matches(self, line):
         assert health._is_error_line(line) is False
 
+    @pytest.mark.parametrize('line', [
+        # 连接级噪音不算服务报错 (客户端断连/取消)
+        'Error: write ECONNABORTED',
+        'ERROR ECONNRESET from client 127.0.0.1',
+        'BrokenPipeError: [WinError 10054]',
+        'WinError 10053 软件导致了连接中止',
+    ])
+    def test_noise_excluded(self, line):
+        assert health._is_error_line(line) is False
+
 
 class TestParseLineTs:
     @pytest.mark.parametrize('line, expect', [

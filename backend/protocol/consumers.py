@@ -8,6 +8,7 @@ import os
 import time
 from typing import Any
 
+from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.utils import timezone as django_timezone
@@ -84,15 +85,39 @@ def _normalize_frame_payload(message_type: str, frame: dict) -> dict:
     """收起/截断帧 payload 生成日志体 (纯函数, 便于单测).
 
     - 截图/大 payload 帧: 只记元信息不存 body (防表膨胀)
-    - 普通帧: payload 超过 _FRAME_LOG_MAX_PAYLOAD_CHARS 截断为 preview
+    - 普通帧: 过 JSON round-trip 保证可序列化 (帧内 UUID/datetime 等对象
+      转 str, 否则 JSONField 写入报错), 超过 _FRAME_LOG_MAX_PAYLOAD_CHARS 截断
     """
     if message_type in _FRAME_LOG_SKIP_BODY_TYPES:
         return {"_skipped": True, "message_type": message_type}
     payload = dict(frame)
     rendered = json.dumps(payload, ensure_ascii=False, default=str)
     if len(rendered) > _FRAME_LOG_MAX_PAYLOAD_CHARS:
-        payload = {"_truncated": True, "preview": rendered[: _FRAME_LOG_MAX_PAYLOAD_CHARS]}
-    return payload
+        return {"_truncated": True, "preview": rendered[: _FRAME_LOG_MAX_PAYLOAD_CHARS]}
+    return json.loads(rendered)
+
+
+def _create_frame_log(*, message_type: str, direction: str, trace_id: Any, payload: dict, agent_id: Any) -> None:
+    """sync DB insert for 消息帧日志 (由 _log_frame 经 sync_to_async 调用).
+
+    agent_id 是 AgentSession.agent_id (UUID), 需先解析出 PK 再关联 FK —
+    不能直接当作 agent_session_id (PK int) 使用 (否则 'Field id expected number').
+    """
+    try:
+        from protocol.models import AgentSession, MessageFrameLog
+
+        session = None
+        if agent_id:
+            session = AgentSession.objects.filter(agent_id=agent_id).order_by("-id").first()
+        MessageFrameLog.objects.create(
+            message_type=message_type,
+            direction=direction,
+            trace_id=trace_id,
+            payload=payload,
+            agent_session=session,
+        )
+    except Exception as exc:  # noqa: BLE001 - 帧日志不阻塞消息处理
+        logger.warning("消息帧日志写入失败 (%s/%s): %s", message_type, direction, exc)
 
 
 class AgentConsumer(AsyncWebsocketConsumer):
@@ -1497,22 +1522,20 @@ class AgentConsumer(AsyncWebsocketConsumer):
 
         spec 2026-08-29-logging-system-consolidation P1-1. 截图/大 payload 帧
         只记元信息; 普通帧 payload 截断到 _FRAME_LOG_MAX_PAYLOAD_CHARS.
+
+        写入必须走 ``sync_to_async(thread_sensitive=False)``:
+        - 裸同步 ORM 在 async 上下文抛 SynchronousOnlyOperation (实测 2026-08-29)
+        - ``database_sync_to_async`` (thread_sensitive=True) 会与 heartbeat 等
+          处理器的主线程同步 DB 访问在同一连接上并发 → TransactionManagementError
+        - thread_sensitive=False 用独立线程/独立连接, 与主流程事务彻底隔离
         """
-        try:
-            from protocol.models import MessageFrameLog
-
-            payload = _normalize_frame_payload(message_type, frame)
-
-            trace_id_val = frame.get("trace_id")
-            await database_sync_to_async(MessageFrameLog.objects.create)(
-                message_type=message_type[:50],
-                direction=direction,
-                trace_id=trace_id_val or None,
-                payload=payload,
-                agent_session_id=self._agent_session_id or None,
-            )
-        except Exception as exc:
-            logger.debug("消息帧日志写入失败 (忽略): %s", exc)
+        await sync_to_async(_create_frame_log, thread_sensitive=False)(
+            message_type=message_type[:50],
+            direction=direction,
+            trace_id=frame.get("trace_id") or None,
+            payload=_normalize_frame_payload(message_type, frame),
+            agent_id=self._agent_session_id or None,
+        )
 
     async def _handle_llm_call(self, frame):
         """Handle LLM call from agent via WebSocket RPC (Task 2.1).

@@ -46,6 +46,12 @@ _ERROR_PATTERNS = (
     re.compile(r"Traceback \(most recent call last\)"),
     re.compile(r"(?:Exception|Error)[:(]"),
 )
+# 连接级噪音: 客户端断连/取消 (ECONNRESET/ECONNABORTED/EPIPE/WinError 10053/10054)
+# 是正常网络现象, 不是服务故障, 不计入"服务报错" (展示层 filter=error 仍可见).
+_NOISE_PATTERNS = (
+    re.compile(r"ECONNRESET|ECONNABORTED|EPIPEBROKEN|BrokenPipe"),
+    re.compile(r"WinError\s+1005[34]"),
+)
 _SCAN_MAX_LINES = 5000          # 单个日志文件最多扫描的行数
 _SCAN_CAP_LINES = 2000          # 报错统计最多处理的行数 (防大文件拖慢看门狗)
 _LATEST_MAX_CHARS = 300         # latest 报错文本截断长度
@@ -244,8 +250,13 @@ def check_frontend(ports: dict) -> Health:
 # ---- 报错检测 (spec 2026-08-29-services-management-monitor P2) -------------------
 
 def _is_error_line(line: str) -> bool:
-    """判断一行是否为报错行 (logging 级别 / Traceback / Python 异常冒号行)."""
-    return any(pat.search(line) for pat in _ERROR_PATTERNS)
+    """判断一行是否为报错行 (logging 级别 / Traceback / Python 异常冒号行).
+
+    排除连接级噪音 (客户端断连/取消 — 正常网络现象, 非服务故障).
+    """
+    if any(p.search(line) for p in _NOISE_PATTERNS):
+        return False
+    return any(p.search(line) for p in _ERROR_PATTERNS)
 
 
 def _latest_day_dir(app_rel: str) -> Path | None:
