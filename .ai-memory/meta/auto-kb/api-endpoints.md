@@ -25,7 +25,7 @@ auto_updated: 2026-07-26
         # Auto-generated knowledge entry
 
         <!-- source: backend/config/urls.py, backend/*/urls.py -->
-        <!-- generated: 2026-08-28 -->
+        <!-- generated: 2026-08-29 -->
 
         ## Symptom
 

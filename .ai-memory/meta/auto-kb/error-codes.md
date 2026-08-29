@@ -27,7 +27,7 @@ auto_updated: 2026-07-26
         # Auto-generated knowledge entry
 
         <!-- source: agent/src/core/exceptions.py, backend/**/exceptions.py, backend/config/settings/base.py -->
-        <!-- generated: 2026-08-28 -->
+        <!-- generated: 2026-08-29 -->
 
         ## Symptom
 

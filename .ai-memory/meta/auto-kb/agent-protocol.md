@@ -30,7 +30,7 @@ auto_updated: 2026-07-18
         # Auto-generated knowledge entry
 
         <!-- source: backend/protocol/constants.py, backend/protocol/schemas.py, backend/protocol/consumers.py -->
-        <!-- generated: 2026-08-28 -->
+        <!-- generated: 2026-08-29 -->
 
         ## Symptom
 
