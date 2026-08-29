@@ -230,7 +230,7 @@ class DeviceScanView(APIView):
             return [
                 {
                     "name": d.name,
-                    "emulator": d.emulator or "adb",
+                    "emulator_brand": d.emulator_brand or "adb",
                     "adb_port": (
                         (d.extra_info.get("adb_port") or d.extra_info.get("port") or 5555) if d.extra_info else 5555
                     ),
@@ -498,9 +498,9 @@ class DeviceRegisterView(APIView):
             if not device.adb_serial and adb_serial:
                 device.adb_serial = adb_serial
                 update_fields.append("adb_serial")
-            if not device.emulator and emulator_type:
-                device.emulator = emulator_type
-                update_fields.append("emulator")
+            if not device.emulator_brand and emulator_type:
+                device.emulator_brand = emulator_type
+                update_fields.append("emulator_brand")
             # Re-registration often means the window was reopened and got a new
             # handle. Update window_handle so the device can come back online.
             new_hwnd = data.get("hwnd", "")
@@ -679,7 +679,7 @@ class DeviceRegisterView(APIView):
                     "status": device.status,
                     "adb_serial": device.adb_serial,
                     "window_handle": device.window_handle,
-                    "emulator": device.emulator,
+                    "emulator_brand": device.emulator_brand,
                 }, extra_sensitive={"agent_token", "secret", "fcm_token", "token"}),
                 ip_address=get_client_ip(request),
             )

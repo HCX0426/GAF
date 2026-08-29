@@ -25,7 +25,7 @@ class Command(BaseCommand):
                 'resolution_height': 1080,
                 'screenshot_fps': 30,
                 'adb_serial': '127.0.0.1:5555',
-                'emulator': 'ldplayer',
+                'emulator_brand': 'ldplayer',
                 'extra_info': {'android_version': '12', 'cpu': 'Intel i7-12700', 'memory': '8GB'},
             },
             {
@@ -36,7 +36,7 @@ class Command(BaseCommand):
                 'resolution_height': 720,
                 'screenshot_fps': 0,
                 'adb_serial': '127.0.0.1:7555',
-                'emulator': 'mumu',
+                'emulator_brand': 'mumu',
                 'extra_info': {'android_version': '9', 'cpu': '', 'memory': '4GB'},
             },
             {
@@ -67,7 +67,7 @@ class Command(BaseCommand):
                 'resolution_height': 900,
                 'screenshot_fps': 24,
                 'adb_serial': '127.0.0.1:62001',
-                'emulator': 'nox',
+                'emulator_brand': 'nox',
                 'extra_info': {'android_version': '7', 'cpu': 'AMD Ryzen 7', 'memory': '6GB'},
             },
         ]

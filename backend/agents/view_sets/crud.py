@@ -124,7 +124,7 @@ class DeviceViewSet(AuditMixin, viewsets.ModelViewSet):
         """Build audit details for Device writes; sensitive fields redacted."""
         snapshot_keys = (
             "name", "device_type", "status", "agent_id", "adb_serial",
-            "window_handle", "emulator", "control_mode",
+            "window_handle", "emulator_brand", "control_mode",
             "screenshot_method", "input_method",
             "game_profile_id", "game_account_id",
             "resolution_width", "resolution_height",

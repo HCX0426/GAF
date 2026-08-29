@@ -82,7 +82,7 @@ def _build_device_info_for_execution(execution):
         "input_method": input_method,
         "control_mode": control_mode,
         "adb_serial": dev.adb_serial or "",
-        "emulator": dev.emulator or "",
+        "emulator_brand": dev.emulator_brand or "",
     }
 
 

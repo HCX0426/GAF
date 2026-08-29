@@ -57,7 +57,7 @@ def _get_or_cache_available_methods(device: Device) -> list[str]:
                 get_available_methods as _get_available_methods,
             )
 
-            methods = _get_available_methods(device.emulator or "")
+            methods = _get_available_methods(device.emulator_brand or "")
         except Exception:
             logger.warning("available_methods: emulator methods probe failed", exc_info=True)
             methods = []

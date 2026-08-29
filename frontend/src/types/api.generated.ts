@@ -8891,7 +8891,7 @@ export interface components {
             /** @default  */
             window_title: string;
             /** @default  */
-            emulator: string;
+            emulator_brand: string;
             resolution?: {
                 [key: string]: unknown;
             } | null;

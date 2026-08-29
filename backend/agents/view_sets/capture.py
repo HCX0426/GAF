@@ -321,7 +321,7 @@ class DeviceTestScreenshotView(APIView):
                         img_bytes, adb_method = adb_capture(
                             serial,
                             adb_exe,
-                            emulator_type=device.emulator or "",
+                            emulator_type=device.emulator_brand or "",
                             method=requested_method or None,
                         )
                         if img_bytes:
@@ -336,7 +336,7 @@ class DeviceTestScreenshotView(APIView):
                             fps, latency_ms = self._benchmark_adb_screenshot(
                                 serial,
                                 adb_exe,
-                                device.emulator or "",
+                                device.emulator_brand or "",
                                 rounds=3,
                                 method=requested_method,
                             )

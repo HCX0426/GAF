@@ -86,7 +86,7 @@ class DeviceSerializer(serializers.ModelSerializer):
             'screenshot_fps', 'extra_info',
             'locked_by', 'locked_by_username', 'locked_at',
             'control_mode', 'screenshot_method', 'input_method', 'device_stats',
-            'adb_serial', 'window_handle', 'emulator', 'game_profile', 'game_profile_detail',
+            'adb_serial', 'window_handle', 'emulator_brand', 'game_profile', 'game_profile_detail',
             'game_account',
             'system_version', 'battery_level', 'last_heartbeat',
             'resolved_methods',
@@ -239,7 +239,7 @@ class DeviceRegisterSerializer(serializers.Serializer):
     adb_serial = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
     hwnd = serializers.CharField(max_length=64, required=False, allow_blank=True, default='')
     window_title = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
-    emulator = serializers.CharField(max_length=32, required=False, allow_blank=True, default='')
+    emulator_brand = serializers.CharField(max_length=32, required=False, allow_blank=True, default='')
     resolution = serializers.DictField(required=False, allow_null=True, default=dict)
     resolution_width = serializers.IntegerField(required=False, allow_null=True, default=None)
     resolution_height = serializers.IntegerField(required=False, allow_null=True, default=None)

@@ -224,7 +224,7 @@ export interface ScanResponse {
 
 export interface ScanEmulatorItem {
   name: string;
-  emulator: string;
+  emulator_brand: string;
   adb_port: number;
   adb_serial: string;
   status: string;

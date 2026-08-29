@@ -320,12 +320,12 @@ class Device(models.Model):
         verbose_name='窗口句柄',
         help_text='Windows 窗口句柄标识',
     )
-    emulator = models.CharField(
+    emulator_brand = models.CharField(
         max_length=32,
         blank=True,
         default='',
-        verbose_name='模拟器类型',
-        help_text='模拟器类型, 如 LDPlayer/Nox',
+        verbose_name='模拟器品牌',
+        help_text='模拟器品牌, 如 LDPlayer/Nox',
     )
     system_version = models.CharField(
         max_length=100,

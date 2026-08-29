@@ -239,7 +239,7 @@ verified_baseline: >
 |----|----|------|------|------|
 | P1 | 低危（零 API/迁移/前端） | `A` | 低 | 删 `graph.py`(死代码) + 去 `TaskDispatcher` 框 + `GafDaemon` 归一 + `TraceSpan` 残骸 |
 | P2 | 中危（agent/后端内部或仅文档） | `B` | 中 | `ChainManager`→`StateMachineEngine` + `task_type` 别名 shim；`PerformanceMonitor` 后端类名；`loop_rotation` 文档标注 |
-| P3 | 高危（迁移+前端类型） | `C-device-emulator` | 高 | `Device.emulator`→`emulator_brand` |
+| P3 | 高危（迁移+前端类型） | `C-device-emulator` | 高 | `Device.emulator`→`emulator_brand` | ✅ 已完成 2026-08-29 |
 | P3 | 高危 | `C-default-routine` | 高 | `default_routine`→`default_task_chain` + 端点 |
 | P3 | 高危 | `C-taskstep-merge` | 高 | `TaskStep` 合并入 `ExecutionStep` |
 | P3 | 高危 | `C-task-assign` | 高 | `task.assign` 帧名统一 + alias | ✅ 已完成 2026-08-29 |

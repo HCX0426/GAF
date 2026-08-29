@@ -39,7 +39,7 @@ class DeviceFactory(factory.django.DjangoModelFactory):
     screenshot_fps = 30.0
     extra_info = factory.LazyFunction(dict)
     adb_serial = factory.Sequence(lambda n: f"emulator-{5554 + n}")
-    emulator = "ldplayer"
+    emulator_brand = "ldplayer"
 
 
 class WindowsDeviceFactory(DeviceFactory):
@@ -47,7 +47,7 @@ class WindowsDeviceFactory(DeviceFactory):
 
     device_type = Device.DeviceType.WINDOWS
     adb_serial = ""
-    emulator = ""
+    emulator_brand = ""
     window_handle = factory.Sequence(lambda n: f"{n:08x}")
 
 
