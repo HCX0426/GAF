@@ -2,7 +2,6 @@
  * setup wizard API
  */
 import apiClient from './client';
-import type { InitStatus } from '@/types/models';
 
 /** health check data structure */
 export interface HealthResponse {
@@ -63,15 +62,6 @@ export interface DeviceScanResult {
 /** check if admin user already exists */
 export function checkHasAdmin(): Promise<boolean> {
   return apiClient.get('/accounts/init/check-admin/').then((res) => res.data.exists);
-}
-
-/**
- * Fetch system init status (initialized flag, has_admin, register_enabled).
- * Endpoint: GET /accounts/init/status/
- * Used by the login page to toggle the register tab.
- */
-export function fetchInitStatus(): Promise<InitStatus> {
-  return apiClient.get<InitStatus>('/accounts/init/status/').then((res) => res.data);
 }
 
 /** create admin account */

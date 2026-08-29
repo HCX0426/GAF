@@ -253,7 +253,8 @@ class TestSchedulerService:
             first = result["items"][0]
             assert first["device_id"] == 1
             assert first["device_name"] == "Device A"
-            assert first["status"] == "pending"
+            # N219: 今日日程 = 计划排期, 状态为 planned(计划中), 非 pending
+            assert first["status"] == "planned"
             assert first["progress"] == 0
             assert first["error_message"] is None
 
