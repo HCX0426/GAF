@@ -1,7 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from tasks import analytics_views, backup_views
+from tasks import backup_views
 from tasks.execution_views import (
     TaskBindAccountsView,
     TaskBindDevicesView,
@@ -58,10 +58,7 @@ urlpatterns = [
     path('validate-payload/', TaskViewSet.as_view({'post': 'validate_payload'}), name='task-validate-payload'),
     # TD-074: explicit paths MUST come before include(router.urls) to prevent
     # the router's <pk>/ detail route from matching these as pk values.
-    path('analytics/task-stats/', analytics_views.task_stats, name='analytics-task-stats'),
-    path('analytics/step-heatmap/', analytics_views.step_heatmap, name='analytics-step-heatmap'),
-    path('analytics/trend/', analytics_views.trend, name='analytics-trend'),
-    path('analytics/weekly-report/', analytics_views.weekly_report, name='analytics-weekly-report'),
+    # (analytics/* 由 executions.analytics_urls 挂载于 /api/v2/analytics/, 2026-08-29 去重)
     path('backup/create/', backup_views.create_backup, name='backup-create'),
     path('backup/restore/', backup_views.restore_backup, name='backup-restore'),
     # TD-060: traces routes migrated to tracing app (/api/v2/tracing/traces/).
