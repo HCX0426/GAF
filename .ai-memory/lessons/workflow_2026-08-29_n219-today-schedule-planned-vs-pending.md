@@ -6,6 +6,11 @@ related_files:
   - backend/scheduler/services/scheduler_service.py
   - frontend/src/components/Dashboard/TodaySchedule.tsx
   - backend/scheduler/serializers.py
+  - frontend/src/components/Dashboard/ExecutionQueuePreview.tsx
+  - backend/tasks/execution_views.py
+  - backend/executions/views.py
+  - backend/scheduler/unattended_views.py
+  - backend/protocol/services.py
 created_by: AI
 priority: high
 n_id: N219
@@ -32,6 +37,7 @@ diff_keywords: ["planned", "计划中", "today_schedule", "account_name", "getSt
 2. **空字段条件渲染**: 前端 `account_name` 有值才渲染 ` → account` 段; 后端 `account_name` 空时给 `""`（不再"未知账户"占位）.
 3. **serializer 同步**: TodayScheduleItemSerializer 状态 ChoiceField 补 `planned`.
 4. 回归测试: `test_today_schedule_planned_status_and_empty_account`（planned + 空账号断言）。
+5. 2026-08-29 全仓同类扫除: ① 执行队列预览 (ExecutionQueuePreview) 同消费 today 接口, 补 `planned` 分支 + 空段守卫; ② 后端 `get_today_schedule` 的 `device_name`/`task_chain_name` 占位统一 `""`; ③ recovery-log 摘要/日报 items/failures/无人值守 queue 的 `未知设备/未知账户/未知任务/未知错误` 全部改空串 (无 UI 消费方, 诚实为空优于伪占位); ④ protocol 落库默认 `未知错误` → `""` + 测试同步。
 
 ## 验证
 

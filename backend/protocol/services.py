@@ -864,7 +864,7 @@ def update_task_execution_result(*, execution_id, success, elapsed_time, error_m
         execution.error_message = ""
         execution.error_code = ""
     else:
-        execution.error_message = error_msg or "未知错误"
+        execution.error_message = error_msg or ""
         # N192: Persist task-level error_code and map to user_message.
         # get_user_message() converts technical error codes (DEVICE_DISCONNECTED)
         # to user-friendly Chinese text for frontend display.

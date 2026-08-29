@@ -181,7 +181,7 @@ class TestTaskResultDbSideEffects(TestCase):
         self.assertIsNotNone(refreshed.completed_at)
 
     async def test_task_result_failure_sets_error_message(self):
-        """success=False → error_message captured, defaults to '未知错误' when empty."""
+        """success=False → error_message captured, empty when not provided."""
         execution = await sync_to_async(TaskExecutionFactory.create)()
 
         communicator = await self._connect_communicator()
@@ -199,8 +199,8 @@ class TestTaskResultDbSideEffects(TestCase):
         refreshed = await self._reload_execution(execution)
         self.assertEqual(refreshed.error_message, "image match failed at step 3")
 
-    async def test_task_result_failure_empty_error_defaults_to_unknown(self):
-        """success=False + empty error_msg → error_message defaults to '未知错误'."""
+    async def test_task_result_failure_empty_error_kept_empty(self):
+        """success=False + empty error_msg → error_message stays empty (no fake placeholder)."""
         execution = await sync_to_async(TaskExecutionFactory.create)()
 
         communicator = await self._connect_communicator()
@@ -216,7 +216,7 @@ class TestTaskResultDbSideEffects(TestCase):
             await communicator.disconnect()
 
         refreshed = await self._reload_execution(execution)
-        self.assertEqual(refreshed.error_message, "未知错误")
+        self.assertEqual(refreshed.error_message, "")
 
     # --- duration / started_at backfill ---
 

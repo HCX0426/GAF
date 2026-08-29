@@ -390,10 +390,10 @@ def daily_report_view(request):
         last_step = fe.steps.filter(status='failed').order_by('-step_index').first()
         failures.append({
             'execution_id': fe.id,
-            'device': fe.agent.hostname if fe.agent else '未知',
-            'account': fe.triggered_by.username if fe.triggered_by else '未知',
-            'failed_step': last_step.step_name if last_step else '未知',
-            'error': fe.error_message or '未知错误',
+            'device': fe.agent.hostname if fe.agent else '',
+            'account': fe.triggered_by.username if fe.triggered_by else '',
+            'failed_step': last_step.step_name if last_step else '',
+            'error': fe.error_message or '',
             'time': fe.created_at.isoformat(),
             'root_cause': fe.error_message or '待分析',
         })
@@ -422,9 +422,9 @@ def daily_report_view(request):
             duration_str = f'{int(duration // 60)}:{int(duration % 60):02d}'
         items.append({
             'id': str(fe.id),
-            'task_name': fe.task.name if fe.task else '未知',
-            'device_name': fe.agent.hostname if fe.agent else '未知',
-            'account_name': fe.triggered_by.username if fe.triggered_by else '未知',
+            'task_name': fe.task.name if fe.task else '',
+            'device_name': fe.agent.hostname if fe.agent else '',
+            'account_name': fe.triggered_by.username if fe.triggered_by else '',
             'status': fe.status,
             'started_at': fe.started_at.isoformat() if fe.started_at else None,
             'completed_at': fe.completed_at.isoformat() if fe.completed_at else None,
@@ -579,8 +579,8 @@ def unattended_logs_view(request):
         all_logs.append({
             'id': log.id,
             'timestamp': log.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'device_name': log.details.get('device', '未知设备'),
-            'account_alias': log.details.get('account', '未知账户'),
+            'device_name': log.details.get('device', ''),
+            'account_alias': log.details.get('account', ''),
             'event_type': log.trigger_event,
             'level': level,
             'message': f'{log.trigger_event} → {log.action_taken}',

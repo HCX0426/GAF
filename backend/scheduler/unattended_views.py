@@ -789,13 +789,13 @@ def unattended_queue_view(request):
     queue = []
     for exec_record in queue_execs:
         # 修复: 使用 agent 替代 device, triggered_by 替代 account
-        device_name = exec_record.agent.hostname if hasattr(exec_record, "agent") and exec_record.agent else "未知设备"
+        device_name = exec_record.agent.hostname if hasattr(exec_record, "agent") and exec_record.agent else ""
         account_name = (
             exec_record.triggered_by.username
             if hasattr(exec_record, "triggered_by") and exec_record.triggered_by
-            else "未知账户"
+            else ""
         )
-        task_name = exec_record.task.name if hasattr(exec_record.task, "name") and exec_record.task else "未知任务"
+        task_name = exec_record.task.name if hasattr(exec_record.task, "name") and exec_record.task else ""
 
         queue.append(
             {
