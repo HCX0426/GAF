@@ -78,11 +78,11 @@ class SchedulerService:
             item = {
                 "id": hash((plan.get("device_id"), plan.get("task_chain_id"))) % 1000000,
                 "device_id": plan.get("device_id"),
-                "device_name": plan.get("device_name", "未知设备"),
+                "device_name": plan.get("device_name") or "",
                 "account_id": plan.get("account_id"),
                 "account_name": plan.get("account_name") or "",
                 "task_chain_id": plan.get("task_chain_id"),
-                "task_chain_name": plan.get("task_chain_name", "未知任务链"),
+                "task_chain_name": plan.get("task_chain_name") or "",
                 "scheduled_time": None,
                 "actual_start_time": None,
                 "actual_end_time": None,

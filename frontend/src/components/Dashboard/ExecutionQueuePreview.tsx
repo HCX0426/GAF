@@ -6,13 +6,16 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import { Card, Tag, Spin, Empty, Typography, Space, theme as antTheme } from 'antd';
-import { ClockCircleOutlined, LoadingOutlined, CheckCircleFilled } from '@ant-design/icons';
+import { ClockCircleOutlined, LoadingOutlined, CheckCircleFilled, CalendarOutlined } from '@ant-design/icons';
 import { fetchTodaySchedule } from '@/api/scheduler';
 import type { TodayScheduleResponse } from '@/types/models';
 
 const { Text } = Typography;
 
 const STATUS_META: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
+  // N219: 今日日程 = 计划排期 (引擎推导, 非已派发) — planned 展示为"计划中",
+  // 不能回落成 pending"待执行"误导用户以为任务在排队.
+  planned: { color: 'default', icon: <CalendarOutlined />, label: '计划中' },
   pending: { color: 'default', icon: <ClockCircleOutlined />, label: '待执行' },
   running: { color: 'processing', icon: <LoadingOutlined />, label: '进行中' },
   completed: { color: 'success', icon: <CheckCircleFilled />, label: '已完成' },
@@ -94,7 +97,14 @@ export function ExecutionQueuePreview() {
                     {meta.label}
                   </Tag>
                   <Text className="gaf-text-sm">
-                    {item.device_name} → {item.task_chain_name}
+                    {item.device_name}
+                    {item.task_chain_name ? (
+                      <>
+                        {' '}
+                        <Text type="secondary">→</Text>{' '}
+                        {item.task_chain_name}
+                      </>
+                    ) : null}
                   </Text>
                 </Space>
               </div>
