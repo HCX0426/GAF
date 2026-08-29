@@ -65,7 +65,7 @@ C 批仅解决了两个 `AgentSession` 模型。2026-08-29 的 agent 词族审�
 
 #### Task P3.1: E-6 文档
 
-- `docs/architecture/overview.md` §2 增："Agent 四义：① `Agent` 注册模型(backend/agents) ② 运行 agent Python 进程(`__main__.run_agent`) ③ `AgentConsumer`(WS 协议消费者) ④ `agent_runtime`(backend 子进程管理器)"。
+- `docs/architecture/overview.md` §2 增："Agent 四义：① `Agent` 注册模型(backend/agents) ② 运行 agent Python 进程(`__main__.run_agent`) ③ `AgentConsumer`(WS 协议消费者, **位于 `backend/protocol/consumers.py:123`，非 `agents` app**) ④ `agent_runtime`(backend 子进程管理器)"。注：`backend/agents/consumers.py` 仅含 `AdbLogStreamConsumer`（名不副实），改名见批 F-5。
 
 ## 5. 测试与验收
 

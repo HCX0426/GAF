@@ -28,6 +28,7 @@ verified_baseline: >
   - `TaskStep` 为遗留死模型（生产零写入），`ExecutionStep` 为事实权威 → **MERGE**（无生产数据丢失）。
   - `GameAccountRotation`（共享配置）与 `loop_rotation`+`rotation_index`（每会话运行时游标）处不同抽象层 → **KEEP 双模型**（合并会破坏复用语义）。
   - `protocol.AgentSession` 改名目标须避让 agent 端既有 `AgentConnection`（`connection.py:153`），故用 `AgentWsSession`（服务端 WS 会话），见 §9/OQ-4 与批 E-1。
+  - `backend/device_bridge/` 与 `backend/agents/` 的 Device 抽象三义、`consumers.py` 名不副实、`GAME_PROCESS_NAMES` 重复、docstring 错称等经审计发现（三 agent 目录审计 2026-08-29），新增批 F（见 §9/OQ-9 与 spec naming-f-*）。
 - **最优方案七维评分 31（次优 23 / 现状 12），达自决阈值**（§8）。执行顺序 §7 分阶段（先低危 A/B，后高危 C 带迁移 + 前端类型重生成）。
 
 ## 1. 目标态映射表（code + doc 融合，本稿核心）
@@ -55,6 +56,11 @@ verified_baseline: >
 | `task.assign`(WS 帧)/`handle_task_assign`(方法) | 协议帧 `task.assign` ↔ 方法下划线 | 记为文档矛盾 | **统一帧名 + alias 兼容**（wire-contract） | — | 高(协议) | C | `connection.py:870` `"task.assign": handle_task_assign`；`task.dispatch` 亦别名 |
 | `TaskChainNode`(backend)/`PipelineNode`(agent) | 两结构（持久化链节点 vs 运行时节点） | "Node"过载 | **保留双结构 + 文档显式区分**（可选 agent `PipelineNode`→`AgentNode`） | 明确三层节点(backend Pipeline/TaskChainNode + agent PipelineNode) | 中(可选高) | D | `pipeline/models.py:274` vs `engine/node.py`；不同层非同物 |
 | `get_unified_logical_rect`(方法)/`publish_match_pos`(trace step) | 方法名 vs 追踪 step 值 | 记为"名不一致" | **不改名**（异物） | 文档说明：转换③=`get_unified_logical_rect`，追踪 step=`publish_match_pos` | 低(文档) | D | `coord_transformer.py:454` vs `target.py:111` |
+| `DeviceInfo`(DTO×3) | `device_bridge/platforms/base.py:32` + `agent/src/devices/discovery/base.py:13` + `DeviceInfoView`(`backend/agents/view_sets/app_info.py:406`) | 三义(2 DTO + 1 端点) | 端点 `DeviceInfoView`→`DeviceDetailView`；两 DTO 文档区分 | 中 | F | 三处同名词(审计 F-1) |
+| `DeviceCenter`(agent)/`PlatformDeviceDiscoverer`(bridge) | agent 运行时设备管理 vs backend 设备发现接口 | center/bridge/discovery 分词 | 文档显式区分两层发现 | 中 | F | 互补非同物(审计 F-2) |
+| `backend/agents/consumers.py` | 仅 `AdbLogStreamConsumer` | 名不副实(无 AgentConsumer) | 改名 `adb_log_consumers.py`(路由更新) + 注 AgentConsumer 在 protocol | 中 | F | 审计 F-5 |
+| `GAME_PROCESS_NAMES` | `device_bridge/discovery/windows.py:17` + `platforms/windows/discovery.py:14` | 重复 | 单一来源 | 低 | F | 审计 F-3 |
+| `device_bridge/__init__.py` docstring | "GAF Agent 模块" | 错称 | 改设备抽象层说明 | 低(文档) | F | 审计 F-4 |
 
 > 说明：`get_unified_logical_rect` 与 `publish_match_pos` 不是同一符号（前者是坐标转换方法，后者是识别节点发布匹配位置的 trace step 值），**不应重命名**，仅文档澄清。
 
@@ -107,6 +113,7 @@ verified_baseline: >
 | **Tag** | overview 在 tasks/resources 两 app 均列裸 `Tag` | **仅 `resources.Tag`（`resources/models.py:166`）** | ⚠️ 文档暗示双 Tag | 单一模型 |
 | **DeviceDiscovery** | `DeviceDiscoveryRegistry` | agent `DeviceCenter.auto_discover`/`EmulatorDiscovery`/`WindowDiscovery` | ⚠️ 双机制 | — |
 | **GafDaemon** | overview "GafDaemon" | `gaf_daemon.py`；`gaf_services.ps1` 委托它 | ❌ 三渲染 | 见 §1/§5 |
+| **Device 抽象三层** | Device(ORM)/DeviceInfo(DTO×2)/DeviceCenter(BaseDevice) | `agents.Device`(`models.py:178`) + `device_bridge`/`agent` 各 DTO | ⚠️ 三抽象 | 见 §1/F 批(审计 F-1/F-2) |
 | **AnomalyPattern** | features `AnomalyPatternPanel` | 无模型（用 `LLMAnalysisResult`） | ❌ 未定义 | 前端-only |
 | **9 个 features-only 概念** | UnattendedStrategy/.../AnomalyPattern | 未在 overview §9 枚举 | ⚠️ 文档缺口 | — |
 
@@ -160,6 +167,7 @@ verified_baseline: >
 13. **（OQ-1~OQ-5 已采纳）**：`graph.py` 删除（OQ-1）；`ChainManager`→`StateMachineEngine`+`task_type` 别名 shim（OQ-2）；`ExecutionStep` 为权威、`TaskStep` 弃用合并（OQ-3，**代码核实 MERGE 最优**：`TaskStep` 生产零写入，`serializers.py:46` 明文）；两 `AgentSession`→`AgentWsSession`/`LLMAgentSession`（OQ-4）；全量代码归一化分阶段 A→D（OQ-5）；`rotation_rule` 不改（OQ-6，**代码核实 KEEP 最优**）。—— OQ-3/OQ-4 为高危（`AgentSession` 235 命中含 API/迁移/前端类型；`TaskStep` 192/`ExecutionStep` 218 含 API/迁移/前端），须按 §7 C 批带迁移 + 前端类型重生成。
 14. **F1 — "循环任务" ≠ "监控任务"**：代码无"监控任务"类型；"监控"=monitors 子系统 + agent `MonitorManager`（`docs/business/tasks/cancel-design.md:22`）+ pipeline 监控触发节点，与循环任务(`LoopNode`/`loop_rotation`)不同域。文档新增"概念速查"澄清边界（OQ-7）。
 15. **F2 — "系统运行标志"非"服务全部在线"**：Header "系统运行状态/运行中"（`HeaderStatusIndicator.tsx`）反映 `system_status_view`（`monitors/views.py:305`）聚合 `overall`：`running` 当且仅当 (a) 全部服务健康 **且** (b) ≥1 Agent/Device online/idle **且** (c) 无 `RecoveryLog` 失败/系统级恢复错误。另有 `InfraHealthPanel`（`/accounts/init/health/`）与 `ServicesPage` 两块独立健康面。文档明确三块语义；前端 Header 标签"系统运行状态"→"系统综合状态"（纯 UI 文案，零 API/代码冲击）；`overall` 逻辑不动（OQ-8）。
+16. **（OQ-9 关联）Device 抽象与 device_bridge 命名**：审计 `backend/device_bridge/` + `backend/agents/` 发现 `DeviceInfo` 三义、`consumers.py` 名不副实、`GAME_PROCESS_NAMES` 重复、device_bridge docstring 错称；新增批 F（spec `naming-f-device-bridge`）收口 F-1~F-9，F-10 双发现权威为设计决策单独立项（OQ-9）。同时校正 E-6：`AgentConsumer` 位于 `backend/protocol/consumers.py:123`，**非** `agents` app。
 
 ## 6. 严重度总览
 
@@ -199,7 +207,8 @@ verified_baseline: >
 - **A 批(低危, 零 API/迁移/前端冲击)**：删 `graph.py`+测试(OQ-1)；文档去 `TaskDispatcher` 幽灵框(X1)；`TraceSpan` 文档已正确无需改(D14)；`GafDaemon` 文档归一(D19)。
 - **B 批(中危, agent/后端内部或仅文档)**：`ChainManager`→`StateMachineEngine`(OQ-2)+`task_type` shim；`PerformanceMonitor` 后端类名归一；`loop_rotation` 文档标注（可选改名）。
 - **C 批(高危, 必带迁移 + 前端类型重生成)**：`Device.emulator`→`emulator_brand`；`default_routine`→`default_task_chain`(+端点)；两 `AgentSession` 改名；`TaskStep` 合并入 `ExecutionStep`；`task.assign` 帧名统一+alias。每项：① 后端模型/字段改名 + 生成迁移(兼容别名/数据迁移)；② serializers/views/urls 更新；③ 前端 `api.generated.ts`+`models/*.ts` 重生成；④ 全仓 import 改写；⑤ 后端+前端测试。
-- **D 批(文档收口)**：overview/features/子文档按 §4 修正(D4/D7/D12/D14/X1/章节号) + 概念速查(OQ-7) + 三健康面澄清(OQ-8) + 三层节点区分(TaskChainNode/PipelineNode) + `get_unified_logical_rect`/`publish_match_pos` 文档说明(D23②)。
+  - **D 批(文档收口)**：overview/features/子文档按 §4 修正(D4/D7/D12/D14/X1/章节号) + 概念速查(OQ-7) + 三健康面澄清(OQ-8) + 三层节点区分(TaskChainNode/PipelineNode) + `get_unified_logical_rect`/`publish_match_pos` 文档说明(D23②)。
+  - **F 批(中低危, device_bridge + Device 抽象命名)**：`DeviceInfoView`→`DeviceDetailView` + DTO 文档区分(F-1)；`device_bridge.discovery.*` 单一扫描源 + 两层发现文档(F-2)；`GAME_PROCESS_NAMES` 去重(F-3)；device_bridge docstring 修正(F-4)；`consumers.py`→`adb_log_consumers.py` + 路由 + E-6 校正(F-5)；service 形态/私有方法迁出/F-8/F-9 一致性(F-6~F-9)；F-10 双发现权威为设计决策单独立项(OQ-9)。
 
 ## 8. 七维评估（最优方案，N167）
 
@@ -227,7 +236,8 @@ verified_baseline: >
 - **OQ-5 范围** — ✅ 全量代码归一化，分阶段 A→D（§7）。
 - **OQ-6 `rotation_rule`/轮换模型** — ✅ **KEEP 双模型**（代码核实最优：共享配置 vs 每会话运行时游标，跨层不可合并）。
 - **OQ-7 "监控任务"分类** — ✅ 不新增；文档加"概念速查"澄清循环≠监控。
-- **OQ-8 "系统运行标志"** — ✅ 文档澄清三块健康面 + Header UI 标签"系统运行状态"→"系统综合状态"（纯文案）；`overall` 逻辑不动。
+  - **OQ-8 "系统运行标志"** — ✅ 文档澄清三块健康面 + Header UI 标签"系统运行状态"→"系统综合状态"（纯文案）；`overall` 逻辑不动。
+  - **OQ-9 双设备发现权威** — ⚠️ 设计决策(非重命名)：backend `DeviceScanView`(`scan_all_emulators`) 与 agent `DeviceCenter.auto_discover()` 均写 `agents.Device`。需定 source-of-truth/触发时机，不在本次重命名范围，单独开设计 spec（批 F-10）。
 
 ## 10. 下一步
 
