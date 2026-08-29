@@ -9,6 +9,7 @@ import pyotp
 from django.conf import settings
 from django.core.cache import cache
 from django.db import IntegrityError, connections, transaction
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import OpenApiTypes, extend_schema
 from gaf_core.audit_constants import filter_sensitive_fields, get_client_ip
@@ -1230,10 +1231,15 @@ class GameAccountViewSet(AuditMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
             return GameAccount.objects.none()
-        qs = GameAccount.objects.filter(owner=self.request.user).select_related('group', 'resource_pack')
+        qs = GameAccount.objects.filter(owner=self.request.user).select_related(
+            'group', 'resource_pack', 'game_profile'
+        )
         game_name = self.request.query_params.get('game_name')
         if game_name:
-            qs = qs.filter(game_name__icontains=game_name)
+            # P1: 检索维度迁移到 game_profile (兼容过渡期同时匹配旧字符串, P2 回填后仅 profile 路径生效)
+            qs = qs.filter(
+                Q(game_profile__game_name__icontains=game_name) | Q(game_name__icontains=game_name)
+            )
         status_filter = self.request.query_params.get('status')
         if status_filter:
             qs = qs.filter(status=status_filter)
@@ -1241,10 +1247,7 @@ class GameAccountViewSet(AuditMixin, viewsets.ModelViewSet):
         if group_id:
             # F9 fix (2026-08-28): 前端约定 'null' 表示"未分组"账户。
             # 之前直接 filter(group_id='null') 会误匹配为字面量 'null' 字符串 → 恒空集。
-            if group_id == 'null':
-                qs = qs.filter(group__isnull=True)
-            else:
-                qs = qs.filter(group_id=group_id)
+            qs = qs.filter(group__isnull=True) if group_id == 'null' else qs.filter(group_id=group_id)
         resource_pack_id = self.request.query_params.get('resource_pack')
         if resource_pack_id:
             qs = qs.filter(allowed_resource_packs__id=resource_pack_id)
