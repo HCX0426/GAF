@@ -4,7 +4,7 @@ applies_to_code_paths:
   - frontend/src/
   - backend/
   - agent/
-last_updated: 2026-08-28
+last_updated: 2026-08-29
 ---
 
 # GAF E2E 测试计划
@@ -32,6 +32,7 @@ last_updated: 2026-08-28
 | `ai_qa_chat` | `scripts/e2e/scenarios/ai_qa_chat.py` | I-03 | LLM 问答真实链（commit - 回归） |
 | mock spec.ts×3 | `frontend/e2e/auth|devices|tasks/*.spec.ts` | 快速回归（CI 友好，mock 前端） | 不依赖后端，供开发期快速验证 ✅ |
 | 环境依赖（已实测 2026-08-28） | 有真实模拟器/设备时手动补测 | E-02(雷电模拟器已扫+注册上线), E-05(模拟器实例+启停按钮已验), K-01~K-03(3 条核心链路已真实执行: exec 90 success / 匹配真实化 / unattended session 13) | 环境齐时均已手动实证；D-09 录制仍需 Agent 端（规格内），其余全自动 |
+| 统计对账抽查（月度手动, N218） | `docs/health/e2e-test-plan.md` B-04/B-05（DB 对照, 浏览器实测） | B-04, B-05 | 统计卡片数字与 DB 对账 + 记住我免登录回归 — 见"月度全量"命令补充步骤 |
 
 ### 执行命令（月度全量）
 
@@ -42,6 +43,8 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File scripts\gaf_services.ps1 status
 conda run -n gaf python scripts/e2e/run_all.py
 # 3) 失败详情落盘 .trash/.e2e-failures.log + .ai-memory/ops/why-skipped.md
 # 4) 同步回填 e2e-coverage.md「发现问题登记」并归档；新增页面时更新 full_routes.py ROUTES
+# 5) 统计卡片对账抽查 (B-04, N218): 直连 DB 数各 status 行 → API ?status= 比对 count → 核对工作台卡片
+# 6) 记住我免登录回归 (B-05, N217): 登录(默认勾选) → 查 localStorage → 清 sessionStorage → 刷新自动进 /dashboard
 ```
 
 > **新增页面纪律**: 新路由上线 → ① `App.tsx` 注册路由 → ② `full_routes.py` ROUTES/DYNAMIC_ROUTES 补条目(ID 映射 e2e-test-plan) → ③ 本表加映射。三处缺一不可。
@@ -90,13 +93,15 @@ conda run -n gaf python scripts/e2e/run_all.py
 | A-03 | 注册 Tab / OAuth 按钮 | 登录页 | 点注册 Tab；点 GitHub/Google 按钮 | Tab 可切；按钮跳 OAuth 流程 | ✅ CURR |
 | A-04 | Setup 初始化向导 | admin 已存在 | 访问 /setup | 重定向 /login→/dashboard（已初始化态） | ✅ CURR |
 
-## B. 工作台 Dashboard (3)
+## B. 工作台 Dashboard (5)
 
 | ID | 测试项 | 前置条件 | 操作步骤 | 期望结果 | 状态 |
 |----|--------|---------|----------|---------|:---:|
 | B-01 | 仪表盘渲染 | 已登录 | 打开 /dashboard | 今日进度/设备网格/队列/告警/趋势 9 面板渲染 | ✅ CURR (M6 已修 recharts -1) |
 | B-02 | 面板拖拽 + 快捷操作 | 已登录 | 拖 1 面板；点创建任务/导入市场/设备管理/快速执行 | 拖拽生效；跳对应页 | ✅ CURR |
 | B-03 | 顶栏主题/DPI/语言 | 已登录 | 切主题 3 态；DPI 下拉；语言下拉 | 主题生效；下拉可展开 | ✅ CURR |
+| B-04 | 统计卡片数字对账 DB (N218) | 已登录, 造带状态数据 | ① 直连 DB 数 TaskExecution 各 status 行数 ② 对 API `?status=running/failed/success` 各发一次比对 count ③ 核对工作台卡片: 运行任务/今日执行/成功率 | 卡片数字与 DB 真实值一致; "无任务在跑时运行任务≈0" | ✅ 2026-08-29 (N218 修复后: running 0/failed 26/无参 91, 卡片"运行任务 0") |
+| B-05 | 记住我持久化 + 免登录 (N217) | 已登录勾选记住我 | ① 登录后查 localStorage: remember_me=1 + refresh_token ② 清 sessionStorage(模拟关浏览器) ③ 刷新/重开页面 | 自动跳 dashboard 免登录; checkbox 默认勾选 | ✅ 2026-08-29 (修复 e004db3 后实测) |
 
 ## C. 游戏档案 GameProfiles (6)
 
@@ -223,3 +228,4 @@ conda run -n gaf python scripts/e2e/run_all.py
 | 2026-08-28 | R1-R4 补测完成 | E 组/K 组/A-02/J-07/D-09 | 造数后回看渲染 + 核心链路 + 剩余条目全部有结果, 0 ⏳ |
 | 2026-08-28 | K 链路真实补测 | K-01/K-02/K-03 + I-06/E-04 | exec 90 success(模拟器真实执行) + unattended session 13 start/stop(dispatched 1) + 匹配预览 R37-P2 真实化 + I-06 modal 误判澄清, test-plan 全部测试项 ✅ |
 | 2026-08-28 | 全量终验 | run_all.py 11 场景 | **11/11 全绿**(128s): 7 治理场景 + browser_login/devices_control_mode/ai_qa_chat + full_routes 47/47; 修复 bug_fix(N118 出清后断言泛化) + cross_repo('跨工作区' 措辞演进) 两处测试断言 |
+| 2026-08-29 | B-04/B-05 新增 + 实测 | 统计对账 + 记住我回归 | N218 修复前"运行任务 91"为假(全表 count), 修复后 running 0/failed 26/无参 91, 卡片"运行任务 0" ✅; N217 修复后记住我默认勾选 + 清 sessionStorage 刷新自动进 dashboard ✅ |
