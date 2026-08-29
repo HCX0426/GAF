@@ -3,6 +3,18 @@ from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
+# 执行域状态值单一权威源 (与 TaskStep/ExecutionStep 共用, 防松散字面量漂移):
+from tasks.status_constants import (
+    EXEC_STATUS_CANCELLED,
+    EXEC_STATUS_FAILED,
+    EXEC_STATUS_FORCE_TERMINATED,
+    EXEC_STATUS_PAUSED,
+    EXEC_STATUS_PENDING,
+    EXEC_STATUS_RUNNING,
+    EXEC_STATUS_SKIPPED,
+    EXEC_STATUS_SUCCESS,
+)
+
 
 class Task(models.Model):
     """任务模型，定义自动化任务的执行模式、参数和关联资源包。"""
@@ -205,13 +217,13 @@ class TaskExecution(models.Model):
     """任务执行记录模型，记录每次任务执行的完整状态和结果。"""
 
     class Status(models.TextChoices):
-        PENDING = 'pending', 'Pending'
-        RUNNING = 'running', 'Running'
-        PAUSED = 'paused', 'Paused'
-        SUCCESS = 'success', 'Success'
-        FAILED = 'failed', 'Failed'
-        CANCELLED = 'cancelled', 'Cancelled'
-        FORCE_TERMINATED = 'force_terminated', 'Force Terminated'
+        PENDING = EXEC_STATUS_PENDING, 'Pending'
+        RUNNING = EXEC_STATUS_RUNNING, 'Running'
+        PAUSED = EXEC_STATUS_PAUSED, 'Paused'
+        SUCCESS = EXEC_STATUS_SUCCESS, 'Success'
+        FAILED = EXEC_STATUS_FAILED, 'Failed'
+        CANCELLED = EXEC_STATUS_CANCELLED, 'Cancelled'
+        FORCE_TERMINATED = EXEC_STATUS_FORCE_TERMINATED, 'Force Terminated'
 
     task = models.ForeignKey(
         Task,
@@ -430,11 +442,11 @@ class TaskStep(models.Model):
     """任务步骤模型，记录任务执行中每个步骤的详细状态。"""
 
     class Status(models.TextChoices):
-        PENDING = 'pending', 'Pending'
-        RUNNING = 'running', 'Running'
-        SUCCESS = 'success', 'Success'
-        FAILED = 'failed', 'Failed'
-        SKIPPED = 'skipped', 'Skipped'
+        PENDING = EXEC_STATUS_PENDING, 'Pending'
+        RUNNING = EXEC_STATUS_RUNNING, 'Running'
+        SUCCESS = EXEC_STATUS_SUCCESS, 'Success'
+        FAILED = EXEC_STATUS_FAILED, 'Failed'
+        SKIPPED = EXEC_STATUS_SKIPPED, 'Skipped'
 
     execution = models.ForeignKey(
         TaskExecution,
@@ -734,11 +746,11 @@ class ExecutionStep(models.Model):
     """执行步骤模型，记录任务执行中每个步骤的详细识别结果和耗时。"""
 
     class Status(models.TextChoices):
-        PENDING = 'pending', 'Pending'
-        RUNNING = 'running', 'Running'
-        SUCCESS = 'success', 'Success'
-        FAILED = 'failed', 'Failed'
-        SKIPPED = 'skipped', 'Skipped'
+        PENDING = EXEC_STATUS_PENDING, 'Pending'
+        RUNNING = EXEC_STATUS_RUNNING, 'Running'
+        SUCCESS = EXEC_STATUS_SUCCESS, 'Success'
+        FAILED = EXEC_STATUS_FAILED, 'Failed'
+        SKIPPED = EXEC_STATUS_SKIPPED, 'Skipped'
 
     task_result = models.ForeignKey(
         TaskExecution,
