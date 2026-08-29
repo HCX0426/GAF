@@ -1,7 +1,7 @@
 """URL configuration for system-level endpoints.
 
 Mounted at ``/api/v2/system/`` in ``config/urls.py``. Provides:
-- ``GET /api/v2/system/perf/`` — PerformanceMonitor aggregated statistics
+- ``GET /api/v2/system/perf/`` — PerfMonitor aggregated statistics
 """
 from django.urls import path
 

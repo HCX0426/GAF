@@ -559,21 +559,21 @@ class TaskOrchestrator:
         Returns:
             AutoResult with pipeline execution result
         """
-        # TD-354: state_machine 分发改用 TaskExecutor (ChainManager).
-        # 检测 task_definition 含 "module" 字段即走 ChainManager 路径
+        # TD-354: state_machine 分发改用 TaskExecutor (StateMachineEngine).
+        # 检测 task_definition 含 "module" 字段即走 StateMachineEngine 路径
         # (Python 模块 hook, StateMachine callables 不能 JSON 序列化).
         if isinstance(pipeline_json, dict) and pipeline_json.get("module"):
             from engine.executor import TaskExecutor
 
             executor = TaskExecutor()
             result = executor.execute(
-                "chain",
+                "state_machine",
                 pipeline_json,
                 device_manager=self._device_manager,
                 image_processor=self._image_processor,
                 device_id=device_id,
             )
-            # Map ChainManager result to orchestrator state
+            # Map StateMachineEngine result to orchestrator state
             if result.success:
                 self._state = TaskState.COMPLETED
                 if self._on_task_complete:

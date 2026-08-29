@@ -92,7 +92,7 @@ class HealthzView(APIView):
 
 
 class PerfAPIView(APIView):
-    """GET /api/v2/system/perf — 返回 PerformanceMonitor 的内存聚合.
+    """GET /api/v2/system/perf — 返回 PerfMonitor 的内存聚合.
 
     Only available in development mode (``GAF_CELERY_MODE=eager``).
     In production mode, returns an empty response with
@@ -105,12 +105,12 @@ class PerfAPIView(APIView):
     @extend_schema(
         request=None,
         responses={200: OpenApiTypes.OBJECT},
-        description="Return PerformanceMonitor aggregated statistics.",
+        description="Return PerfMonitor aggregated statistics.",
     )
     def get(self, request):
-        from gaf_core.perf_monitor import PerformanceMonitor
+        from gaf_core.perf_monitor import PerfMonitor
 
-        mon = PerformanceMonitor.get_instance()
+        mon = PerfMonitor.get_instance()
         aggregates = mon.get_aggregates()
         return Response({
             "mode": mon.mode,

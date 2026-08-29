@@ -24,7 +24,7 @@ last_updated: 2026-07-29
 - `game_profile` FK → `gamestate.GameProfile`（CASCADE，P-011 分组边界）
 - `triggered_by` FK → User
 - `rotation_rule` FK → `GameAccountRotation`（启动时快照）
-- `loop_rotation`: bool（默认 False）— 循环轮换（TD-400, 2026-08-26）：链完成后把账户归还轮换池继续派发，支撑持续挂机；循环模式不触发 `all_completed` 自动停止（手动/时间窗口/连续失败仍可停）
+- `loop_rotation`: bool（默认 False）— 循环轮换（TD-400, 2026-08-26）：链完成后把账户归还轮换池继续派发，支撑持续挂机；循环模式不触发 `all_completed` 自动停止（手动/时间窗口/连续失败仍可停）（OQ-6 已决保留原名 `loop_rotation`：与 `GameAccountRotation`（共享轮换配置）互补、非冗余；可选 surface 改名 `rotation_loop_enabled` 标 NOT DONE）
 - `active_chain_executions` M2M → `pipeline.TaskChainExecution`
 - 统计：`total_devices` / `total_accounts` / `failed_count` / `completed_chain_count`
 - 约束：每个 game_profile 至多一个 RUNNING/PAUSED session（由 `unattended_start_view` 409 强制）

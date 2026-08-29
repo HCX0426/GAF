@@ -15,7 +15,7 @@ from engine.context import PipelineContext, PipelineState, StepState
 from engine.pipeline_models import PipelineResult
 from engine.pipeline_utils import MAX_STEP_TIMEOUT, _truncate_dict, _truncate_result_data_priority
 from engine.validator import PipelineValidator
-from utils.perf_monitor import PerformanceMonitor
+from utils.perf_monitor import PerfMonitor
 from utils.structured_logger import (
     extract_result_fields,
     new_execution_id,
@@ -168,9 +168,9 @@ class PipelineExecutionMixin:
         self._context.structured_logger = self._structured_logger
         self._context.device_type = self._device_type
         self._context.transformer_id = self._transformer_id
-        # 阶段 2 (性能计量): 注入 PerformanceMonitor 的 structured_logger,
+        # 阶段 2 (性能计量): 注入 PerfMonitor 的 structured_logger,
         # 让 perf.timer 事件写入同一 JSONL 文件.
-        PerformanceMonitor.get_instance().set_structured_logger(self._structured_logger)
+        PerfMonitor.get_instance().set_structured_logger(self._structured_logger)
         # N191 §10.10 决策点 2 A+ (AI 可调试性, 2026-07-27):
         # 给 device 注入 coord_trace_callback, 让 device 内部 logical→physical
         # 转换能记 trace (堵住 device.click 内部转换黑盒, D5)。
@@ -618,10 +618,10 @@ class PipelineExecutionMixin:
             )
         finally:
             # 阶段 3 (性能计量): Pipeline 结束时写入 perf_summary 事件.
-            # 从 PerformanceMonitor 读取聚合统计, 写入 JSONL 供 LLM 诊断.
+            # 从 PerfMonitor 读取聚合统计, 写入 JSONL 供 LLM 诊断.
             if self._structured_logger is not None:
                 try:
-                    _perf_monitor = PerformanceMonitor.get_instance()
+                    _perf_monitor = PerfMonitor.get_instance()
                     _aggregates = _perf_monitor.get_aggregates()
                     if _aggregates:
                         _total_ms = (time.monotonic() - start_time) * 1000.0
@@ -644,9 +644,9 @@ class PipelineExecutionMixin:
             if self._structured_logger is not None:
                 self._structured_logger.close()
                 self._structured_logger = None
-            # 阶段 2 (性能计量): 清除 PerformanceMonitor 的 structured_logger
+            # 阶段 2 (性能计量): 清除 PerfMonitor 的 structured_logger
             # 引用, 避免 perf.timer 事件污染后续 JSONL 文件.
-            PerformanceMonitor.get_instance().clear_structured_logger()
+            PerfMonitor.get_instance().clear_structured_logger()
             # N pipeline 优化 2026-08-02: 关闭复用线程池.
             # wait=False 避免阻塞在挂起的 worker 线程上.
             _reusable_executor.shutdown(wait=False)

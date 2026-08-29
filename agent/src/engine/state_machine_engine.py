@@ -1,4 +1,4 @@
-"""ChainManager — StateMachine 执行引擎的 BaseEngine 包装。
+"""StateMachineEngine — StateMachine 执行引擎的 BaseEngine 包装。
 
 StateMachine 是 Python callable 模块 hook，不能 JSON 序列化，
 通过 ``task_definition["module"]`` 指定模块路径。
@@ -17,8 +17,8 @@ from engine.executor import BaseEngine
 logger = logging.getLogger(__name__)
 
 
-class ChainManager(BaseEngine):
-    """Chain 执行引擎 — 包装 StateMachine 执行路径。
+class StateMachineEngine(BaseEngine):
+    """StateMachine 执行引擎 — 包装 StateMachine 执行路径。
 
     StateMachine 的 actions/transitions 是 Python callable，不能 JSON 序列化，
     因此 state_machine 模式需要 Python 模块 hook。模块必须暴露::
@@ -31,7 +31,7 @@ class ChainManager(BaseEngine):
 
     Usage::
 
-        engine = ChainManager()
+        engine = StateMachineEngine()
         result = engine.run(
             {"module": "custom_tasks.browndust.guild_fsm", "max_iterations": 500},
             device_manager=device_manager,
@@ -59,7 +59,7 @@ class ChainManager(BaseEngine):
         module_path = task_definition.get("module")
         if not module_path:
             return fail_result(
-                error_msg="ChainManager: state_machine 模式缺少 module 字段",
+                error_msg="StateMachineEngine: state_machine 模式缺少 module 字段",
                 elapsed_time=time.monotonic() - start_time,
             )
 
@@ -67,7 +67,7 @@ class ChainManager(BaseEngine):
         image_processor = kwargs.get("image_processor")
         if device_manager is None or image_processor is None:
             return fail_result(
-                error_msg="ChainManager: 缺少必需参数 device_manager 或 image_processor",
+                error_msg="StateMachineEngine: 缺少必需参数 device_manager 或 image_processor",
                 elapsed_time=time.monotonic() - start_time,
             )
 

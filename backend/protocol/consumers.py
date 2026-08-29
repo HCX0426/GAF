@@ -284,9 +284,9 @@ class AgentConsumer(AsyncWebsocketConsumer):
         sent_at = frame.get("sent_at")
         if sent_at is not None:
             try:
-                from gaf_core.perf_monitor import PerformanceMonitor
+                from gaf_core.perf_monitor import PerfMonitor
 
-                _mon = PerformanceMonitor.get_instance()
+                _mon = PerfMonitor.get_instance()
                 if _mon.is_development:
                     _latency_ms = (time.time() - sent_at) * 1000.0
                     _mon.record(

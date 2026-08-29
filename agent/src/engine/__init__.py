@@ -6,8 +6,8 @@ Phase 1 (2026-08-08, Task 1.2):
 """
 
 # PipelineEngine — the core pipeline execution engine
-# ChainManager — StateMachine execution engine wrapper
-from engine.chain_manager import ChainManager
+# StateMachineEngine — StateMachine execution engine wrapper
+from engine.state_machine_engine import StateMachineEngine
 
 # TaskExecutor — unified entry point for all task types
 from engine.executor import BaseEngine, PipelineEngineAdapter, TaskExecutor
@@ -20,5 +20,5 @@ __all__ = [
     "BaseEngine",
     "PipelineEngineAdapter",
     "TaskExecutor",
-    "ChainManager",
+    "StateMachineEngine",
 ]

@@ -1,17 +1,17 @@
 """Performance monitoring for GAF agent.
 
-Provides ``Timer`` (context manager) and ``PerformanceMonitor`` (singleton)
+Provides ``Timer`` (context manager) and ``PerfMonitor`` (singleton)
 for measuring and recording execution times across the agent pipeline.
 
 Usage::
 
-    from utils.perf_monitor import Timer, PerformanceMonitor
+    from utils.perf_monitor import Timer, PerfMonitor
 
     with Timer("pipeline.node.screenshot", tags={"node_id": "n1"}):
         img = device.capture()
 
     # Get aggregates at any point
-    mon = PerformanceMonitor.get_instance()
+    mon = PerfMonitor.get_instance()
     aggregates = mon.get_aggregates()
     print(aggregates["pipeline.node.screenshot"]["p95_ms"])
 """
@@ -25,7 +25,7 @@ import time
 from typing import Any
 
 
-class PerformanceMonitor:
+class PerfMonitor:
     """Per-process singleton for recording and aggregating performance metrics.
 
     **Modes** (auto-detected from ``GAF_CELERY_MODE``):
@@ -42,7 +42,7 @@ class PerformanceMonitor:
     MODE_PRODUCTION = "production"
     MODE_DEVELOPMENT = "development"
 
-    _instance: PerformanceMonitor | None = None
+    _instance: PerfMonitor | None = None
     _instance_lock = threading.Lock()
 
     def __init__(self) -> None:
@@ -58,8 +58,8 @@ class PerformanceMonitor:
     # ------------------------------------------------------------------
 
     @classmethod
-    def get_instance(cls) -> PerformanceMonitor:
-        """Return the global PerformanceMonitor singleton."""
+    def get_instance(cls) -> PerfMonitor:
+        """Return the global PerfMonitor singleton."""
         if cls._instance is None:
             with cls._instance_lock:
                 if cls._instance is None:
@@ -80,9 +80,9 @@ class PerformanceMonitor:
     def _detect_mode() -> str:
         mode = os.environ.get("GAF_CELERY_MODE", "eager")
         return (
-            PerformanceMonitor.MODE_PRODUCTION
+            PerfMonitor.MODE_PRODUCTION
             if mode == "celery"
-            else PerformanceMonitor.MODE_DEVELOPMENT
+            else PerfMonitor.MODE_DEVELOPMENT
         )
 
     @property
@@ -184,7 +184,7 @@ class PerformanceMonitor:
 
 
 class Timer:
-    """Context manager that measures elapsed time and records to PerformanceMonitor.
+    """Context manager that measures elapsed time and records to PerfMonitor.
 
     Usage::
 
@@ -211,7 +211,7 @@ class Timer:
 
     def __exit__(self, *args: object) -> None:
         self.elapsed_ms = (time.monotonic() - self._start) * 1000.0
-        PerformanceMonitor.get_instance().record(
+        PerfMonitor.get_instance().record(
             self._name, self.elapsed_ms, self._tags,
         )
 

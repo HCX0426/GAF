@@ -7,7 +7,7 @@ to the appropriate engine implementation based on ``task_type``.
 Currently supports:
   - ``"pipeline"`` → delegated to ``PipelineEngine``
 
-Extensible for future task types (e.g. ``"chain"``, ``"state_machine"``)
+Extensible for future task types (e.g. ``"state_machine"``; legacy alias ``"chain"`` also accepted)
 by registering additional engines in ``TaskExecutor.engines``.
 """
 
@@ -19,16 +19,16 @@ from typing import Any
 
 from core.result import AutoResult
 
-# Lazy import for ChainManager to avoid circular dependency
-# (chain_manager.py imports BaseEngine from this module).
-_chain_manager: Any = None
+# Lazy import for StateMachineEngine to avoid circular dependency
+# (state_machine_engine.py imports BaseEngine from this module).
+_state_machine_engine: Any = None
 
-def _get_chain_manager() -> BaseEngine:
-    global _chain_manager
-    if _chain_manager is None:
-        from engine.chain_manager import ChainManager
-        _chain_manager = ChainManager()
-    return _chain_manager
+def _get_state_machine_engine() -> BaseEngine:
+    global _state_machine_engine
+    if _state_machine_engine is None:
+        from engine.state_machine_engine import StateMachineEngine
+        _state_machine_engine = StateMachineEngine()
+    return _state_machine_engine
 
 logger = logging.getLogger(__name__)
 
@@ -110,9 +110,11 @@ class TaskExecutor:
     """
 
     def __init__(self) -> None:
+        _sm_engine = _get_state_machine_engine()
         self._engines: dict[str, BaseEngine] = {
             "pipeline": PipelineEngineAdapter(),
-            "chain": _get_chain_manager(),
+            "state_machine": _sm_engine,
+            "chain": _sm_engine,  # deprecated alias for "state_machine"
         }
 
     @property
@@ -124,7 +126,7 @@ class TaskExecutor:
         """Register a new engine for a task type.
 
         Args:
-            task_type: Task type identifier (e.g. ``"chain"``, ``"state_machine"``).
+            task_type: Task type identifier (e.g. ``"state_machine"``; legacy alias ``"chain"`` accepted).
             engine: Engine implementation.
 
         Raises:

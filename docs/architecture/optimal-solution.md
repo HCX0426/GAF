@@ -149,14 +149,14 @@ last_updated: 2026-07-12
 
 ## 五、关键设计决策
 
-### 决策1：任务引擎 — Pipeline JSON vs ChainManager
+### 决策1：任务引擎 — Pipeline JSON vs StateMachineEngine
 
-**结论：两者并存，Pipeline JSON 为声明式上层，ChainManager 为编程式底层**
+**结论：两者并存，Pipeline JSON 为声明式上层，StateMachineEngine 为编程式底层**
 
 | 模式 | 适用场景 | 来源 |
 |------|---------|------|
 | Pipeline JSON | 前端可视化编辑器创建的任务、资源包中的任务定义 | MaaFramework |
-| ChainManager | Python 编程式任务开发、需要复杂逻辑的任务 | BD2-AUTO |
+| StateMachineEngine | Python 编程式任务开发、需要复杂逻辑的任务 | BD2-AUTO |
 | StateMachine | 状态驱动的任务（如游戏主界面循环） | GAF 自研 |
 
 三者共享底层 OperationHandler / VerifyHandler / ImageProcessor。
@@ -361,7 +361,7 @@ last_updated: 2026-07-12
 
 ### 最优策略总结
 
-1. **从 BD2-AUTO 迁移核心引擎**（ChainManager/VerifyHandler/OperationHandler/ColorProcessor）— ✅ 已完成，纯 Python 天然跨平台
+1. **从 BD2-AUTO 迁移核心引擎**（StateMachineEngine/VerifyHandler/OperationHandler/ColorProcessor）— ✅ 已完成，纯 Python 天然跨平台
 2. **从 ok-script 复用 Windows 截图**（WGC纯ctypes/BitBlt DC缓存/子窗口合成/PostMessage动态定位）— **✅ 全部已完成 (Phase 6)**
 3. **从 MaaFramework 借鉴设计**（Pipeline JSON(10识别18动作)/竞速选择/伪最小化/9输入变体/按键守护/跨平台架构）— ✅ 全部已完成 (Phase 6-8)
 4. **从 Alas 复用模拟器生态**（10种ADB截图/8类模拟器管理/连接池/异常恢复/配置生成）— ✅ 模拟器发现+异常恢复+健康检查+配置表单已完成 (Phase 9/13)

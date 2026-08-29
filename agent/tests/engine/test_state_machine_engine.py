@@ -1,4 +1,4 @@
-"""ChainManager 测试 — TD-354"""
+"""StateMachineEngine 测试 — TD-354"""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from core.result import AutoResult, fail_result, success_result
-from engine.chain_manager import ChainManager
+from engine.state_machine_engine import StateMachineEngine
 from engine.executor import BaseEngine, TaskExecutor
 
 pytestmark = pytest.mark.integration
@@ -33,17 +33,17 @@ def _make_mock_module(build_fn=None) -> ModuleType:
     return mod
 
 
-class TestChainManager:
-    """ChainManager 基本功能测试"""
+class TestStateMachineEngine:
+    """StateMachineEngine 基本功能测试"""
 
-    def test_chain_manager_is_baseengine(self):
-        """ChainManager 应是 BaseEngine 子类"""
-        engine = ChainManager()
+    def test_state_machine_engine_is_baseengine(self):
+        """StateMachineEngine 应是 BaseEngine 子类"""
+        engine = StateMachineEngine()
         assert isinstance(engine, BaseEngine)
 
     def test_run_missing_module(self):
         """缺 module 字段应返回 fail"""
-        engine = ChainManager()
+        engine = StateMachineEngine()
         result = engine.run(
             {},
             device_manager=MagicMock(),
@@ -54,7 +54,7 @@ class TestChainManager:
 
     def test_run_missing_deps(self):
         """缺 device_manager/image_processor 应返回 fail"""
-        engine = ChainManager()
+        engine = StateMachineEngine()
         result = engine.run({"module": "test_module"})
         assert not result.success
         assert "缺少必需参数" in (result.error_msg or "")
@@ -64,7 +64,7 @@ class TestChainManager:
         """模块导入失败应返回 fail"""
         mock_import.side_effect = ImportError("no module")
 
-        engine = ChainManager()
+        engine = StateMachineEngine()
         result = engine.run(
             {"module": "nonexistent.module"},
             device_manager=MagicMock(),
@@ -80,7 +80,7 @@ class TestChainManager:
         mock_mod = _make_mock_module(build_fn=None)
         mock_import.return_value = mock_mod
 
-        engine = ChainManager()
+        engine = StateMachineEngine()
         result = engine.run(
             {"module": "test_fsm_module"},
             device_manager=MagicMock(),
@@ -98,7 +98,7 @@ class TestChainManager:
         mock_mod = _make_mock_module(build_fn=_bad_builder)
         mock_import.return_value = mock_mod
 
-        engine = ChainManager()
+        engine = StateMachineEngine()
         result = engine.run(
             {"module": "test_fsm_module"},
             device_manager=MagicMock(),
@@ -116,7 +116,7 @@ class TestChainManager:
         mock_mod = _make_mock_module(build_fn=_good_builder)
         mock_import.return_value = mock_mod
 
-        engine = ChainManager()
+        engine = StateMachineEngine()
         result = engine.run(
             {"module": "test_fsm_module"},
             device_manager=MagicMock(),
@@ -133,7 +133,7 @@ class TestChainManager:
         mock_mod = _make_mock_module(build_fn=_good_builder)
         mock_import.return_value = mock_mod
 
-        engine = ChainManager()
+        engine = StateMachineEngine()
         result = engine.run(
             {"module": "test_fsm_module"},
             device_manager=MagicMock(),
@@ -153,7 +153,7 @@ class TestChainManager:
         mock_mod = _make_mock_module(build_fn=_bad_run)
         mock_import.return_value = mock_mod
 
-        engine = ChainManager()
+        engine = StateMachineEngine()
         result = engine.run(
             {"module": "test_fsm_module"},
             device_manager=MagicMock(),
@@ -175,7 +175,7 @@ class TestChainManager:
         device_manager.get_active_device_id.return_value = "prev_device"
         device_manager.set_active_device.return_value = True
 
-        engine = ChainManager()
+        engine = StateMachineEngine()
         result = engine.run(
             {"module": "test_fsm_module"},
             device_manager=device_manager,
@@ -200,7 +200,7 @@ class TestChainManager:
         device_manager = MagicMock()
         device_manager.set_active_device.return_value = False  # 切换失败
 
-        engine = ChainManager()
+        engine = StateMachineEngine()
         result = engine.run(
             {"module": "test_fsm_module"},
             device_manager=device_manager,
@@ -213,19 +213,20 @@ class TestChainManager:
     def test_run_max_iterations(self):
         """max_iterations 参数透传"""
         # 测试 max_iterations 被正确读取
-        ChainManager()
+        StateMachineEngine()
         # 不需要真正执行，验证参数解析逻辑（通过其他测试覆盖）
         assert True
 
 
-class TestTaskExecutorChain:
-    """TaskExecutor 与 ChainManager 集成测试"""
+class TestTaskExecutorStateMachine:
+    """TaskExecutor 与 StateMachineEngine 集成测试"""
 
     def test_task_executor_registers_chain(self):
         """TaskExecutor 应注册 chain 引擎"""
         executor = TaskExecutor()
-        assert "chain" in executor.engines
-        assert isinstance(executor.engines["chain"], ChainManager)
+        assert "state_machine" in executor.engines
+        assert "chain" in executor.engines  # deprecated alias
+        assert isinstance(executor.engines["state_machine"], StateMachineEngine)
 
     @patch("importlib.import_module")
     def test_task_executor_dispatch_chain(self, mock_import):
@@ -238,7 +239,7 @@ class TestTaskExecutorChain:
 
         executor = TaskExecutor()
         result = executor.execute(
-            "chain",
+            "state_machine",
             {"module": "test_fsm_module"},
             device_manager=MagicMock(),
             image_processor=MagicMock(),
@@ -252,7 +253,7 @@ class TestTaskExecutorChain:
 
         executor = TaskExecutor()
         result = executor.execute(
-            "chain",
+            "state_machine",
             {"module": "nonexistent.module"},
             device_manager=MagicMock(),
             image_processor=MagicMock(),

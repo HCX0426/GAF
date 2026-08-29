@@ -1,7 +1,7 @@
 ---
 spec: 2026-08-29-naming-b-internal
 title: 命名归一化 B 批：中危内部改名（ChainManager→StateMachineEngine / PerformanceMonitor / loop_rotation 标注）
-status: active
+status: completed
 created: 2026-08-29
 estimated_effort: 1 day
 risk: medium
@@ -36,9 +36,9 @@ B 批为 agent/后端**内部**改名或仅文档标注，无 API 契约 / DB �
 
 | 阶段 | 内容 | 状态 |
 |------|------|------|
-| P1 | ChainManager→StateMachineEngine + task_type shim + 文档 | ⏳ |
-| P2 | PerformanceMonitor→PerfMonitor | ⏳ |
-| P3 | loop_rotation 文档标注 | ⏳ |
+| P1 | ChainManager→StateMachineEngine + task_type shim + 文档 | ✅ |
+| P2 | PerformanceMonitor→PerfMonitor | ✅ |
+| P3 | loop_rotation 文档标注 | ✅ |
 
 #### Task P1.1: ChainManager 改名
 

@@ -76,7 +76,7 @@ GAF/
 │   └── plugins/                # 插件系统 + 沙箱执行
 ├── agent/                      # Agent 独立进程 (Python 3.11 自研)
 │   └── src/
-│       ├── engine/             # TaskExecutor + PipelineEngine + ChainManager + StateMachine (Phase 1 统一入口)
+│       ├── engine/             # TaskExecutor + PipelineEngine + StateMachineEngine + StateMachine (Phase 1 统一入口)
 │       ├── devices/            # 设备抽象 + 发现注册表 (discovery/ 子包: DeviceDiscoveryRegistry Phase 2)
 │       ├── platforms/windows/  # Win32 截图(6种) + 输入(3方法: SendInput/PostMessage/PseudoBackground) + LDPlayer/MuMu 专用
 │       ├── recognition/        # OCR 4 引擎 + OpenCC + 缓存
@@ -559,7 +559,7 @@ agent/src/
 │   │   └── post_processor.py  # 后处理 + gettext 翻译
 │   └── cache.py           # pHash 缓存 (避免重复识别)
 ├── core/                  # 核心工具
-│   ├── chain_manager.py   # ChainManager 链式执行
+│   ├── state_machine_engine.py   # StateMachineEngine 状态机执行
 │   ├── state_machine.py   # 状态机引擎
 │   ├── script_dsl.py      # Script DSL 编译器 (625 行)
 │   ├── worker_pool.py     # Alas 风格 8 线程池
@@ -790,7 +790,7 @@ desktop/
 | Agent 自动关联 | ✅ Phase R18 | Agent 启动上报 → Server 创建/更新 Device |
 | 跨平台抽象层 | ✅ P-028 | Windows/macOS/Linux 统一接口，业务代码不直接调平台 API |
 | LangGraph AI Agent | ✅ 已实施 | 状态图 + 工具集 + LLM 适配器 |
-| Pipeline JSON + ChainManager 并存 | ✅ 已实施 | Pipeline 声明式上层 + ChainManager 编程式底层 + StateMachine 状态驱动 |
+| Pipeline JSON + StateMachineEngine 并存 | ✅ 已实施 | Pipeline 声明式上层 + StateMachineEngine 编程式底层 + StateMachine 状态驱动（task_type `chain` 为 `state_machine` 的废弃别名） |
 | 5 层截图降级 | ✅ 已实施 | scrcpy→droidcast→nemuipe→ld_opengl→screencap |
 | 3 方法输入 (TD-090) | ✅ 已实施 | SendInput/PostMessage/PseudoBackground (TD-090 删除 1320 行 9 变体死代码) |
 | Multi-game 模式开关 (Spec A) | ✅ 2026-07-16 | FeatureFlag `unattended_multi_game_mode` + `resolve_device_methods` 白名单降级 + 前端模式选择器 disabled 约束 |

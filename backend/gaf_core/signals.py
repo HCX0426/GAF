@@ -48,9 +48,9 @@ def install_db_query_timing() -> None:
                 return execute(sql, params, many, context)
             finally:
                 elapsed_ms = (time.monotonic() - start) * 1000.0
-                from gaf_core.perf_monitor import PerformanceMonitor
+                from gaf_core.perf_monitor import PerfMonitor
 
-                PerformanceMonitor.get_instance().record(
+                PerfMonitor.get_instance().record(
                     "db.query", elapsed_ms, {"sql": str(sql)[:200]},
                 )
                 if elapsed_ms > SLOW_QUERY_THRESHOLD_MS:
@@ -102,10 +102,10 @@ def install_celery_task_timing() -> None:
         if start is None:
             return
         elapsed_ms = (time.monotonic() - start) * 1000.0
-        from gaf_core.perf_monitor import PerformanceMonitor
+        from gaf_core.perf_monitor import PerfMonitor
 
         task_name = task.name if task else "unknown"
-        PerformanceMonitor.get_instance().record(
+        PerfMonitor.get_instance().record(
             "celery.task.execute", elapsed_ms,
             {"task": task_name, "task_id": task_id},
         )
