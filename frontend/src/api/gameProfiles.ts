@@ -9,7 +9,7 @@
  *
  * Spec v3 §2.5.2: extended with 5 sub-resource endpoints for the
  * GameProfile detail page tabs (tasks / task_chains / devices / accounts /
- * resource_packs) + default-routine / dispatch-routine actions.
+ * resource_packs) + default-task-chain / dispatch-routine actions.
  */
 import client from './client';
 import type {
@@ -110,12 +110,12 @@ export async function fetchGameProfileResourcePacks(
 }
 
 // ---------------------------------------------------------------------------
-// v3 §2.7.2 default-routine / dispatch-routine actions
+// v3 §2.7.2 default-task-chain / dispatch-routine actions
 // ---------------------------------------------------------------------------
 
 /** Set the default TaskChain for this GameProfile (spec v3 §2.7.2) */
 export async function setDefaultRoutine(profileId: number, taskChainId: number): Promise<GameProfile> {
-  const res = await client.patch<GameProfile>(`${API_BASE}${profileId}/default-routine/`, {
+  const res = await client.patch<GameProfile>(`${API_BASE}${profileId}/default-task-chain/`, {
     task_chain_id: taskChainId,
   });
   return res.data;

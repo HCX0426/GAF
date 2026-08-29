@@ -170,7 +170,7 @@ export interface AccountRotationRule {
   isActive: boolean;
 }
 
-/** execute plan event (spec §2.4.2 — window-centric, based on Device + GameProfile.default_routine) */
+/** execute plan event (spec §2.4.2 — window-centric, based on Device + GameProfile.default_task_chain) */
 
 export interface ExecutionPlanEvent {
   device_id: number;

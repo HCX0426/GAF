@@ -4,7 +4,7 @@ Extracted from TaskChainViewSet.execute action so that:
     - GameProfile dispatch-routine API (task 2.3) can dispatch the
       default routine for all online devices under a GameProfile
     - scheduler unattended_start_view (task 2.6) can dispatch the
-      default routine for all online devices with a default_routine
+      default routine for all online devices with a default_task_chain
 
 Both callers need the same flow:
     1. Validate chain has nodes + chain.is_enabled

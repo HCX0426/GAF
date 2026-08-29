@@ -290,9 +290,9 @@ class TestExecutionPlan(TestCase):
         plans = generate_execution_plan(days=7)
         self.assertIsInstance(plans, list)
 
-    def test_plan_returns_empty_when_no_default_routine(self):
+    def test_plan_returns_empty_when_no_default_task_chain(self):
         """TD-097: empty_fallback path removed — plan is empty when no device
-        has a default_routine configured (no placeholder item)."""
+        has a default_task_chain configured (no placeholder item)."""
         plans = generate_execution_plan(days=7)
         self.assertEqual(plans, [])
 
@@ -306,8 +306,8 @@ class TestExecutionPlan(TestCase):
             is_default=True,
             created_by=self.user,
         )
-        profile.default_routine = chain
-        profile.save(update_fields=['default_routine'])
+        profile.default_task_chain = chain
+        profile.save(update_fields=['default_task_chain'])
         Device.objects.create(
             name='Win-PC-1',
             device_type='windows',
@@ -329,7 +329,7 @@ class TestExecutionPlan(TestCase):
         self.assertIsNone(plan['account_name'])
 
     def test_plan_one_item_per_device_per_day(self):
-        """Each device with a default_routine produces exactly one item per day."""
+        """Each device with a default_task_chain produces exactly one item per day."""
         profile = GameProfile.objects.create(game_name='BD2')
         chain = TaskChain.objects.create(
             name='BD2-daily',
@@ -338,8 +338,8 @@ class TestExecutionPlan(TestCase):
             is_default=True,
             created_by=self.user,
         )
-        profile.default_routine = chain
-        profile.save(update_fields=['default_routine'])
+        profile.default_task_chain = chain
+        profile.save(update_fields=['default_task_chain'])
         Device.objects.create(name='Dev-A', device_type='windows', game_profile=profile)
         Device.objects.create(name='Dev-B', device_type='windows', game_profile=profile)
 
@@ -367,7 +367,7 @@ class TestExecutionPlan(TestCase):
     def test_today_schedule_planned_status_and_empty_account(self):
         """N219: 计划项状态为 planned(计划中) + 无绑定账户时 account_name 为空串.
 
-        今日日程 = 计划排期 (引擎按 Device+default_routine 推导), 非实际执行:
+        今日日程 = 计划排期 (引擎按 Device+default_task_chain 推导), 非实际执行:
         ① 状态用 planned 而非 pending, 避免"待执行"误导 ② 未绑账户时
         account_name 为 "" (前端不渲染空段箭头), 而非 "未知账户".
         """
@@ -379,8 +379,8 @@ class TestExecutionPlan(TestCase):
             is_default=True,
             created_by=self.user,
         )
-        profile.default_routine = chain
-        profile.save(update_fields=['default_routine'])
+        profile.default_task_chain = chain
+        profile.save(update_fields=['default_task_chain'])
         Device.objects.create(name='Win-PC-1', device_type='windows', game_profile=profile)
 
         res = self.client.get('/api/v2/scheduler/today/')
@@ -466,8 +466,8 @@ class TestUnattendedStartRealDispatch(TestCase):
         self.assertEqual(res.status_code, status.HTTP_409_CONFLICT)
         self.assertEqual(res.data['code'], ErrorCode.INVALID_PARAMS)
 
-    def test_no_devices_with_default_routine_returns_zero_dispatch(self):
-        """No devices with default_routine → dispatched_count=0, status=running."""
+    def test_no_devices_with_default_task_chain_returns_zero_dispatch(self):
+        """No devices with default_task_chain → dispatched_count=0, status=running."""
         res = self.client.post(
             '/api/v2/scheduler/unattended/start/',
             {'game_profile_id': self.game_profile.id},
@@ -481,7 +481,7 @@ class TestUnattendedStartRealDispatch(TestCase):
         self.assertEqual(body['failed_count'], 0)
 
     def test_device_with_disabled_chain_is_skipped(self):
-        """Device bound to a disabled default_routine chain is skipped."""
+        """Device bound to a disabled default_task_chain chain is skipped."""
         profile = GameProfile.objects.create(game_name='BD2')
         chain = TaskChain.objects.create(
             name='disabled-chain',
@@ -490,8 +490,8 @@ class TestUnattendedStartRealDispatch(TestCase):
             is_default=True,
             created_by=self.user,
         )
-        profile.default_routine = chain
-        profile.save(update_fields=['default_routine'])
+        profile.default_task_chain = chain
+        profile.save(update_fields=['default_task_chain'])
         agent = Agent.objects.create(
             agent_id='online-agent-1',
             hostname='host-1',
@@ -525,8 +525,8 @@ class TestUnattendedStartRealDispatch(TestCase):
             is_default=True,
             created_by=self.user,
         )
-        profile.default_routine = chain
-        profile.save(update_fields=['default_routine'])
+        profile.default_task_chain = chain
+        profile.save(update_fields=['default_task_chain'])
         # Device with offline agent
         offline_agent = Agent.objects.create(
             agent_id='offline-agent-1',
@@ -554,7 +554,7 @@ class TestUnattendedStartRealDispatch(TestCase):
 
     @patch('pipeline.tasks.dispatch_chain_node.delay')
     def test_device_with_online_agent_and_enabled_chain_dispatches(self, mock_delay):
-        """Device with online agent + enabled default_routine chain dispatches."""
+        """Device with online agent + enabled default_task_chain chain dispatches."""
         profile = GameProfile.objects.create(game_name='BD2')
         chain = TaskChain.objects.create(
             name='active-chain',
@@ -563,8 +563,8 @@ class TestUnattendedStartRealDispatch(TestCase):
             is_default=True,
             created_by=self.user,
         )
-        profile.default_routine = chain
-        profile.save(update_fields=['default_routine'])
+        profile.default_task_chain = chain
+        profile.save(update_fields=['default_task_chain'])
         # Chain must have at least one node
         task = Task.objects.create(name='Task A')
         TaskChainNode.objects.create(chain=chain, task=task, order=1)
@@ -1459,14 +1459,14 @@ def tick_user(db):
 
 @pytest.fixture
 def tick_game_profile(db):
-    """GameProfile with an enabled default_routine TaskChain."""
+    """GameProfile with an enabled default_task_chain TaskChain."""
     chain = TaskChain.objects.create(
         name='Tick Test Chain',
         is_enabled=True,
     )
     return GameProfile.objects.create(
         game_name='TickGame',
-        default_routine=chain,
+        default_task_chain=chain,
     )
 
 
@@ -1553,7 +1553,7 @@ def test_tick_paused_session_not_processed(running_session, idle_device, tick_us
     running_session.save(update_fields=['status'])
 
     chain_exec = _make_chain_execution(
-        idle_device.game_profile.default_routine,
+        idle_device.game_profile.default_task_chain,
         tick_user,
     )
 
@@ -1567,7 +1567,7 @@ def test_tick_paused_session_not_processed(running_session, idle_device, tick_us
 def test_tick_outside_time_window_skipped(running_session, idle_device, tick_user):
     """tick returns early when check_time_window returns False."""
     chain_exec = _make_chain_execution(
-        idle_device.game_profile.default_routine,
+        idle_device.game_profile.default_task_chain,
         tick_user,
     )
 
@@ -1597,7 +1597,7 @@ def test_tick_dispatches_for_idle_device_no_rotation(
     idle_device.save(update_fields=['game_account'])
 
     chain_exec = _make_chain_execution(
-        idle_device.game_profile.default_routine,
+        idle_device.game_profile.default_task_chain,
         tick_user,
         device=idle_device,
         account=account,
@@ -1634,7 +1634,7 @@ def test_tick_skips_already_dispatched_account_no_rotation(
     running_session.save(update_fields=['dispatched_account_ids'])
 
     chain_exec = _make_chain_execution(
-        idle_device.game_profile.default_routine,
+        idle_device.game_profile.default_task_chain,
         tick_user,
     )
 
@@ -1661,14 +1661,14 @@ def test_tick_skips_device_with_active_chain_execution(
 
     # Create an existing RUNNING chain_execution for this device
     TaskChainExecution.objects.create(
-        chain=idle_device.game_profile.default_routine,
+        chain=idle_device.game_profile.default_task_chain,
         triggered_by=tick_user,
         device=idle_device,
         status=TaskChainExecution.Status.RUNNING,
     )
 
     chain_exec = _make_chain_execution(
-        idle_device.game_profile.default_routine,
+        idle_device.game_profile.default_task_chain,
         tick_user,
     )
 
@@ -1684,7 +1684,7 @@ def test_tick_skips_disabled_chain(
     running_session, idle_device, tick_user,
 ):
     """Disabled chain (is_enabled=False) is skipped."""
-    chain = idle_device.game_profile.default_routine
+    chain = idle_device.game_profile.default_task_chain
     chain.is_enabled = False
     chain.save(update_fields=['is_enabled'])
 
@@ -1747,7 +1747,7 @@ def test_tick_dispatches_with_rotation_rule(
     expected_account = ordered[0]
 
     chain_exec = _make_chain_execution(
-        idle_device.game_profile.default_routine,
+        idle_device.game_profile.default_task_chain,
         tick_user,
         device=idle_device,
         account=expected_account,
@@ -1790,7 +1790,7 @@ def test_tick_rotation_skips_already_dispatched(
     running_session.save(update_fields=['rotation_rule', 'dispatched_account_ids'])
 
     chain_exec = _make_chain_execution(
-        idle_device.game_profile.default_routine,
+        idle_device.game_profile.default_task_chain,
         tick_user,
         device=idle_device,
         account=acct2,
@@ -1827,7 +1827,7 @@ def test_tick_rotation_all_dispatched_skips(
     running_session.save(update_fields=['rotation_rule', 'dispatched_account_ids'])
 
     chain_exec = _make_chain_execution(
-        idle_device.game_profile.default_routine,
+        idle_device.game_profile.default_task_chain,
         tick_user,
     )
 
@@ -1912,7 +1912,7 @@ def test_tick_continues_after_device_exception(running_session, tick_user):
     dev2.save(update_fields=['game_account'])
 
     chain_exec_ok = _make_chain_execution(
-        profile.default_routine, tick_user, device=dev2, account=acct2,
+        profile.default_task_chain, tick_user, device=dev2, account=acct2,
     )
 
     from pipeline.services import ChainDispatchError
@@ -1959,7 +1959,7 @@ def test_tick_scopes_devices_by_session_game_profile(
     # fixture via the running_session fixture).
     other_profile = GameProfile.objects.create(
         game_name='OtherGame',
-        default_routine=TaskChain.objects.create(
+        default_task_chain=TaskChain.objects.create(
             name='Other Chain', is_enabled=True,
         ),
     )
@@ -1995,7 +1995,7 @@ def test_tick_scopes_devices_by_session_game_profile(
     idle_device.save(update_fields=['game_account'])
 
     own_chain_exec = _make_chain_execution(
-        running_session.game_profile.default_routine,
+        running_session.game_profile.default_task_chain,
         tick_user,
         device=idle_device,
         account=own_account,

@@ -1,7 +1,7 @@
 ---
 spec: 2026-08-29-naming-c-default-routine
 title: 命名归一化 C-2：GameProfile.default_routine → default_task_chain（含端点）
-status: active
+status: done
 created: 2026-08-29
 estimated_effort: 0.5 day
 risk: high
@@ -35,9 +35,9 @@ source: docs/analysis/concept-naming-normalization.md §1/§5(4)/§7
 
 | 阶段 | 内容 | 状态 |
 |------|------|------|
-| P1 | 后端模型 + 迁移 + serializers/views/urls | ⏳ |
-| P2 | 前端类型重生成 + 引用替换 | ⏳ |
-| P3 | 文档同步 + 测试 | ⏳ |
+| P1 | 后端模型 + 迁移 + serializers/views/urls | ✅ |
+| P2 | 前端类型重生成 + 引用替换 | ✅ |
+| P3 | 文档同步 + 测试 | ✅ |
 
 #### Task P1.1: 后端
 

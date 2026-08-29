@@ -86,12 +86,12 @@ class GameProfileSubResourceAPITest(TestCase):
 
 
 class GameProfileDefaultRoutineAPITest(TestCase):
-    """Tests for PATCH /api/v2/gamestate/game-profiles/{id}/default-routine/ (spec 2.3)."""
+    """Tests for PATCH /api/v2/gamestate/game-profiles/{id}/default-task-chain/ (spec 2.3)."""
 
     def setUp(self):
         self.client = APIClient()
         self.user = User.objects.create_superuser('admin', 'admin@test.com', 'admin123')
-        # create_superuser does not set User.role; default_routine needs
+        # create_superuser does not set User.role; default_task_chain needs
         # 'manage' permission, so we must explicitly grant admin role.
         self.user.role = 'admin'
         self.user.save(update_fields=['role'])
@@ -103,42 +103,42 @@ class GameProfileDefaultRoutineAPITest(TestCase):
             created_by=self.user,
         )
 
-    def test_set_default_routine_success(self):
-        url = f'/api/v2/gamestate/game-profiles/{self.profile.id}/default-routine/'
+    def test_set_default_task_chain_success(self):
+        url = f'/api/v2/gamestate/game-profiles/{self.profile.id}/default-task-chain/'
         r = self.client.patch(url, {'task_chain_id': self.chain.id}, format='json')
         assert r.status_code == 200
         # TD-336 #6: assert response body confirms the new default chain
-        assert _unwrap(r)['default_routine_id'] == self.chain.id
+        assert _unwrap(r)['default_task_chain_id'] == self.chain.id
         self.profile.refresh_from_db()
-        assert self.profile.default_routine_id == self.chain.id
+        assert self.profile.default_task_chain_id == self.chain.id
         self.chain.refresh_from_db()
         assert self.chain.is_default is True
 
-    def test_set_default_routine_missing_task_chain_id(self):
-        url = f'/api/v2/gamestate/game-profiles/{self.profile.id}/default-routine/'
+    def test_set_default_task_chain_missing_task_chain_id(self):
+        url = f'/api/v2/gamestate/game-profiles/{self.profile.id}/default-task-chain/'
         r = self.client.patch(url, {}, format='json')
         assert r.status_code == 400
 
-    def test_set_default_routine_chain_not_found(self):
-        url = f'/api/v2/gamestate/game-profiles/{self.profile.id}/default-routine/'
+    def test_set_default_task_chain_chain_not_found(self):
+        url = f'/api/v2/gamestate/game-profiles/{self.profile.id}/default-task-chain/'
         r = self.client.patch(url, {'task_chain_id': 999999}, format='json')
         assert r.status_code == 404
 
-    def test_set_default_routine_chain_belongs_to_other_profile(self):
+    def test_set_default_task_chain_chain_belongs_to_other_profile(self):
         other_profile = GameProfile.objects.create(game_name='OtherGame')
         other_chain = TaskChain.objects.create(
             name='other-chain',
             game_profile=other_profile,
             created_by=self.user,
         )
-        url = f'/api/v2/gamestate/game-profiles/{self.profile.id}/default-routine/'
+        url = f'/api/v2/gamestate/game-profiles/{self.profile.id}/default-task-chain/'
         r = self.client.patch(url, {'task_chain_id': other_chain.id}, format='json')
         assert r.status_code == 400
         # Source profile should not have been mutated.
         self.profile.refresh_from_db()
-        assert self.profile.default_routine_id is None
+        assert self.profile.default_task_chain_id is None
 
-    def test_set_default_routine_clears_previous_default(self):
+    def test_set_default_task_chain_clears_previous_default(self):
         """Setting a new default should clear is_default on the previous chain."""
         chain2 = TaskChain.objects.create(
             name='chain-2',
@@ -146,10 +146,10 @@ class GameProfileDefaultRoutineAPITest(TestCase):
             is_default=True,
             created_by=self.user,
         )
-        self.profile.default_routine = chain2
-        self.profile.save(update_fields=['default_routine'])
+        self.profile.default_task_chain = chain2
+        self.profile.save(update_fields=['default_task_chain'])
 
-        url = f'/api/v2/gamestate/game-profiles/{self.profile.id}/default-routine/'
+        url = f'/api/v2/gamestate/game-profiles/{self.profile.id}/default-task-chain/'
         r = self.client.patch(url, {'task_chain_id': self.chain.id}, format='json')
         assert r.status_code == 200
 
@@ -158,7 +158,7 @@ class GameProfileDefaultRoutineAPITest(TestCase):
         assert chain2.is_default is False
         assert self.chain.is_default is True
         self.profile.refresh_from_db()
-        assert self.profile.default_routine_id == self.chain.id
+        assert self.profile.default_task_chain_id == self.chain.id
 
 
 class GameProfileDispatchRoutineAPITest(TestCase):
@@ -179,7 +179,7 @@ class GameProfileDispatchRoutineAPITest(TestCase):
         self.client.force_authenticate(user=self.user)
         self.profile = GameProfile.objects.create(game_name='BD2')
 
-    def test_dispatch_routine_no_default_routine_returns_400(self):
+    def test_dispatch_routine_no_default_task_chain_returns_400(self):
         url = f'/api/v2/gamestate/game-profiles/{self.profile.id}/dispatch-routine/'
         r = self.client.post(url, {}, format='json')
         assert r.status_code == 400
@@ -188,9 +188,9 @@ class GameProfileDispatchRoutineAPITest(TestCase):
         msg = body.get('message', '') if isinstance(body, dict) else ''
         err_data = body.get('data') if isinstance(body, dict) else None
         if isinstance(err_data, dict) and 'error' in err_data:
-            assert 'default_routine' in err_data['error']
+            assert 'default_task_chain' in err_data['error']
         else:
-            assert 'default_routine' in msg or 'default_routine' in str(body)
+            assert 'default_task_chain' in msg or 'default_task_chain' in str(body)
 
     def test_dispatch_routine_disabled_chain_returns_400(self):
         chain = TaskChain.objects.create(
@@ -200,8 +200,8 @@ class GameProfileDispatchRoutineAPITest(TestCase):
             is_default=True,
             created_by=self.user,
         )
-        self.profile.default_routine = chain
-        self.profile.save(update_fields=['default_routine'])
+        self.profile.default_task_chain = chain
+        self.profile.save(update_fields=['default_task_chain'])
         url = f'/api/v2/gamestate/game-profiles/{self.profile.id}/dispatch-routine/'
         r = self.client.post(url, {}, format='json')
         assert r.status_code == 400
@@ -224,8 +224,8 @@ class GameProfileDispatchRoutineAPITest(TestCase):
             is_default=True,
             created_by=self.user,
         )
-        self.profile.default_routine = chain
-        self.profile.save(update_fields=['default_routine'])
+        self.profile.default_task_chain = chain
+        self.profile.save(update_fields=['default_task_chain'])
 
         # Device bound to this profile but with no Agent — must be skipped.
         Device.objects.create(

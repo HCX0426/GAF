@@ -41,10 +41,10 @@ class GameProfileViewSet(AuditMixin, viewsets.ModelViewSet):
         return GameProfileSerializer
 
     def get_permissions(self):
-        # default_routine mutates GameProfile + TaskChain state -> manage.
+        # default_task_chain mutates GameProfile + TaskChain state -> manage.
         # dispatch_routine triggers real TaskChain executions -> execute.
         if self.action in ('create', 'update', 'partial_update', 'destroy',
-                           'default_routine',
+                           'default_task_chain',
                            'bind_task', 'unbind_task',
                            'bind_task_chain', 'unbind_task_chain',
                            'bind_account', 'unbind_account'):
@@ -81,9 +81,9 @@ class GameProfileViewSet(AuditMixin, viewsets.ModelViewSet):
 
         def _snapshot(obj):
             data = {k: getattr(obj, k, None) for k in snapshot_keys}
-            # default_routine is a FK to TaskChain; record only the id
+            # default_task_chain is a FK to TaskChain; record only the id
             # so auditors can see when the default routine changes.
-            data["default_routine_id"] = getattr(obj, "default_routine_id", None)
+            data["default_task_chain_id"] = getattr(obj, "default_task_chain_id", None)
             return data
 
         if action == AuditAction.CREATE:
@@ -274,20 +274,20 @@ class GameProfileViewSet(AuditMixin, viewsets.ModelViewSet):
 
     # ---- v3 §2.7.2 window-centric routine management ------------------
 
-    @action(detail=True, methods=['patch'], url_path='default-routine')
+    @action(detail=True, methods=['patch'], url_path='default-task-chain')
     @audit_action(AuditAction.UPDATE, AuditResourceType.GAME_PROFILE)
-    def default_routine(self, request, pk=None):
+    def default_task_chain(self, request, pk=None):
         """Set the default TaskChain for this GameProfile (spec v3 §2.7.2).
 
         Atomically:
             1. Validate the target TaskChain belongs to this GameProfile
             2. Clear is_default on other chains under the same profile
             3. Set the target chain's is_default=True
-            4. Sync GameProfile.default_routine to the target chain
+            4. Sync GameProfile.default_task_chain to the target chain
 
         This is the profile-side mirror of
         ``POST /api/v2/pipeline/task-chains/{id}/set-default/``: both keep
-        GameProfile.default_routine and TaskChain.is_default consistent.
+        GameProfile.default_task_chain and TaskChain.is_default consistent.
         Exposed as a PATCH on the profile so the frontend GameProfiles page
         can update it without navigating to the pipeline app.
 
@@ -332,15 +332,15 @@ class GameProfileViewSet(AuditMixin, viewsets.ModelViewSet):
             chain.is_default = True
             chain.save(update_fields=['is_default'])
 
-            profile.default_routine = chain
-            profile.save(update_fields=['default_routine'])
+            profile.default_task_chain = chain
+            profile.save(update_fields=['default_task_chain'])
 
         return Response({
             'status': 'ok',
             'game_profile_id': profile.pk,
             'game_name': profile.game_name,
-            'default_routine_id': chain.pk,
-            'default_routine_name': chain.name,
+            'default_task_chain_id': chain.pk,
+            'default_task_chain_name': chain.name,
             'is_default': True,
             'message': (
                 f'TaskChain [{chain.name}] set as default routine for '
@@ -382,13 +382,13 @@ class GameProfileViewSet(AuditMixin, viewsets.ModelViewSet):
         from agents.models import Agent
 
         profile = self.get_object()
-        chain = profile.default_routine
+        chain = profile.default_task_chain
         if chain is None:
             return Response(
                 {
                     'error': (
-                        f'GameProfile [{profile.game_name}] has no default_routine; '
-                        f'call PATCH default-routine first'
+                        f'GameProfile [{profile.game_name}] has no default_task_chain; '
+                        f'call PATCH default-task-chain first'
                     )
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -469,8 +469,8 @@ class GameProfileViewSet(AuditMixin, viewsets.ModelViewSet):
             'skipped': skipped,
             'failed': failed,
             'game_profile_id': profile.pk,
-            'default_routine_id': chain.pk,
-            'default_routine_name': chain.name,
+            'default_task_chain_id': chain.pk,
+            'default_task_chain_name': chain.name,
         })
 
 

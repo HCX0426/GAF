@@ -141,8 +141,8 @@ def unattended_start_view(request):
     devices = Device.objects.filter(
         agent__status__in=online_statuses,
         game_profile_id=game_profile_id,
-        game_profile__default_routine__isnull=False,
-    ).select_related('game_profile__default_routine', 'agent', 'game_account')
+        game_profile__default_task_chain__isnull=False,
+    ).select_related('game_profile__default_task_chain', 'agent', 'game_account')
 
     # P-011 Spec A: in multi-game mode, refuse to start if any bound device
     # is configured with an unsafe input method. resolve_device_methods()
@@ -223,7 +223,7 @@ def unattended_start_view(request):
     skipped = []
     failed = []
     for device in devices:
-        chain = device.game_profile.default_routine
+        chain = device.game_profile.default_task_chain
         if not chain.is_enabled:
             skipped.append({"device_id": device.id, "reason": "chain_disabled"})
             continue

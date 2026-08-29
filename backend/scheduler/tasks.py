@@ -5,7 +5,7 @@ This module drives the unattended loop. Celery beat triggers
 tick:
 
 1. Checks time window (skips if outside)
-2. For each idle device with default_routine:
+2. For each idle device with default_task_chain:
    a. If session.rotation_rule is set: pick next account via
       ``calculate_account_order``, skipping already-dispatched accounts
    b. Else: use device.game_account (legacy one-shot behavior)
@@ -61,7 +61,7 @@ def tick_unattended_session():
 def _tick_session(session):
     """Process a single RUNNING session.
 
-    For each idle device with default_routine, dispatch the next account's
+    For each idle device with default_task_chain, dispatch the next account's
     chain. If rotation_rule is set, pick the next undispatched account.
     """
     from pipeline.models import TaskChainExecution
@@ -87,8 +87,8 @@ def _tick_session(session):
         agent__status__in=online_statuses,
         status=Device.Status.ONLINE,
         game_profile_id=session.game_profile_id,
-        game_profile__default_routine__isnull=False,
-    ).select_related('game_profile__default_routine', 'agent', 'game_account')
+        game_profile__default_task_chain__isnull=False,
+    ).select_related('game_profile__default_task_chain', 'agent', 'game_account')
 
     # Determine candidate accounts for rotation
     rotation_rule = session.rotation_rule
@@ -101,7 +101,7 @@ def _tick_session(session):
         dispatched_set = set(session.dispatched_account_ids or [])
 
     for device in devices:
-        chain = device.game_profile.default_routine
+        chain = device.game_profile.default_task_chain
         if not chain.is_enabled:
             continue
 

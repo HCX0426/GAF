@@ -46,7 +46,7 @@ class GameProfileSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'game_name', 'screenshot_methods', 'ocr_language',
             'ui_reference_resolution', 'known_popups', 'resolution_strategy',
-            'default_routine', 'routine_path', 'default_screenshot_method',
+            'default_task_chain', 'routine_path', 'default_screenshot_method',
             'default_input_method', 'default_control_mode',
             'device_type_hint', 'allowed_device_types',
             'created_at', 'updated_at',

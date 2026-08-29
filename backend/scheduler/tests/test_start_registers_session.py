@@ -36,8 +36,8 @@ def _build_stack(start_user):
     )
     task = Task.objects.create(name='StartTask')
     TaskChainNode.objects.create(chain=chain, task=task, order=1)
-    profile.default_routine = chain
-    profile.save(update_fields=['default_routine'])
+    profile.default_task_chain = chain
+    profile.save(update_fields=['default_task_chain'])
     agent = Agent.objects.create(
         agent_id='start-agent', hostname='h', status=Agent.Status.ONLINE,
     )

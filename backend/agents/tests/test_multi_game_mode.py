@@ -44,7 +44,7 @@ def _make_profile(name: str = 'TestGame') -> GameProfile:
     chain = TaskChain.objects.create(name=f'{name} chain', is_enabled=True)
     return GameProfile.objects.create(
         game_name=name,
-        default_routine=chain,
+        default_task_chain=chain,
     )
 
 

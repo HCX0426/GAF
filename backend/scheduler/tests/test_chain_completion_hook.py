@@ -61,10 +61,10 @@ def game_chain(db):
 
 @pytest.fixture
 def game_profile(game_chain):
-    """GameProfile with default_routine."""
+    """GameProfile with default_task_chain."""
     return GameProfile.objects.create(
         game_name='HookGame',
-        default_routine=game_chain,
+        default_task_chain=game_chain,
     )
 
 

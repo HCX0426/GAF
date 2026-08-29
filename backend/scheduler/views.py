@@ -303,7 +303,7 @@ def today_schedule_view(request):
     今日日程 API。
 
     GET /api/v2/scheduler/today/
-    返回今日的无人值守执行日程（基于 Device + GameProfile.default_routine）。
+    返回今日的无人值守执行日程（基于 Device + GameProfile.default_task_chain）。
 
     Delegates to ``SchedulerService.get_today_schedule`` (Phase 1).
     """

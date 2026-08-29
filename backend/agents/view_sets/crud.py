@@ -264,7 +264,7 @@ class DeviceViewSet(AuditMixin, viewsets.ModelViewSet):
         """Bind a Device to a GameProfile (spec v3 §2.7.2 + §2.8).
 
         Sets ``Device.game_profile`` so the device inherits the profile's
-        default_routine / default_screenshot_method / default_input_method /
+        default_task_chain / default_screenshot_method / default_input_method /
         default_control_mode (the 'auto' resolution is implemented in
         stage 5 ``resolve_device_methods``; this endpoint only persists
         the FK).
@@ -318,7 +318,7 @@ class DeviceViewSet(AuditMixin, viewsets.ModelViewSet):
             'device_name': device.name,
             'game_profile_id': profile.pk,
             'game_name': profile.game_name,
-            'default_routine_id': profile.default_routine_id,
+            'default_task_chain_id': profile.default_task_chain_id,
             'message': f'Device [{device.name}] bound to GameProfile [{profile.game_name}]',
         })
 

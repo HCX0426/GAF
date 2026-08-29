@@ -246,13 +246,13 @@ def check_auto_stop_conditions(
 
 
 def generate_execution_plan(days: int = 7) -> list:
-    """Generate execution plan for the next N days based on Device + GameProfile.default_routine.
+    """Generate execution plan for the next N days based on Device + GameProfile.default_task_chain.
 
     Per spec §2.4.2 (window-centric task binding v3): the plan is derived
-    from each Device's bound GameProfile.default_routine (TaskChain). This
+    from each Device's bound GameProfile.default_task_chain (TaskChain). This
     replaces the legacy Task-centric + GameAccount/Device fallback logic
     (TD-097 — empty_fallback path removed; plan can now be empty if no
-    device has a default_routine configured).
+    device has a default_task_chain configured).
 
     Args:
         days: number of future days to plan, default 7
@@ -261,25 +261,25 @@ def generate_execution_plan(days: int = 7) -> list:
         List of plan items. Each item has:
             - device_id / device_name
             - account_id / account_name (from device.game_account runtime binding)
-            - task_chain_id / task_chain_name (from game_profile.default_routine)
+            - task_chain_id / task_chain_name (from game_profile.default_task_chain)
             - day_offset (0 = today)
     """
     from agents.models import Device
 
     devices = Device.objects.filter(
-        game_profile__default_routine__isnull=False,
-    ).select_related('game_profile__default_routine', 'game_account')
+        game_profile__default_task_chain__isnull=False,
+    ).select_related('game_profile__default_task_chain', 'game_account')
 
     plans = []
     for day_offset in range(days):
         for device in devices:
             # Type narrowing for mypy: the queryset above filtered
-            # game_profile__default_routine__isnull=False, so both
-            # device.game_profile and device.game_profile.default_routine
+            # game_profile__default_task_chain__isnull=False, so both
+            # device.game_profile and device.game_profile.default_task_chain
             # are guaranteed non-None at runtime.
             assert device.game_profile is not None
-            assert device.game_profile.default_routine is not None
-            chain = device.game_profile.default_routine
+            assert device.game_profile.default_task_chain is not None
+            chain = device.game_profile.default_task_chain
             plans.append({
                 'device_id': device.id,
                 'device_name': device.name or device.adb_serial or '',

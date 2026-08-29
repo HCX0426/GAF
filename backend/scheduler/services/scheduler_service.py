@@ -61,7 +61,7 @@ class SchedulerService:
         """Derive today's unattended schedule from the execution plan engine.
 
         Notes (N219, 2026-08-29):
-        - 今日日程 = **计划排期** (引擎按 Device+default_routine 推导
+        - 今日日程 = **计划排期** (引擎按 Device+default_task_chain 推导
           "今天该跑哪些链"), 非实际执行记录. 计划项状态用 ``planned``
           (计划中) 而非 ``pending``, 避免与"已派发待执行"混淆 — 用户
           未启动无人值守时, 计划只是"排了期", 不是"在排队".

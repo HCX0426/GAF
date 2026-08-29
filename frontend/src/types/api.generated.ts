@@ -2069,7 +2069,7 @@ export interface paths {
          * @description Bind a Device to a GameProfile (spec v3 §2.7.2 + §2.8).
          *
          *     Sets ``Device.game_profile`` so the device inherits the profile's
-         *     default_routine / default_screenshot_method / default_input_method /
+         *     default_task_chain / default_screenshot_method / default_input_method /
          *     default_control_mode (the 'auto' resolution is implemented in
          *     stage 5 ``resolve_device_methods``; this endpoint only persists
          *     the FK).
@@ -2550,7 +2550,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v2/gamestate/game-profiles/{id}/default-routine/": {
+    "/api/v2/gamestate/game-profiles/{id}/default-task-chain/": {
         parameters: {
             query?: never;
             header?: never;
@@ -2570,17 +2570,17 @@ export interface paths {
          *         1. Validate the target TaskChain belongs to this GameProfile
          *         2. Clear is_default on other chains under the same profile
          *         3. Set the target chain's is_default=True
-         *         4. Sync GameProfile.default_routine to the target chain
+         *         4. Sync GameProfile.default_task_chain to the target chain
          *
          *     This is the profile-side mirror of
          *     ``POST /api/v2/pipeline/task-chains/{id}/set-default/``: both keep
-         *     GameProfile.default_routine and TaskChain.is_default consistent.
+         *     GameProfile.default_task_chain and TaskChain.is_default consistent.
          *     Exposed as a PATCH on the profile so the frontend GameProfiles page
          *     can update it without navigating to the pipeline app.
          *
          *     Body: ``{"task_chain_id": 123}``
          */
-        patch: operations["gamestate_game_profiles_default_routine_partial_update"];
+        patch: operations["gamestate_game_profiles_default_task_chain_partial_update"];
         trace?: never;
     };
     "/api/v2/gamestate/game-profiles/{id}/devices/": {
@@ -4311,7 +4311,7 @@ export interface paths {
          *
          *     Atomically:
          *         1. Set this chain's is_default=True
-         *         2. Set GameProfile.default_routine=this chain
+         *         2. Set GameProfile.default_task_chain=this chain
          *         3. Clear is_default on other chains under the same GameProfile
          *
          *     POST /api/v2/pipeline/task-chains/{id}/set-default/
@@ -5751,7 +5751,7 @@ export interface paths {
          * @description 今日日程 API。
          *
          *     GET /api/v2/scheduler/today/
-         *     返回今日的无人值守执行日程（基于 Device + GameProfile.default_routine）。
+         *     返回今日的无人值守执行日程（基于 Device + GameProfile.default_task_chain）。
          *
          *     Delegates to ``SchedulerService.get_today_schedule`` (Phase 1).
          */
@@ -9540,7 +9540,7 @@ export interface components {
              * 默认任务链
              * @description Window-centric: 日常默认任务链，新窗口绑 GameProfile 后自动继承
              */
-            default_routine?: number | null;
+            default_task_chain?: number | null;
             /**
              * Routine.json 路径
              * @description TD-113: 该档案对应的 routine.json 文件路径，如 resources/BrownDust-II/routine.json。convert_routine_to_chain 从此字段读取，支持多 GameProfile 指向不同 routine.json
@@ -9619,7 +9619,7 @@ export interface components {
              * 默认任务链
              * @description Window-centric: 日常默认任务链，新窗口绑 GameProfile 后自动继承
              */
-            default_routine?: number | null;
+            default_task_chain?: number | null;
             /**
              * Routine.json 路径
              * @description TD-113: 该档案对应的 routine.json 文件路径，如 resources/BrownDust-II/routine.json。convert_routine_to_chain 从此字段读取，支持多 GameProfile 指向不同 routine.json
@@ -11838,7 +11838,7 @@ export interface components {
              * 默认任务链
              * @description Window-centric: 日常默认任务链，新窗口绑 GameProfile 后自动继承
              */
-            default_routine?: number | null;
+            default_task_chain?: number | null;
             /**
              * Routine.json 路径
              * @description TD-113: 该档案对应的 routine.json 文件路径，如 resources/BrownDust-II/routine.json。convert_routine_to_chain 从此字段读取，支持多 GameProfile 指向不同 routine.json
@@ -20033,7 +20033,7 @@ export interface operations {
             };
         };
     };
-    gamestate_game_profiles_default_routine_partial_update: {
+    gamestate_game_profiles_default_task_chain_partial_update: {
         parameters: {
             query?: never;
             header?: never;

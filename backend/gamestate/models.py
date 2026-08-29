@@ -50,7 +50,7 @@ class GameProfile(models.Model):
         BACKGROUND = 'background', '后台模式'
         PSEUDO_BACKGROUND = 'pseudo_background', '伪后台模式'
 
-    default_routine = models.ForeignKey(
+    default_task_chain = models.ForeignKey(
         'pipeline.TaskChain',
         on_delete=models.SET_NULL,
         null=True,

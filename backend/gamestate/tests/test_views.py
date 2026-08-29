@@ -255,7 +255,7 @@ class TaskSerializerFieldsTest(TestCase):
     def test_game_profile_serializer_has_defaults(self):
         from gamestate.serializers import GameProfileSerializer
         fields = GameProfileSerializer().fields
-        assert 'default_routine' in fields
+        assert 'default_task_chain' in fields
         assert 'default_screenshot_method' in fields
         assert 'default_input_method' in fields
         assert 'default_control_mode' in fields

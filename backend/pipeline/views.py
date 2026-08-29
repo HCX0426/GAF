@@ -451,7 +451,7 @@ class TaskChainViewSet(AuditMixin, viewsets.ModelViewSet):
 
         Atomically:
             1. Set this chain's is_default=True
-            2. Set GameProfile.default_routine=this chain
+            2. Set GameProfile.default_task_chain=this chain
             3. Clear is_default on other chains under the same GameProfile
 
         POST /api/v2/pipeline/task-chains/{id}/set-default/
@@ -480,10 +480,10 @@ class TaskChainViewSet(AuditMixin, viewsets.ModelViewSet):
             chain.is_default = True
             chain.save(update_fields=['is_default'])
 
-            # Sync GameProfile.default_routine
+            # Sync GameProfile.default_task_chain
             profile = chain.game_profile
-            profile.default_routine = chain
-            profile.save(update_fields=['default_routine'])
+            profile.default_task_chain = chain
+            profile.save(update_fields=['default_task_chain'])
 
         return Response({
             'status': 'ok',

@@ -154,9 +154,9 @@ class TaskChainFieldsTest(TestCase):
 class GameProfileDefaultsTest(TestCase):
     """Verify GameProfile default fields."""
 
-    def test_has_default_routine_fk(self):
+    def test_has_default_task_chain_fk(self):
         fields = {f.name for f in GameProfile._meta.get_fields()}
-        assert 'default_routine' in fields
+        assert 'default_task_chain' in fields
 
     def test_has_default_screenshot_method(self):
         fields = {f.name for f in GameProfile._meta.get_fields()}

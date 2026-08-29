@@ -72,9 +72,9 @@ export interface DeviceCommand {
  *     vs models was `{ w: number; h: number }`. Consumers that accessed
  *     `.w` / `.h` directly need a runtime cast: `(profile.ui_reference_resolution
  *     as { w: number; h: number })`.
- *   - `default_routine_name`: models had it, schema does not (frontend
+ *   - `default_task_chain_name`: models had it, schema does not (frontend
  *     computed it from a separate lookup). Removed — consumers should use
- *     `default_routine` (FK id) and resolve the name via a separate query
+ *     `default_task_chain` (FK id) and resolve the name via a separate query
  *     if needed.
  *   - Many fields: schema optional vs models required (`game_name` /
  *     `ocr_language` / `ui_reference_resolution` / `known_popups` /

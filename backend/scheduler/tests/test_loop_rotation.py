@@ -30,7 +30,7 @@ def base_data(db):
     """User + enabled chain + profile + online agent + online device."""
     user = User.objects.create_user(username='loop_user', password='Pass123!')
     chain = TaskChain.objects.create(name='Loop Chain', is_enabled=True)
-    profile = GameProfile.objects.create(game_name='LoopGame', default_routine=chain)
+    profile = GameProfile.objects.create(game_name='LoopGame', default_task_chain=chain)
     agent = Agent.objects.create(
         agent_id='loop-agent-1', hostname='h', status=Agent.Status.ONLINE,
     )
