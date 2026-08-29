@@ -359,6 +359,35 @@ class TestExecutionPlan(TestCase):
             self.assertIn('completed', body)
             self.assertIn('failed', body)
 
+    def test_today_schedule_planned_status_and_empty_account(self):
+        """N219: 计划项状态为 planned(计划中) + 无绑定账户时 account_name 为空串.
+
+        今日日程 = 计划排期 (引擎按 Device+default_routine 推导), 非实际执行:
+        ① 状态用 planned 而非 pending, 避免"待执行"误导 ② 未绑账户时
+        account_name 为 "" (前端不渲染空段箭头), 而非 "未知账户".
+        """
+        profile = GameProfile.objects.create(game_name='BD2-plan')
+        chain = TaskChain.objects.create(
+            name='BD2-daily-plan',
+            game_profile=profile,
+            is_enabled=True,
+            is_default=True,
+            created_by=self.user,
+        )
+        profile.default_routine = chain
+        profile.save(update_fields=['default_routine'])
+        Device.objects.create(name='Win-PC-1', device_type='windows', game_profile=profile)
+
+        res = self.client.get('/api/v2/scheduler/today/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        body = _unwrap_original(res)
+        self.assertEqual(body['total'], 1)
+        item = body['items'][0]
+        self.assertEqual(item['status'], 'planned')
+        self.assertEqual(item['account_name'], '')
+        self.assertEqual(item['device_name'], 'Win-PC-1')
+        self.assertEqual(item['task_chain_name'], 'BD2-daily-plan')
+
 
 class TestPlanAPIIntegration(TestCase):
     """Execution plan API integration tests."""

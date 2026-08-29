@@ -195,7 +195,7 @@ export interface ExecutionPlanResponse {
 
 /** schedule item status */
 
-export type ScheduleItemStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+export type ScheduleItemStatus = 'planned' | 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
 
 /** today schedule item (spec §2.4.2 — derived from execution plan with day_offset=0) */
 

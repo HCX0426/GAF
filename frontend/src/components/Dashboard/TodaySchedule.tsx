@@ -10,6 +10,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { Card, Timeline, Tag, Typography, Progress, Space, Spin, Empty, theme as antTheme } from 'antd';
 import type { GlobalToken } from 'antd/es/theme/interface';
 import {
+  CalendarOutlined,
   CheckCircleFilled,
   ClockCircleFilled,
   ExclamationCircleFilled,
@@ -25,6 +26,11 @@ const { Text } = Typography;
 // TD-294 Phase 1: STATUS_CONFIG moved to function so it can resolve antd theme tokens.
 function getStatusConfig(token: GlobalToken) {
   return {
+    planned: {
+      color: token.colorTextQuaternary,
+      icon: <CalendarOutlined style={{ color: token.colorTextQuaternary }} />,
+      label: '计划中',
+    },
     pending: {
       color: token.colorTextQuaternary,
       icon: <ClockCircleFilled style={{ color: token.colorTextQuaternary }} />,
@@ -183,11 +189,15 @@ export function TodaySchedule() {
                 </div>
                 <div style={{ marginBottom: 2 }}>
                   <Text>
-                    {item.device_name}
+                    {item.device_name || '未知设备'}
+                    {item.account_name ? (
+                      <>
+                        <Text type="secondary"> → </Text>
+                        {item.account_name}
+                      </>
+                    ) : null}
                     <Text type="secondary"> → </Text>
-                    {item.account_name}
-                    <Text type="secondary"> → </Text>
-                    {item.task_chain_name}
+                    {item.task_chain_name || '未知任务链'}
                   </Text>
                 </div>
                 {item.status === 'running' && item.progress !== undefined && (

@@ -60,6 +60,12 @@ class SchedulerService:
     def get_today_schedule() -> dict:
         """Derive today's unattended schedule from the execution plan engine.
 
+        Notes (N219, 2026-08-29):
+        - 今日日程 = **计划排期** (引擎按 Device+default_routine 推导
+          "今天该跑哪些链"), 非实际执行记录. 计划项状态用 ``planned``
+          (计划中) 而非 ``pending``, 避免与"已派发待执行"混淆 — 用户
+          未启动无人值守时, 计划只是"排了期", 不是"在排队".
+
         Returns:
             dict with ``date``, ``total``, ``completed``, ``failed``,
             and ``items`` keys.
@@ -74,13 +80,13 @@ class SchedulerService:
                 "device_id": plan.get("device_id"),
                 "device_name": plan.get("device_name", "未知设备"),
                 "account_id": plan.get("account_id"),
-                "account_name": plan.get("account_name", "未知账户"),
+                "account_name": plan.get("account_name") or "",
                 "task_chain_id": plan.get("task_chain_id"),
                 "task_chain_name": plan.get("task_chain_name", "未知任务链"),
                 "scheduled_time": None,
                 "actual_start_time": None,
                 "actual_end_time": None,
-                "status": "pending",
+                "status": "planned",
                 "progress": 0,
                 "error_message": None,
             }

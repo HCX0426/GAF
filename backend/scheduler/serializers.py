@@ -199,6 +199,7 @@ class TodayScheduleItemSerializer(serializers.Serializer):
     actual_end_time = serializers.DateTimeField(allow_null=True)
     status = serializers.ChoiceField(
         choices=[
+            ("planned", "计划中"),
             ("pending", "待执行"),
             ("running", "进行中"),
             ("completed", "已完成"),
