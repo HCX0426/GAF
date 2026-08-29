@@ -52,12 +52,34 @@ class SLAMetric(models.Model):
 
 
 class MonitorRule(models.Model):
-    """监控规则模型，定义自动化监控的触发条件和处理策略。"""
+    """监控规则模型，定义自动化监控的触发条件和处理策略。
+
+    TD-420 (2026-08-29): 增加 ``rule_kind`` 字段，区分两类规则语义——
+    - ``monitor``: 真正的监控/告警规则（心跳超时、步骤执行超时等）
+    - ``game_ui``: 资源包导入的游戏 UI 处理规则（弹窗点击/剧情跳过），
+      原历史设计误占用本表，现通过 kind 显式分类，避免"监控规则"
+      名不副实。
+
+    Agent 端 (MonitorManager) 消费 game_ui 规则做弹窗/剧情自动处理；
+    backend 端 escalate 链路消费 monitor 规则 / MonitorEvent 做告警升级。
+    """
+
+    class RuleKind(models.TextChoices):
+        MONITOR = 'monitor', '监控告警规则'
+        GAME_UI = 'game_ui', '游戏 UI 处理规则'
 
     name = models.CharField(
         max_length=255,
         verbose_name='规则名称',
         help_text='监控规则的显示名称',
+    )
+    rule_kind = models.CharField(
+        max_length=16,
+        choices=RuleKind.choices,
+        default=RuleKind.MONITOR,
+        db_index=True,
+        verbose_name='规则类型',
+        help_text='monitor=监控告警规则; game_ui=游戏 UI 处理规则(弹窗/剧情)',
     )
     rule_definition = models.JSONField(
         default=dict,

@@ -39,7 +39,7 @@ import { useTranslation } from '@/i18n';
 import PageWrapper from '@/components/Common/PageWrapper';
 import { useDeviceStore } from '@/stores/useDeviceStore';
 import DeviceOperationPanel from '@/components/Device/DeviceOperationPanel';
-import { matchTemplatePreview, type TemplateMatchBox } from '@/api/resources';
+import { matchTemplatePreview } from '@/api/resources';
 
 /** Supported drawing tools */
 type DrawingTool = 'rect' | 'polygon' | 'ellipse' | 'select' | 'point' | 'line';

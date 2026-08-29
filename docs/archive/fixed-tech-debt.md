@@ -17,6 +17,13 @@ last_updated: "2026-08-28 (TD-412 闭环; TD-413 闭环; TD-414 闭环; 2026-08-
 | TD | 摘要 |
 |----|------|
 | [TD-412](#L) | Active N## 36 > 上限 35 (✅ FIXED 于 2026-08-28, N105 出清 + N201 行修复, check-cap 35 ≤ 35) |
+| [TD-415](#L) | log_rotation 跨天轮转 _stream=None 日志丢失 (✅ FIXED 于 2026-08-29, emit 自愈 + 压缩容错 + 2 回归测试) |
+| [TD-416](#L) | 消息帧日志 MessageFrameLog 无生产写入点 (✅ FIXED 于 2026-08-29, AgentConsumer 收发帧写入, 7+1 测试, commit 2fcff72) |
+| [TD-417](#L) | 应用日志数据源断层 LogEntry 停写 (✅ FIXED 于 2026-08-29, 日志中心切文件数据源 logs/files, commit 2fcff72) |
+| [TD-418](#L) | 审计日志双入口重复 (✅ FIXED 于 2026-08-29, 日志中心审计 tab 移除, 单入口 /system/audit-log, commit d484c39) |
+| [TD-419](#L) | 服务管理页 e2e 缺失 + 日志体系分界文档 (✅ FIXED 于 2026-08-29, e2e spec + handbook 指引, spec P4/P5) |
+| [TD-420](#L) | MonitorRule 模型被游戏 UI 规则占用 (✅ FIXED 于 2026-08-29, rule_kind 字段拆分 monitor/game_ui + 数据迁移 + 4 测试) |
+| [TD-421](#L) | 通知中心输入侧缺口 dev 无新事件 (✅ FIXED 于 2026-08-29, 执行失败/event.alert 打点 + chain-health 接口 + 8 测试) |
 | [TD-413](#L) | gaf-orchestrator SKILL.md 27.6KB 瘦身 (✅ FIXED 于 2026-08-28, 27,655B→18,260B, 9 处冗余外迁, sync_skills 通过) |
 | [TD-414](#L) | N209/N210/N211 补 yn-matrices 条目 (✅ FIXED 于 2026-08-28, _testing.md 2 段 + _misc.md 1 段 + 索引同步, doc_health 0) |
 | [TD-411](#L) | frontend prettier 全仓存量未格式化 (✅ FIXED 于 2026-08-27, 272 文件格式收敛到 .prettierrc, tsc 0 + eslint 0 + vitest 366, commit -) |
@@ -867,5 +874,84 @@ last_updated: "2026-08-28 (TD-412 闭环; TD-413 闭环; TD-414 闭环; 2026-08-
 - **修复**: 方案 B 9 处冗余外迁/压缩（用户 2026-08-28 批准）: ① AI 任务开工 bash 块 23→7 行; ② §0.5 AI patch 流程 68→3 行（完整流程指向 handbook Part 2 + doc_health_patch.py）; ③ §4.2 Evidence 沉淀 33→3 行; ④ §4.10 Spec 分阶段改 single-line 指针（权威源 project_rules §4.10）; ⑤ task_type→skill 映射表删 KB 列收敛 1 行; ⑥ 闭环步骤 v9.6 压缩 6 步; ⑦ §3.2 反思清单 1 行指针; ⑧ v8.3.1 历史说明删除; ⑨ L3 循环段收敛。决策树块字节级不动（hash 稳定）
 - **验证**: ① size 27,655B → **18,260B** (-9.4KB, -34%); ② `sync_skills.py --check` → 4 skills + 1 rule 一致, 决策树 6 sections 完整, L2 hard-load 段含 handbook/tech-stack; ③ `doc_health_check.py --no-fail` → **0 issues**; ④ `pytest test_decision_tree_sync.py + test_sync_changelog.py` → **11 passed**; ⑤ junction 自动同步 .trae/ 无独立 diff
 - **关联**: .skills/skills/gaf-orchestrator/SKILL.md (权威源) + scripts/bootstrap/sync_skills.py
+
+## TD-415: DateRotatingFileHandler 跨天轮转偶发 _stream=None (✅ FIXED — 2026-08-29)
+
+- **状态**: ✅ FIXED (emit None 自愈 + 压缩容错, 2 回归测试)
+- **优先级**: P3
+- **登记时间**: 2026-08-29
+- **修复时间**: 2026-08-29
+- **来源**: 服务管理页实测 daemon status 时报 Logging error Traceback, AttributeError: 'NoneType' object has no attribute 'write'
+- **症状**: daemon/agent 跨天首条日志 emit 崩溃 (handleError 吞掉), 当日日志丢失; 每次 status 调用刷 Logging error
+- **根因**: `_rotate_if_needed` 日期变化时 close 旧流后 `_open_today()` 前异常/并发 → `_stream` 保持 None, 后续 emit 无守卫
+- **修复**: ① 轮转压缩失败 (OSError) 不阻塞 (`try-except` 保留原文件继续开新文件); ② `emit` 内 `if self._stream is None: self._open_today()` 自愈重建
+- **验证**: `agent/tests/test_log_rotation.py` 2 passed (旧文件缺失轮转自愈 + close 后重建自愈); ruff 通过
+- **关联**: agent/src/utils/log_rotation.py, agent/tests/test_log_rotation.py
+
+## TD-416: 消息帧日志 MessageFrameLog 无生产写入点 (✅ FIXED — 2026-08-29)
+
+- **状态**: ✅ FIXED (AgentConsumer 收发帧路径写入, 表不再恒空)
+- **优先级**: P1
+- **登记时间**: 2026-08-29
+- **修复时间**: 2026-08-29
+- **来源**: 日志体系 meta_audit — MessageFrameLog total=0, 全仓无生产写入点
+- **修复**: protocol/consumers.py 收发帧路径以 `_log_frame` 记录 inbound/outbound (trace_id 复用 / payload 截断 2KB / 开关 PROTOCOL_FRAME_LOG_ENABLED 默认开); frontend_error 崩溃报告同步落 CrashReport
+- **验证**: 7+1 测试 (WS 接线 + 纯函数 + 模型直写); 环境实测 outbound 帧记录; commit 2fcff72
+- **关联**: spec 2026-08-29-logging-system-consolidation P1-1; protocol/consumers.py + test_message_frame_log.py
+
+## TD-417: 应用日志数据源断层 — LogEntry 停写 /logs/ 恒空 (✅ FIXED — 2026-08-29)
+
+- **状态**: ✅ FIXED (日志中心"应用日志"tab 切文件数据源)
+- **优先级**: P1
+- **登记时间**: 2026-08-29
+- **修复时间**: 2026-08-29
+- **来源**: 日志体系 meta_audit — /api/v2/logs/ 返回 0 条 (LogEntry 已停写, 读侧未收口)
+- **修复**: gaf_core/log_files.py 统一文件日志检索模块 + GET /api/v2/logs/files/ (service/date/lines/error 过滤); 前端应用日志 tab 改文件数据源 + 时间线 service_file ref_type
+- **验证**: 单元测试 + 浏览器实测日志中心有数据; commit 2fcff72
+- **关联**: spec 2026-08-29-logging-system-consolidation P2; backend/gaf_core/log_files.py
+
+## TD-418: 审计日志双入口重复 (✅ FIXED — 2026-08-29)
+
+- **状态**: ✅ FIXED (日志中心审计 tab 移除, 单入口 /system/audit-log)
+- **优先级**: P3
+- **登记时间**: 2026-08-29
+- **修复时间**: 2026-08-29
+- **来源**: 日志体系 meta_audit — AuditLogPage 与 SpecialtyLogTabs 同调 /accounts/audit-logs/
+- **修复**: SpecialtyLogTabs 移除 AuditLogTab; 日志中心 tab 8→7; 统一时间线仍聚合 AuditLog
+- **验证**: 浏览器实测 tab 数量正确; commit d484c39; 关联 spec P3
+
+## TD-419: 服务管理页 e2e 缺失 + 日志体系分界文档 (✅ FIXED — 2026-08-29)
+
+- **状态**: ✅ FIXED (e2e 覆盖 + AI 调试文档补日志查询指引)
+- **优先级**: P3
+- **登记时间**: 2026-08-29
+- **修复时间**: 2026-08-29
+- **来源**: 日志体系 meta_audit — /system/services 无 Playwright e2e; 文件层/DB 层两套日志无边界文档
+- **修复**: e2e 补服务管理页用例 (卡片渲染+日志 Drawer+过滤); ai-operating-handbook 补日志查询指引; tech-stack 关键路径补 logs/files; overview 补日志体系分界段
+- **验证**: e2e 全过; spec P4/P5 完成; commit 2fcff72/d484c39 后续 spec
+
+## TD-420: MonitorRule 模型被游戏 UI 规则占用 (✅ FIXED — 2026-08-29)
+
+- **状态**: ✅ FIXED (rule_kind 字段拆分 monitor/game_ui, 语义恢复)
+- **优先级**: P2
+- **登记时间**: 2026-08-29
+- **修复时间**: 2026-08-29
+- **来源**: 通知中心巡检 — MonitorRule 4 条全为 story_skip/popup_handler, 名不副实
+- **症状**: "监控规则"页面展示的实为游戏 UI 处理规则 (template→action), 与监控告警语义混淆
+- **根因**: 历史设计让资源包导入 (monitors/*.yaml) 误用 MonitorRule 表, 无类型区分
+- **修复**: 方案 B — MonitorRule 增加 `rule_kind` (monitor/game_ui, 默认 monitor) + 数据迁移按 rule_definition 回填 + views filterset + serializer 暴露 + 前端类型/表格 Tag 展示; import_monitors 显式标注 game_ui
+- **验证**: `backend/monitors/tests/test_monitors.py` 16 passed (新增 4 用例: 默认 monitor / game_ui 显式 / list 过滤 / serializer); ruff 通过; makemigrations --check 无漂移
+- **关联**: backend/monitors/models.py + migration 0008 + resources/import_utils.py; frontend/src/pages/Ops/Monitors + types/models/task.ts
+
+## TD-421: 通知中心输入侧缺口 — dev 环境 MonitorEvent 几乎无新事件 (✅ FIXED — 2026-08-29)
+
+- **状态**: ✅ FIXED (执行失败/event.alert 打点 + chain-health 链路健康展示)
+- **优先级**: P2
+- **登记时间**: 2026-08-29
+- **修复时间**: 2026-08-29
+- **来源**: 通知中心巡检 — 20h+ 无新通知, MonitorEvent 仅 3 条历史; 链路 (bus→escalate→Notification) 引擎正常但上游无输入
+- **修复**: ① task.result 失败 → EventBus.persist 打点 MonitorEvent (agent 执行失败包含 OCR/模板匹配等真实故障源); ② event.alert 协议打通 (原 TD-134 stub → 持久化); ③ GET /api/v2/monitors/chain-health/ 链路健康指标 (事件计数/最近事件/升级任务痕痕); ④ 前端通知中心空态区分"无告警"vs"链路异常" + 4 语言 i18n
+- **验证**: `backend/protocol/tests/test_notification_chain_puncturing.py` 8 passed (失败打点/成功不打/坏 broadcast 不阻断/event.alert 持久化/severity 映射/帧取数); ruff 通过; 全量 monitors 57 passed
+- **关联**: backend/protocol/consumers.py + monitors/views.py + urls.py; frontend/src/pages/System/Notifications.tsx + api/monitors.ts
 
 <!-- Template:

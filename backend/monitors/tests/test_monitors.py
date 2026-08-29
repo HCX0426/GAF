@@ -235,3 +235,93 @@ class TestAcknowledgeAPI(TestCase):
             escalated_at=timezone.now(),
         )
         self.assertFalse(new_event.is_unacknowledged)
+
+
+class TestMonitorRuleKind(TestCase):
+    """TD-420: MonitorRule.rule_kind 区分监控告警 / 游戏 UI 规则"""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username='rule_kind_user',
+            password='testpass123',
+            is_superuser=True,
+        )
+        self.client.force_authenticate(user=self.user)
+        self.pack = ResourcePack.objects.create(
+            name='rule_kind_pack',
+            version='1.0',
+            directory_path='/tmp/rule_kind_pack',
+        )
+
+    def test_default_kind_is_monitor(self):
+        """新建规则默认 rule_kind=monitor (监控告警语义)"""
+        from monitors.models import MonitorRule
+
+        rule = MonitorRule.objects.create(
+            name='默认监控规则',
+            resource_pack=self.pack,
+            rule_definition={'type': 'heartbeat', 'condition': 'timeout_s > 120'},
+        )
+        self.assertEqual(rule.rule_kind, MonitorRule.RuleKind.MONITOR)
+
+    def test_game_ui_kind_explicit(self):
+        """game_ui 规则可通过 rule_kind 字段显式标注"""
+        from monitors.models import MonitorRule
+
+        rule = MonitorRule.objects.create(
+            name='popup_handler',
+            rule_kind=MonitorRule.RuleKind.GAME_UI,
+            resource_pack=self.pack,
+            rule_definition={'rules': [{'template': 'common/close_button', 'action': 'click'}]},
+        )
+        self.assertEqual(rule.rule_kind, MonitorRule.RuleKind.GAME_UI)
+
+    def test_list_api_filters_by_rule_kind(self):
+        """列表 API 支持 ?rule_kind= 过滤, 语义规则与游戏规则分离"""
+        from monitors.models import MonitorRule
+
+        MonitorRule.objects.create(
+            name='心跳超时',
+            rule_kind=MonitorRule.RuleKind.MONITOR,
+            resource_pack=self.pack,
+            rule_definition={'type': 'heartbeat'},
+        )
+        MonitorRule.objects.create(
+            name='story_skip',
+            rule_kind=MonitorRule.RuleKind.GAME_UI,
+            resource_pack=self.pack,
+            rule_definition={'rules': [{'template': 'story/skip', 'action': 'click'}]},
+        )
+
+        res = self.client.get('/api/v2/monitors/monitor-rules/', {'rule_kind': 'monitor'})
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        data = _unwrap(res)
+        names = [item['name'] for item in data.get('results', [])]
+        self.assertIn('心跳超时', names)
+        self.assertNotIn('story_skip', names)
+
+        res_game = self.client.get('/api/v2/monitors/monitor-rules/', {'rule_kind': 'game_ui'})
+        data_game = _unwrap(res_game)
+        names_game = [item['name'] for item in data_game.get('results', [])]
+        self.assertIn('story_skip', names_game)
+        self.assertNotIn('心跳超时', names_game)
+
+    def test_serializer_exposes_rule_kind(self):
+        """序列化结果包含 rule_kind 字段"""
+        from monitors.models import MonitorRule
+
+        MonitorRule.objects.create(
+            name='序列化检查',
+            resource_pack=self.pack,
+            rule_definition={'type': 'step_duration'},
+        )
+        res = self.client.get('/api/v2/monitors/monitor-rules/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        data = _unwrap(res)
+        for item in data.get('results', []):
+            if item['name'] == '序列化检查':
+                self.assertEqual(item['rule_kind'], 'monitor')
+                break
+        else:  # pragma: no cover - 防御: 未找到则失败
+            self.fail('serialized rule not found')

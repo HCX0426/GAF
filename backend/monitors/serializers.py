@@ -9,7 +9,7 @@ class MonitorRuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = MonitorRule
         fields = [
-            'id', 'name', 'rule_definition', 'resource_pack',
+            'id', 'name', 'rule_kind', 'rule_definition', 'resource_pack',
             'is_enabled', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']

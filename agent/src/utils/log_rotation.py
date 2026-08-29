@@ -99,14 +99,23 @@ class DateRotatingFileHandler(logging.Handler):
             self._stream.close()
             self._stream = None
 
-        # 2. Compress old file → .gz
+        # 2. Compress old file → .gz (best-effort: 旧文件不存在/压缩失败
+        #    不阻塞轮转 — 否则 _stream 停在 None 且 _open_today 不执行,
+        #    后续 emit 全部 AttributeError, 当日日志丢失. TD-415 自愈.)
         if self._current_log_path and os.path.exists(self._current_log_path):
-            gz_path = self._current_log_path + ".gz"
-            with open(self._current_log_path, "rb") as f_in, gzip.open(gz_path, "wb") as f_out:
-                shutil.copyfileobj(f_in, f_out)
-            os.remove(self._current_log_path)
+            try:
+                gz_path = self._current_log_path + ".gz"
+                with open(self._current_log_path, "rb") as f_in, gzip.open(gz_path, "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+                os.remove(self._current_log_path)
+            except OSError as exc:
+                # 压缩失败: 保留原文件, 继续开新文件 (TD-415 自愈 —
+                # 轮转不能中断, 否则 _stream 停在 None 导致后续日志丢失)
+                logger.warning(
+                    "日志轮转压缩旧文件失败 (保留原文件, 继续开新文件): %s", exc,
+                )
 
-        # 3. Open new file for today
+        # 3. Open new file for today (guaranteed — 轮转不能中断在这里)
         self._open_today()
 
         # 4. Cleanup old date directories
@@ -135,6 +144,10 @@ class DateRotatingFileHandler(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
         try:
             self._rotate_if_needed()
+            # TD-415 自愈: 任何异常路径导致 _stream=None (轮转中断/首次失败)
+            # 时重建当天句柄, 保证后续日志不丢失.
+            if self._stream is None:
+                self._open_today()
             msg = self.format(record)
             self._stream.write(msg + self.terminator)
             self._stream.flush()

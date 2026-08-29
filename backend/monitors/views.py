@@ -46,7 +46,7 @@ class MonitorRuleViewSet(AuditMixin, viewsets.ModelViewSet):
     serializer_class = MonitorRuleSerializer
     permission_classes = [IsAuthenticated, RoleBasedPermission]
     required_permission = 'execute'
-    filterset_fields = ['resource_pack', 'is_enabled']
+    filterset_fields = ['resource_pack', 'is_enabled', 'rule_kind']
     search_fields = ['name']
     audit_resource_type = AuditResourceType.MONITOR_RULE
 
@@ -552,6 +552,55 @@ def service_logs_view(request):
         'path': str(files[0]) if files else None,
         'files': [str(f) for f in files],
         'lines': lines,
+    })
+
+
+@extend_schema(
+    tags=['monitors'],
+    summary='Notification chain health (TD-421)',
+    responses={200: OpenApiTypes.OBJECT},
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def notification_chain_health_view(request):
+    """
+    通知中心"链路健康"指标 (TD-421 2026-08-29).
+
+    GET /api/v2/monitors/chain-health/
+    让用户区分"没有告警" vs "告警链路断了":
+    - last_event_at / event_count_24h: 近 24h 监控事件 (bus→MonitorEvent)
+      是否在产生, 无事件时提示"链路可能未打点"
+    - last_escalated_at / escalation_count: 升级任务 (P-024, 每 5min)
+      最近运行痕迹, 无则提示"升级任务可能未启用"
+    - next_escalation_in_seconds: 距下次升级扫描的时间
+    """
+    # @api_view allowed: read-only aggregation over MonitorEvent, not model CRUD
+    from datetime import timedelta
+
+    from django.utils import timezone as tz
+
+    now = tz.now()
+    cutoff = now - timedelta(days=1)
+
+    last_event = MonitorEvent.objects.order_by('-created_at').first()
+    last_escalated = MonitorEvent.objects.exclude(escalated_at__isnull=True).order_by('-escalated_at').first()
+
+    event_count_24h = MonitorEvent.objects.filter(created_at__gte=cutoff).count()
+
+    # 升级任务调度时距 (config/celery.py: 每 300s 一次; 取基线)
+    escalation_interval_sec = 300
+    next_escalation_in = None
+    if last_escalated:
+        elapsed = (now - last_escalated.escalated_at).total_seconds()
+        next_escalation_in = max(0, escalation_interval_sec - (elapsed % escalation_interval_sec))
+
+    return Response({
+        'last_event_at': last_event.created_at.isoformat() if last_event else None,
+        'event_count_24h': event_count_24h,
+        'last_escalated_at': last_escalated.escalated_at.isoformat() if last_escalated else None,
+        'escalation_count': MonitorEvent.objects.exclude(escalated_at__isnull=True).count(),
+        'escalation_interval_seconds': escalation_interval_sec,
+        'next_escalation_in_seconds': next_escalation_in,
     })
 
 

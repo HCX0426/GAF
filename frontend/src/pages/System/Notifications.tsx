@@ -32,6 +32,7 @@ import {
 } from '@/api/notifications';
 import type { NotificationItem as NotifItem } from '@/api/notifications';
 import { useTranslation, getLocale } from '@/i18n';
+import { fetchNotificationChainHealth, type NotificationChainHealth } from '@/api/monitors';
 
 /** category label i18n key mapping */
 const CATEGORY_LABEL_KEYS: Record<string, string> = {
@@ -71,6 +72,7 @@ export function NotificationsPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [chainHealth, setChainHealth] = useState<NotificationChainHealth | null>(null);
   const pageSize = 20;
 
   /** load notification list */
@@ -101,10 +103,21 @@ export function NotificationsPage() {
     }
   }, []);
 
+  /** load 通知链路健康指标 (TD-421: 区分"无告警"与"链路异常") */
+  const loadChainHealth = useCallback(async () => {
+    try {
+      const data = await fetchNotificationChainHealth();
+      setChainHealth(data);
+    } catch (err) {
+      console.error('Notification chain health load failed:', err);
+    }
+  }, []);
+
   useEffect(() => {
     loadNotifications();
     loadUnreadCount();
-  }, [loadNotifications, loadUnreadCount]);
+    loadChainHealth();
+  }, [loadNotifications, loadUnreadCount, loadChainHealth]);
 
   /** Mark single as read */
   const markRead = async (id: number) => {
@@ -196,6 +209,7 @@ export function NotificationsPage() {
               onClick={() => {
                 loadNotifications();
                 loadUnreadCount();
+                loadChainHealth();
               }}
             >
               {t('notifications.btn_refresh')}
@@ -242,7 +256,22 @@ export function NotificationsPage() {
 
                   <Spin spinning={loading}>
                     {notifications.length === 0 && !loading ? (
-                      <Empty description={t('notifications.empty')} style={{ padding: 48 }} />
+                      <Empty
+                        description={
+                          chainHealth && chainHealth.event_count_24h === 0 ? (
+                            <Typography.Text type="secondary">
+                              {t('notifications.chain_idle_hint')}
+                              <br />
+                              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                                {t('notifications.chain_idle_detail')}
+                              </Typography.Text>
+                            </Typography.Text>
+                          ) : (
+                            t('notifications.empty')
+                          )
+                        }
+                        style={{ padding: 48 }}
+                      />
                     ) : (
                       <div>
                         {(notifications || []).map((item) => {

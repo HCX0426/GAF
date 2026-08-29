@@ -528,6 +528,10 @@ def import_monitors(pack_dir, resource_pack):
                 name=name,
                 resource_pack=resource_pack,
                 defaults={
+                    # TD-420: monitors/*.yaml 导入的均为游戏 UI 处理规则
+                    # (popup/story 模板→动作), 显式标注 game_ui 避免与监控
+                    # 告警规则 (rule_kind=monitor) 语义混淆.
+                    "rule_kind": MonitorRule.RuleKind.GAME_UI,
                     "rule_definition": data,
                     "is_enabled": True,
                 },

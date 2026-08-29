@@ -351,6 +351,18 @@ function RulesTab({ refreshKey }: RulesTabProps) {
   const columns: ColumnsType<MonitorRule> = [
     { title: t('monitors.col_name'), dataIndex: 'name', key: 'name', width: 160, ellipsis: true },
     {
+      title: t('monitors.col_rule_kind'),
+      dataIndex: 'rule_kind',
+      key: 'rule_kind',
+      width: 100,
+      render: (kind: string | undefined) => {
+        if (kind === 'game_ui') {
+          return <Tag color="purple">{t('monitors.rule_kind_game_ui')}</Tag>;
+        }
+        return <Tag color="blue">{t('monitors.rule_kind_monitor')}</Tag>;
+      },
+    },
+    {
       title: t('monitors.col_rule_definition'),
       dataIndex: 'rule_definition',
       key: 'rule_definition',

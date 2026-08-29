@@ -686,6 +686,32 @@ Query：`service`（必填）、`lines`（默认 300，上限 2000）、`filter`
 
 - `service` 缺失 → 400；文件不存在 → `files: []`, `lines: []`, `path: null`
 
+### 18.3 MonitorRule 增加 `rule_kind` 过滤（TD-420）
+
+`GET /api/v2/monitors/monitor-rules/` 列表支持 `?rule_kind=` 过滤：
+
+- `rule_kind=monitor`：监控告警规则（默认）
+- `rule_kind=game_ui`：游戏 UI 处理规则（弹窗/剧情，资源包 monitors/*.yaml 导入）
+
+响应体每项含 `rule_kind` 字段（`monitor` | `game_ui`）。
+
+### 18.4 `GET /api/v2/monitors/chain-health/` — 通知链路健康（TD-421）
+
+```json
+{
+  "last_event_at": "2026-08-28T04:29:19+00:00",
+  "event_count_24h": 0,
+  "last_escalated_at": "2026-08-28T06:29:59+00:00",
+  "escalation_count": 1,
+  "escalation_interval_seconds": 300,
+  "next_escalation_in_seconds": 63
+}
+```
+
+- `last_event_at` / `event_count_24h`：最近 24h 监控事件（bus→MonitorEvent）是否在产生
+- `last_escalated_at` / `escalation_count` / `next_escalation_in_seconds`：P-024 升级任务（每 300s）运行痕迹
+- 供通知中心区分"无告警" vs "告警链路断了"
+
 ---
 
 ## 19. 统一文件日志检索（logs — spec 2026-08-29-logging-system-consolidation P2-1）

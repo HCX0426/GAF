@@ -610,6 +610,12 @@ class AgentConsumer(AsyncWebsocketConsumer):
                 structured_log_path=structured_log_path,
                 error_code=error_code,
             )
+            # TD-421 (2026-08-29): 执行失败 → 通知链路打点. Agent 执行失败
+            # (含 OCR/模板匹配/步骤超时等) 是目前 dev 环境最真实的监控事件源,
+            # 通过 EventBus.persist 落 MonitorEvent, 供通知中心升级链路消费.
+            # 只有失败才打点 (成功是常态, 避免 MonitorEvent 刷屏).
+            if not success:
+                await self._publish_task_failure_event(execution_id, error_msg, error_code, frame)
             # TD-267 fix: release ConcurrencyController slot + restore
             # Device.status to ONLINE. The wiring was lost in spec-29c
             # (commit 8f184734) when the legacy agents/consumers.py:AgentConsumer
@@ -671,6 +677,93 @@ class AgentConsumer(AsyncWebsocketConsumer):
             result_data=result_data,
             structured_log_path=structured_log_path,
             error_code=error_code,
+        )
+
+    @database_sync_to_async
+    def _publish_task_failure_event(self, execution_id, error_msg, error_code, frame):
+        """TD-421: 广播+持久化执行失败监控事件 (Agent 执行失败 → 通知链路).
+
+        Agent 执行失败 (OCR/模板匹配/超时/异常) 是监控告警链路的真实输入源.
+        通过 ``memories/events.Events`` 的 ``MonitoringEvent.error`` 构造事件,
+        走 EventBus 广播到 Dashboard + 持久化 ``monitors.MonitorEvent``.
+        升级任务 (P-024 escalate) 定时扫描这些事件生成通知.
+
+        N190: 该函数是 ``database_sync_to_async``, 内部做同步 ORM 合理.
+
+        Args:
+            execution_id: TaskExecution pk
+            error_msg: 失败原因 (可能是空字符串)
+            error_code: 任务级错误码 (agent payload, 可能为空)
+            frame: 原始消息帧 (用于 trace_id)
+        """
+        from monitors.bus import EventBus
+        from monitors.events import MonitoringEvent
+
+        error_text = error_msg or (error_code or "unknown")
+        error_text = error_text[:200]
+        try:
+            event = MonitoringEvent.error(
+                source="agent",
+                category="task_execution",
+                message=f"执行失败: {error_text}",
+                execution_id=execution_id,
+                error_code=error_code or "",
+                agent_id=self.agent_id,
+            )
+            event.trace_id = frame.get("trace_id", "") or ""
+            # EventBus.broadcast 内部以 event.trace_id 注入 trace_id;
+            # 不能再通过 kwargs 传 trace_id (会与关键字冲突).
+            EventBus.broadcast(event, persist=True)
+        except Exception as exc:  # pragma: no cover - 打点失败不应阻断结果处理
+            logger.warning("执行失败打点 MonitorEvent 失败 (非致命): %s", exc)
+
+    async def _handle_event_alert(self, frame):
+        """Handle event.alert frames from the Agent (TD-421: 打通协议打点).
+
+        原为 protocol reserved stub (TD-134), 仅日志不处理. TD-421 将其落地:
+        agent 主动上报的告警事件 (如 OCR 低置信度 / 弹窗救助) 广播到
+        Dashboard 并持久化 ``monitors.MonitorEvent``, 与执行失败打点共用
+        通知链路 (P-024 escalate → Notification).
+
+        Args:
+            frame: validated message frame; payload carries
+                ``{"event_type": str, "message": str, "severity": "P0|P1|P2|P3",
+                  "event_data": dict}`` (severity 与 event_data 可选)
+        """
+        payload = frame.get("payload", {})
+        event_type = str(payload.get("event_type", "agent.report"))[:100]
+        message = str(payload.get("message", ""))[:512]
+        logger.info(
+            "事件告警 (agent 上报): agent_id=%s, event_type=%s, trace_id=%s",
+            self.agent_id, event_type, frame["trace_id"],
+        )
+        try:
+            await self._db_persist_agent_alert(
+                event_type=event_type,
+                message=message,
+                severity=payload.get("severity", "P1"),
+                event_data=payload.get("event_data", {}) or {},
+                trace_id=frame.get("trace_id", ""),
+            )
+        except Exception as exc:
+            logger.warning("持久化 agent 告警失败 (非致命): %s", exc)
+
+    @database_sync_to_async
+    def _db_persist_agent_alert(self, *, event_type, message, severity, event_data, trace_id):
+        """持久化 agent 上报的告警到 monitors.MonitorEvent (同步 ORM)."""
+        from monitors.models import MonitorEvent
+
+        valid_severity = {
+            "P0": MonitorEvent.Severity.P0_CRITICAL,
+            "P1": MonitorEvent.Severity.P1_HIGH,
+            "P2": MonitorEvent.Severity.P2_MEDIUM,
+            "P3": MonitorEvent.Severity.P3_LOW,
+        }
+        MonitorEvent.objects.create(
+            event_type=f"agent.{event_type}",
+            severity=valid_severity.get(str(severity).upper(), MonitorEvent.Severity.P1_HIGH),
+            handling_result=message,
+            event_data=dict(event_data) if isinstance(event_data, dict) else {},
         )
 
     @database_sync_to_async
@@ -1304,20 +1397,6 @@ class AgentConsumer(AsyncWebsocketConsumer):
             payload={"rules": rules},
         )
         await self.send(text_data=frame)
-
-    async def _handle_event_alert(self, frame):
-        """Handle event.alert frames (protocol reserved, no agent sender yet).
-
-        TD-134 (2026-07-18): The agent (agent/src/) has no send_message call
-        for 'event.alert' — the protocol reserves this msg_type for future
-        monitor alerting, but no agent-side sender is wired. Handler kept
-        to avoid KeyError in handler_map dispatch and to log unexpected
-        frames if a future agent version starts sending them.
-
-        Args:
-            frame: validated message frame
-        """
-        logger.info("事件告警 (protocol reserved, no agent sender): agent_id=%s, trace_id=%s", self.agent_id, frame["trace_id"])
 
     async def _handle_event_ack(self, frame):
         """Handle event.ack frames from the agent (S1 dispatch acknowledgment).

@@ -151,7 +151,7 @@ export function ServicesPage() {
       <Space wrap style={{ marginBottom: 16 }}>
         {daemonRunning ? (
           <Tag color="green" icon={<CheckCircleFilled />}>
-            {t('servicesManage.daemon_running', { pid: status?.daemon?.pid })}
+            {t('servicesManage.daemon_running', { pid: status?.daemon?.pid ?? '' })}
           </Tag>
         ) : (
           <Tag color="default" icon={<MinusCircleFilled />}>
@@ -294,7 +294,7 @@ function ServiceCard({ svc, onViewLog }: ServiceCardProps) {
       }
       extra={
         hasErrors ? (
-          <Tag color="red">{t('servicesManage.err_count', { count: svc.error_count })}</Tag>
+          <Tag color="red">{t('servicesManage.err_count', { count: svc.error_count ?? 0 })}</Tag>
         ) : null
       }
     >

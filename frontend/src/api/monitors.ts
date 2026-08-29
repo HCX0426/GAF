@@ -28,6 +28,26 @@ export async function deleteMonitorRule(ruleId: number): Promise<void> {
   await client.delete(`/monitors/monitor-rules/${ruleId}/`);
 }
 
+/**
+ * Notification chain health (TD-421).
+ * GET /api/v2/monitors/chain-health/
+ * 让通知中心区分"没有告警" vs "告警链路断了"。
+ */
+export interface NotificationChainHealth {
+  last_event_at: string | null;
+  event_count_24h: number;
+  last_escalated_at: string | null;
+  escalation_count: number;
+  escalation_interval_seconds: number;
+  next_escalation_in_seconds: number | null;
+}
+
+/** Fetch notification chain health */
+export async function fetchNotificationChainHealth(): Promise<NotificationChainHealth> {
+  const res = await client.get<NotificationChainHealth>('/monitors/chain-health/');
+  return res.data;
+}
+
 /** Fetch monitor events list */
 export async function fetchMonitorEvents(
   params?: Record<string, unknown> & { signal?: AbortSignal },

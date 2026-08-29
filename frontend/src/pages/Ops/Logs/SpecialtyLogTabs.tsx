@@ -9,7 +9,7 @@
  * 审计单入口收敛到系统页 /system/audit-log.
  */
 import { useEffect, useState, useCallback } from 'react';
-import { Table, Tag, Space, Button, Typography, Input, Upload, App, Alert, Select, theme } from 'antd';
+import { Table, Tag, Space, Button, Typography, Upload, App, Alert, Select, theme } from 'antd';
 import type { UploadProps } from 'antd';
 import { ReloadOutlined, InboxOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';

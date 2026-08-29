@@ -76,6 +76,7 @@ export type ResourcePack = API.components['schemas']['ResourcePack'];
 export interface MonitorRule {
   id: number;
   name: string;
+  rule_kind?: 'monitor' | 'game_ui';
   rule_definition: string;
   resource_pack?: number | null;
   is_enabled: boolean;
