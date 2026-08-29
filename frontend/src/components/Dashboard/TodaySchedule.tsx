@@ -12,19 +12,9 @@ import type { TodayScheduleResponse, TodayScheduleItem } from '@/types/models';
 import { fetchTodaySchedule } from '@/api/scheduler';
 import { classifyError } from '@/utils/errorHandler';
 import { SCHEDULE_STATUS_META, resolveScheduleStatus, tokenColorForStatus } from './scheduleStatusMeta';
+import { formatTimeHM } from '@/utils/formatTime';
 
 const { Text } = Typography;
-
-function formatDisplayTime(isoStr: string): string {
-  try {
-    return new Date(isoStr).toLocaleTimeString('zh-CN', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return isoStr;
-  }
-}
 
 function getWeekDayStr(): string {
   const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
@@ -141,7 +131,7 @@ export function TodaySchedule() {
                 <div className="gaf-flex-between gaf-mb-xs">
                   <Space size="small">
                     <Text className="gaf-text-xs" style={{ color: token.colorTextTertiary }}>
-                      {item.scheduled_time ? formatDisplayTime(item.scheduled_time) : '—'}
+                      {item.scheduled_time ? formatTimeHM(item.scheduled_time) : '—'}
                     </Text>
                     <Tag color={color} style={{ fontSize: 10, lineHeight: '18px' }}>
                       {meta.label}

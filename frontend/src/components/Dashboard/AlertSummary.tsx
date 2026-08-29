@@ -10,6 +10,7 @@ import { WarningOutlined, BellOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { fetchMonitorEvents } from '@/api/monitors';
 import type { MonitorEvent, MonitorEventSeverity, PaginatedResponse } from '@/types/models';
+import { formatDateHM } from '@/utils/formatTime';
 
 const { Text } = Typography;
 
@@ -19,19 +20,6 @@ const SEVERITY_COLOR: Record<MonitorEventSeverity, string> = {
   P2: 'orange',
   P3: 'gold',
 };
-
-function formatTime(isoStr: string): string {
-  try {
-    return new Date(isoStr).toLocaleString('zh-CN', {
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return isoStr;
-  }
-}
 
 export function AlertSummary() {
   const { token } = antTheme.useToken();
@@ -126,7 +114,7 @@ export function AlertSummary() {
                   )}
                 </Space>
                 <Text type="secondary" className="gaf-text-xs">
-                  <BellOutlined /> {formatTime(event.created_at)}
+                  <BellOutlined /> {formatDateHM(event.created_at)}
                 </Text>
               </Space>
             </div>

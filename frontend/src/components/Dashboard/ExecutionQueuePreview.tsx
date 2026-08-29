@@ -9,16 +9,9 @@ import { Card, Tag, Spin, Empty, Typography, Space, theme as antTheme } from 'an
 import { fetchTodaySchedule } from '@/api/scheduler';
 import type { TodayScheduleResponse } from '@/types/models';
 import { SCHEDULE_STATUS_META, resolveScheduleStatus } from './scheduleStatusMeta';
+import { formatTimeHM } from '@/utils/formatTime';
 
 const { Text } = Typography;
-
-function formatTime(isoStr: string): string {
-  try {
-    return new Date(isoStr).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-  } catch {
-    return isoStr;
-  }
-}
 
 export function ExecutionQueuePreview() {
   const { token } = antTheme.useToken();
@@ -80,7 +73,7 @@ export function ExecutionQueuePreview() {
               >
                 <Space>
                   <Text type="secondary" className="gaf-text-xs">
-                    {item.scheduled_time ? formatTime(item.scheduled_time) : '—'}
+                    {item.scheduled_time ? formatTimeHM(item.scheduled_time) : '—'}
                   </Text>
                   <Tag color={meta.tagColor} icon={meta.icon} style={{ fontSize: 10, lineHeight: '16px' }}>
                     {meta.label}

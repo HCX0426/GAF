@@ -10,6 +10,7 @@ import { Popover, Typography, Space, Spin, theme as antTheme } from 'antd';
 import { fetchSystemStatus } from '@/api/misc';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { classifyError } from '@/utils/errorHandler';
+import { formatTimeHM } from '@/utils/formatTime';
 import { CheckCircleFilled, ExclamationCircleFilled, CloseCircleFilled, MinusCircleFilled } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -67,17 +68,6 @@ const STATUS_STYLE: Record<string, { color: string; icon: React.ReactNode; label
     label: '未启动',
   },
 };
-
-function formatTimeStr(isoStr: string): string {
-  try {
-    return new Date(isoStr).toLocaleTimeString('zh-CN', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return isoStr;
-  }
-}
 
 export function HeaderStatusIndicator() {
   const { token } = antTheme.useToken();
@@ -222,7 +212,7 @@ export function HeaderStatusIndicator() {
             </Text>
             {status.recentWarnings.slice(0, 3).map((w) => (
               <div key={w.id} className="gaf-text-sm" style={{ color: token.colorWarning }}>
-                {formatTimeStr(w.timestamp)} [{w.source}] {w.message}
+                {formatTimeHM(w.timestamp)} [{w.source}] {w.message}
               </div>
             ))}
           </>
@@ -235,7 +225,7 @@ export function HeaderStatusIndicator() {
             </Text>
             {status.recentErrors.slice(0, 3).map((e) => (
               <div key={e.id} className="gaf-text-sm" style={{ color: token.colorError }}>
-                {formatTimeStr(e.timestamp)} [{e.source}] {e.message}
+                {formatTimeHM(e.timestamp)} [{e.source}] {e.message}
               </div>
             ))}
           </>
