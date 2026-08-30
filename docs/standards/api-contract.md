@@ -1,7 +1,7 @@
 ---
 summary: 前后端接口契约 — URL 约定/请求/响应/错误码/分页/类型共享/版本控制，约束 AI 写出一致的 API
 applies_to: [frontend, backend, api-contract, rest]
-last_updated: 2026-07-27
+last_updated: 2026-08-30 (§18.5 服务重启控制新增; §18.1/§19.1 服务名 agent→worker)
 key_decisions:
   - URL 用复数名词 + kebab-case：/api/v2/devices/, /api/v2/agent-instances/
   - 路径以 / 结尾（DRF 默认行为）

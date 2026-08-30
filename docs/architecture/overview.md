@@ -951,7 +951,7 @@ desktop/
 
 | 健康面 | 入口 | 语义 |
 |--------|------|------|
-| **系统综合状态** | `HeaderStatusIndicator` (顶部 Header) | `system_status_view.overall`：全部服务健康 **且** ≥1 Worker/Device online/idle **且** 无 `RecoveryLog` 失败/系统级恢复错误 |
+| **系统综合状态** | `HeaderStatusIndicator` (顶部 Header) | `system_status_view.overall`：任一服务不健康/查询失败 → `error`；全部服务健康 **且** ≥1 Worker/Device online/idle → `running`；仅近 24h 恢复失败 → `warning`（服务健康矩阵优先，2026-08-30 语义） |
 | **基础设施健康** | `InfraHealthPanel` (`/accounts/init/health/`) | `GafDaemon` 健康探针 + 看门狗循环 + 服务矩阵 |
 | **服务列表健康** | `ServicesPage` (`/system/services/`) | 各服务 `health_check` 探针聚合 |
 

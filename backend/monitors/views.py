@@ -352,10 +352,16 @@ def system_status_view(request):
     warnings = []
     errors = []
     try:
+        from datetime import timedelta
+
         from scheduler.models import RecoveryLog
 
+        # 仅统计最近 24h 内的恢复失败, 避免历史失败记录永久钉死整体状态.
+        # (2026-08-30 修复: 服务健康/在线设备是主判据, 恢复失败是近因提示)
+        cutoff_24h = timezone.now() - timedelta(hours=24)
         recent_warnings_qs = RecoveryLog.objects.filter(
             success=False,
+            created_at__gte=cutoff_24h,
         ).order_by('-created_at')[:3]
         for log in recent_warnings_qs:
             warnings.append({
@@ -369,6 +375,7 @@ def system_status_view(request):
         recent_errors_qs = RecoveryLog.objects.filter(
             success=False,
             recovery_level='system',
+            created_at__gte=cutoff_24h,
         ).order_by('-created_at')[:3]
         for log in recent_errors_qs:
             errors.append({
@@ -381,21 +388,20 @@ def system_status_view(request):
     except Exception as e:
         logger.warning('system_status 恢复日志查询失败: %s', e, exc_info=True)
 
-    if errors:
+    # spec 2026-08-29 P3: 服务健康矩阵 (daemon 快照, 含 daemon 键)
+    services = _load_service_health()
+    services_unhealthy = any(not s['healthy'] for s in services) if services else False
+
+    # 优先级 (2026-08-30 重排): 查询失败 / 服务不健康 → error (当前事实优先);
+    # 设备在线且服务全健康 → running; 仅近期(24h)恢复失败 → warning (非永久钉死); 否则 idle.
+    if agent_error or task_error or services_unhealthy:
         overall = 'error'
-    elif warnings:
-        overall = 'warning'
     elif devices_online is not None and (devices_online > 0 or (devices_idle and devices_idle > 0)):
         overall = 'running'
-    elif agent_error or task_error:
-        overall = 'error'
+    elif errors or warnings:
+        overall = 'warning'
     else:
         overall = 'idle'
-
-    from django.utils import timezone
-
-    # spec 2026-08-29 P3: 服务健康矩阵 (daemon 快照)
-    services = _load_service_health()
 
     response_data = {
         'overall': overall,
@@ -410,11 +416,6 @@ def system_status_view(request):
         'updatedAt': timezone.now().isoformat(),
         'services': services,
     }
-    if services:
-        # 任一服务不健康 → 降级为 warning (服务编排健康感知, spec P3)
-        unhealthy_services = [s for s in services if not s['healthy']]
-        if unhealthy_services and overall in ('running', 'idle'):
-            response_data['overall'] = 'warning'
     if agent_error:
         response_data['agentError'] = agent_error
     if task_error:

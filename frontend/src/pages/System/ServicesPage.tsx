@@ -114,8 +114,6 @@ export function ServicesPage() {
     [load],
   );
 
-  const restartAll = useCallback(() => handleRestart('all'), [handleRestart]);
-
   const loadLogs = useCallback(
     async (service: ServiceInfo, filter: 'all' | 'error' = logFilter) => {
       setLogLoading(true);
@@ -187,23 +185,6 @@ export function ServicesPage() {
         <Button size="small" icon={<ReloadOutlined />} loading={loading} onClick={() => load()}>
           {t('servicesManage.btn_refresh')}
         </Button>
-        <Popconfirm
-          title={t('servicesManage.restart_all_confirm')}
-          onConfirm={restartAll}
-          disabled={restartingName !== null}
-          okText={t('common.confirm')}
-          cancelText={t('common.cancel')}
-        >
-          <Button
-            type="primary"
-            size="small"
-            icon={<RedoOutlined />}
-            loading={restartingName === 'all'}
-            disabled={restartingName !== null && restartingName !== 'all'}
-          >
-            {t('servicesManage.btn_restart_all')}
-          </Button>
-        </Popconfirm>
       </Space>
 
       {!daemonRunning && (
@@ -377,7 +358,7 @@ function ServiceCard({ svc, onViewLog, onRestart, restarting = false }: ServiceC
       )}
 
       {svc.name === 'daemon' ? (
-        <Tooltip title={t('servicesManage.view_log_tip')}>
+        <Tooltip title={t('servicesManage.daemon_no_restart')}>
           <Button size="small" icon={<EyeOutlined />} onClick={() => onViewLog(svc)} block>
             {t('servicesManage.btn_view_log')}
           </Button>
@@ -385,7 +366,12 @@ function ServiceCard({ svc, onViewLog, onRestart, restarting = false }: ServiceC
       ) : (
         <div style={{ display: 'flex', gap: 8 }}>
           <Tooltip title={t('servicesManage.view_log_tip')}>
-            <Button size="small" icon={<EyeOutlined />} onClick={() => onViewLog(svc)} block>
+            <Button
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => onViewLog(svc)}
+              style={{ flex: '1 1 0' }}
+            >
               {t('servicesManage.btn_view_log')}
             </Button>
           </Tooltip>
@@ -403,7 +389,7 @@ function ServiceCard({ svc, onViewLog, onRestart, restarting = false }: ServiceC
               icon={<RedoOutlined />}
               danger
               loading={restarting}
-              style={{ width: 88, flexShrink: 0 }}
+              style={{ flex: '1 1 0' }}
             >
               {t('servicesManage.btn_restart')}
             </Button>
