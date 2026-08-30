@@ -694,7 +694,7 @@ def cleanup_view(request):
     import os
     from datetime import timedelta
 
-    from tasks.models import TaskExecution, TaskStep
+    from tasks.models import TaskExecution, ExecutionStep
 
     data = request.data
     execution_days = int(data.get('execution_retention_days', 30))
@@ -703,16 +703,16 @@ def cleanup_view(request):
     skipped: list[str] = []
 
     cutoff_exec = django_now() - timedelta(days=execution_days)
-    # Delete TaskStep rows belonging to old TaskExecution first (FK CASCADE
+    # Delete ExecutionStep rows belonging to old TaskExecution first (FK CASCADE
     # would handle this, but explicit delete makes the count accurate).
     # spec-58-A (TD-296): wrap both deletes in a transaction so a partial
-    # failure cannot leave orphaned TaskStep rows pointing at deleted
+    # failure cannot leave orphaned ExecutionStep rows pointing at deleted
     # TaskExecution rows.
     with transaction.atomic():
         old_exec_ids = list(
             TaskExecution.objects.filter(created_at__lt=cutoff_exec).values_list('id', flat=True)
         )
-        deleted_steps, _ = TaskStep.objects.filter(execution_id__in=old_exec_ids).delete()
+        deleted_steps, _ = ExecutionStep.objects.filter(task_result_id__in=old_exec_ids).delete()
         deleted_execs, _ = TaskExecution.objects.filter(id__in=old_exec_ids).delete()
 
     # LogEntry 表已废弃 (spec §2.2) — 不再写入/删除, 保留只读查询.

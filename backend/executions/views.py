@@ -24,14 +24,14 @@ from accounts.permissions import RoleBasedPermission, require_permission
 
 # spec-59-E / TD-297: avoid top-level ``from tasks.models import ...``
 # cross-app import. executions app is the view layer for tasks (no own
-# models; all 9 view functions read TaskExecution / TaskStep). Migrating
+# models; all 9 view functions read TaskExecution / ExecutionStep). Migrating
 # 35 use sites to a service layer would require 8+ wrapper functions —
 # over-engineering per N178-A3. Use apps.get_model at module load time
 # (apps registry is ready by the time URL config imports this module) so
-# TaskExecution / TaskStep are available as module attributes for name
+# TaskExecution / ExecutionStep are available as module attributes for name
 # lookup inside functions, without a top-level cross-app import statement.
 TaskExecution = apps.get_model('tasks', 'TaskExecution')
-TaskStep = apps.get_model('tasks', 'TaskStep')
+ExecutionStep = apps.get_model('tasks', 'ExecutionStep')
 
 logger = logging.getLogger(__name__)
 
@@ -51,11 +51,11 @@ def execution_steps_view(request, pk):
     """
     获取指定执行的 Pipeline 步骤详情列表
 
-    从 TaskStep 表查询步骤数据，按 step_index 排序。
+    从 ExecutionStep 表查询步骤数据，按 step_index 排序。
     Admin 可查看任意执行；其他用户仅能查看自己触发的执行。
     """
-    # @api_view allowed: custom aggregation over TaskStep with permission filtering, not model CRUD
-    steps_qs = TaskStep.objects.filter(execution_id=pk).order_by('step_index')
+    # @api_view allowed: custom aggregation over ExecutionStep with permission filtering, not model CRUD
+    steps_qs = ExecutionStep.objects.filter(task_result_id=pk).order_by('step_index')
     step_index = request.query_params.get('step_index')
 
     try:
@@ -79,12 +79,12 @@ def execution_steps_view(request, pk):
     for s in steps_qs:
         steps.append({
             'id': s.id,
-            'execution_id': s.execution_id,
+            'execution_id': s.task_result_id,
             'index': s.step_index,
             'name': s.step_name,
             'status': s.status,
             'started_at': s.started_at.isoformat() if s.started_at else None,
-            'duration': s.duration.total_seconds() if s.duration else None,
+            'duration': s.duration if s.duration else None,
             'retries': s.retry_count,
             'error_message': s.error_message or None,
             'screenshot_url': s.screenshot_path or None,
@@ -193,13 +193,13 @@ def execution_intervene_view(request, pk):
             # but silently did nothing. The task executor should poll step status to
             # actually skip/fail the in-flight operation.
             step_status_map = {
-                'skip_step': TaskStep.Status.SKIPPED,
-                'fail_step': TaskStep.Status.FAILED,
+                'skip_step': ExecutionStep.Status.SKIPPED,
+                'fail_step': ExecutionStep.Status.FAILED,
             }
             if action in step_status_map:
-                running_step = TaskStep.objects.filter(
-                    execution_id=execution.pk,
-                    status=TaskStep.Status.RUNNING,
+                running_step = ExecutionStep.objects.filter(
+                    task_result_id=execution.pk,
+                    status=ExecutionStep.Status.RUNNING,
                 ).order_by('step_index').first()
                 if running_step:
                     running_step.status = step_status_map[action]
@@ -279,7 +279,7 @@ def daily_report_view(request):
     """
     获取每日执行报告
 
-    从 TaskExecution 和 TaskStep 表聚合统计生成日报。
+    从 TaskExecution 和 ExecutionStep 表聚合统计生成日报。
     Admin 看全平台数据；其他用户仅看自己触发的执行。
     """
     # @api_view allowed: analytics aggregation producing markdown report, not model CRUD
@@ -364,9 +364,9 @@ def daily_report_view(request):
         })
 
     step_stats = []
-    step_aggregates = TaskStep.objects.filter(
-        execution__created_at__gte=day_start,
-        execution__created_at__lt=day_end,
+    step_aggregates = ExecutionStep.objects.filter(
+        task_result__created_at__gte=day_start,
+        task_result__created_at__lt=day_end,
     ).values('step_name').annotate(
         total_runs=Count('id'),
         fail_count=Count('id', filter=Q(status='failed')),
@@ -374,7 +374,7 @@ def daily_report_view(request):
     ).order_by('step_name')
 
     for s in step_aggregates:
-        avg_s = round(s['avg_dur'].total_seconds(), 1) if s['avg_dur'] else 0
+        avg_s = round(s['avg_dur'], 1) if s['avg_dur'] else 0
         fail_rate = round(s['fail_count'] / s['total_runs'] * 100, 1) if s['total_runs'] else 0
         step_stats.append({
             'step_name': s['step_name'] or '未命名步骤',
@@ -384,10 +384,10 @@ def daily_report_view(request):
             'fail_rate': fail_rate,
         })
 
-    failed_executions = executions.filter(status='failed').select_related('agent', 'triggered_by').prefetch_related('steps').order_by('-created_at')[:5]
+    failed_executions = executions.filter(status='failed').select_related('agent', 'triggered_by').prefetch_related('execution_steps').order_by('-created_at')[:5]
     failures = []
     for fe in failed_executions:
-        last_step = fe.steps.filter(status='failed').order_by('-step_index').first()
+        last_step = fe.execution_steps.filter(status='failed').order_by('-step_index').first()
         failures.append({
             'execution_id': fe.id,
             'device': fe.agent.hostname if fe.agent else '',
@@ -698,10 +698,10 @@ def step_heatmap_view(request):
     GET /api/v2/analytics/step-heatmap/
     返回每个步骤名称的平均耗时和成功率，用于热力图展示
     """
-    # @api_view allowed: analytics aggregation over TaskStep, not model CRUD
+    # @api_view allowed: analytics aggregation over ExecutionStep, not model CRUD
     from django.db.models import Avg, Count, Q
 
-    steps = TaskStep.objects.values('step_name').annotate(
+    steps = ExecutionStep.objects.values('step_name').annotate(
         total=Count('id'),
         success_count=Count('id', filter=Q(status='success')),
         avg_duration=Avg('duration'),
@@ -815,9 +815,9 @@ def weekly_report_view(request):
         .order_by('-count')
         .first()
     )
-    raw_avg = TaskStep.objects.filter(
-        execution__created_at__date__gte=week_start,
-        execution__created_at__date__lte=today,
+    raw_avg = ExecutionStep.objects.filter(
+        task_result__created_at__date__gte=week_start,
+        task_result__created_at__date__lte=today,
         status='success',
     ).aggregate(avg=Avg('duration'))['avg']
     if raw_avg is None:
@@ -920,7 +920,7 @@ def execution_analysis_view(request, pk):
     """
     AI 分析指定执行记录
 
-    拉取 TaskExecution + TaskStep 列表，构建 prompt 调 LLM 生成分析摘要和修复建议。
+    拉取 TaskExecution + ExecutionStep 列表，构建 prompt 调 LLM 生成分析摘要和修复建议。
     返回结构匹配前端 LogAnalysisResult 接口：
     {steps: [{name, status, duration_ms, error?}], summary: string, suggestions: string[]}
 
@@ -928,7 +928,7 @@ def execution_analysis_view(request, pk):
     存在（本地开发场景 agent 和 backend 同机器），读取结构化日志加入 prompt，
     让 LLM 能基于 confidence/threshold/roi/screenshot_path 做精确诊断。
     """
-    # @api_view allowed: AI analysis aggregation over TaskExecution + TaskStep, not model CRUD
+    # @api_view allowed: AI analysis aggregation over TaskExecution + ExecutionStep, not model CRUD
     try:
         execution = TaskExecution.objects.get(pk=pk)
     except TaskExecution.DoesNotExist:
@@ -945,12 +945,12 @@ def execution_analysis_view(request, pk):
         )
 
     # Pull steps ordered by step_index
-    steps_qs = TaskStep.objects.filter(execution_id=pk).order_by('step_index')
+    steps_qs = ExecutionStep.objects.filter(task_result_id=pk).order_by('step_index')
 
     # Build steps payload matching frontend LogAnalysisResult.steps
     steps = []
     for s in steps_qs:
-        duration_ms = int(s.duration.total_seconds() * 1000) if s.duration else 0
+        duration_ms = int(s.duration * 1000) if s.duration else 0
         steps.append({
             'name': s.step_name,
             'status': s.status,

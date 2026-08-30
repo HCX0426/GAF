@@ -142,20 +142,20 @@ class TestTaskExecutionFlow(TestCase):
             triggered_by=self.admin,
             log='step1 completed',
         )
-        from tasks.models import TaskStep
-        TaskStep.objects.create(
-            execution=execution,
+        from tasks.models import ExecutionStep
+        ExecutionStep.objects.create(
+            task_result=execution,
             step_index=0,
             step_name='点击签到按钮',
             step_type='click',
-            status=TaskStep.Status.SUCCESS,
+            status=ExecutionStep.Status.SUCCESS,
         )
-        TaskStep.objects.create(
-            execution=execution,
+        ExecutionStep.objects.create(
+            task_result=execution,
             step_index=1,
             step_name='等待结果',
             step_type='wait',
-            status=TaskStep.Status.SUCCESS,
+            status=ExecutionStep.Status.SUCCESS,
         )
         response = self.client.get(
             f'/api/v2/tasks/task-executions/{execution.id}/steps/',
@@ -217,19 +217,19 @@ class TestTaskExecutionFlow(TestCase):
 
     def test_skip_step(self):
         """跳过执行步骤"""
-        from tasks.models import TaskStep
+        from tasks.models import ExecutionStep
         execution = TaskExecution.objects.create(
             task=self.task,
             agent=self.agent,
             status=TaskExecution.Status.RUNNING,
             triggered_by=self.admin,
         )
-        TaskStep.objects.create(
-            execution=execution,
+        ExecutionStep.objects.create(
+            task_result=execution,
             step_index=0,
             step_name='点击签到按钮',
             step_type='click',
-            status=TaskStep.Status.PENDING,
+            status=ExecutionStep.Status.PENDING,
         )
         response = self.client.post(
             f'/api/v2/tasks/task-executions/{execution.id}/skip/',

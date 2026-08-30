@@ -64,7 +64,7 @@ def get_execution_detail(execution_id: int) -> str:
         }
         return json.dumps(result, ensure_ascii=False, indent=2)
     except Exception as exc:
-        logger.exception('get_execution_detail failed for execution_id=%s', execution_id)
+        logger.exception('get_execution_detail failed for task_result_id=%s', execution_id)
         return json.dumps({
             'error': f'Tool execution failed: {exc}',
             'tool': 'get_execution_detail',
@@ -82,9 +82,9 @@ def get_execution_steps(execution_id: int) -> str:
         JSON string with step list, or error message.
     """
     try:
-        from tasks.models import TaskStep
+        from tasks.models import ExecutionStep
 
-        steps = TaskStep.objects.filter(execution_id=execution_id).order_by('step_index')
+        steps = ExecutionStep.objects.filter(task_result_id=execution_id).order_by('step_index')
         if not steps.exists():
             return f"Execution #{execution_id} has no steps."
 
@@ -101,7 +101,7 @@ def get_execution_steps(execution_id: int) -> str:
             })
         return json.dumps(result, ensure_ascii=False, indent=2)
     except Exception as exc:
-        logger.exception('get_execution_steps failed for execution_id=%s', execution_id)
+        logger.exception('get_execution_steps failed for task_result_id=%s', execution_id)
         return json.dumps({
             'error': f'Tool execution failed: {exc}',
             'tool': 'get_execution_steps',
@@ -448,7 +448,7 @@ def get_screenshot_base64(execution_id: int, step_index: int = None, raw: bool =
                     / ocr / feature_match / color_detect). Read from the
                     JSONL ``raw_screenshot_path`` field.
       - raw=False → annotated PNG (all nodes). Read from
-                    ``TaskStep.screenshot_path``.
+                    ``ExecutionStep.screenshot_path``.
 
     When ``step_index`` is omitted, the first failed step is selected
     automatically. When ``raw=True`` but no raw image exists for that
@@ -471,7 +471,7 @@ def get_screenshot_base64(execution_id: int, step_index: int = None, raw: bool =
         import base64
         import os
 
-        from tasks.models import TaskExecution, TaskStep
+        from tasks.models import TaskExecution, ExecutionStep
 
         try:
             ex = TaskExecution.objects.get(pk=execution_id)
@@ -481,13 +481,13 @@ def get_screenshot_base64(execution_id: int, step_index: int = None, raw: bool =
                 'tool': 'get_screenshot_base64',
             }, ensure_ascii=False)
 
-        # 1. Locate the TaskStep
+        # 1. Locate the ExecutionStep
         if step_index is not None:
             try:
-                step = TaskStep.objects.get(
-                    execution_id=execution_id, step_index=step_index,
+                step = ExecutionStep.objects.get(
+                    task_result_id=execution_id, step_index=step_index,
                 )
-            except TaskStep.DoesNotExist:
+            except ExecutionStep.DoesNotExist:
                 return json.dumps({
                     'error': (
                         f'Step #{step_index} not found in execution '
@@ -497,8 +497,8 @@ def get_screenshot_base64(execution_id: int, step_index: int = None, raw: bool =
                 }, ensure_ascii=False)
         else:
             step = (
-                TaskStep.objects.filter(
-                    execution_id=execution_id, status='failed',
+                ExecutionStep.objects.filter(
+                    task_result_id=execution_id, status='failed',
                 ).order_by('step_index').first()
             )
             if step is None:
@@ -582,7 +582,7 @@ def get_screenshot_base64(execution_id: int, step_index: int = None, raw: bool =
         }, ensure_ascii=False)
     except Exception as exc:
         logger.exception(
-            'get_screenshot_base64 failed for execution_id=%s step_index=%s',
+            'get_screenshot_base64 failed for task_result_id=%s step_index=%s',
             execution_id, step_index,
         )
         return json.dumps({
@@ -800,7 +800,7 @@ def get_structured_log(execution_id: int) -> str:
         }, ensure_ascii=False, indent=2)
     except Exception as exc:
         logger.exception(
-            'get_structured_log failed for execution_id=%s', execution_id,
+            'get_structured_log failed for task_result_id=%s', execution_id,
         )
         return json.dumps({
             'error': f'Tool execution failed: {exc}',

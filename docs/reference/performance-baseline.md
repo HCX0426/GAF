@@ -844,6 +844,12 @@
 | 2026-08-30T00:09:34+08:00 | 17 | 18 | 3.28 | FAILED: doc-code sync |
 | 2026-08-30T00:10:28+08:00 | 18 | 18 | 3.45 | all pass |
 | 2026-08-30T00:24:39+08:00 | 18 | 18 | 3.34 | all pass |
+| 2026-08-30T08:34:47+08:00 | 17 | 18 | 8.77 | FAILED: B2 evidence |
+| 2026-08-30T08:36:14+08:00 | 16 | 18 | 3.72 | FAILED: B2 evidence, spec-context carrier |
+| 2026-08-30T08:38:53+08:00 | 16 | 18 | 6.48 | FAILED: sync_ai_memory, spec-context carrier |
+| 2026-08-30T08:43:10+08:00 | 17 | 18 | 6.77 | FAILED: spec-context carrier |
+| 2026-08-30T08:44:06+08:00 | 17 | 18 | 3.50 | FAILED: spec-context carrier |
+| 2026-08-30T08:45:54+08:00 | 17 | 18 | 3.28 | FAILED: spec-context carrier |
 
 ## pytest 耗时记录
 

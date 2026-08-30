@@ -241,7 +241,7 @@ verified_baseline: >
 | P2 | 中危（agent/后端内部或仅文档） | `B` | 中 | `ChainManager`→`StateMachineEngine` + `task_type` 别名 shim；`PerformanceMonitor` 后端类名；`loop_rotation` 文档标注 |
 | P3 | 高危（迁移+前端类型） | `C-device-emulator` | 高 | `Device.emulator`→`emulator_brand` | ✅ 已完成 2026-08-29 |
 | P3 | 高危 | `C-default-routine` | 高 | `default_routine`→`default_task_chain` + 端点 | ✅ 已完成 2026-08-29 |
-| P3 | 高危 | `C-taskstep-merge` | 高 | `TaskStep` 合并入 `ExecutionStep` |
+| P3 | 高危 | `C-taskstep-merge` | 高 | `TaskStep` 合并入 `ExecutionStep` | ✅ 已完成 2026-08-30 |
 | P3 | 高危 | `C-task-assign` | 高 | `task.assign` 帧名统一 + alias | ✅ 已完成 2026-08-29 |
 | P4 | 最高危（Agent→Worker 全量） | `G`（含 `C-agentsession` 的 `WorkerSession` 改名 + `E` 概念落地） | 高 | `Agent` 模型/`backend/agents`→`backend/workers`/`agent/`→`worker/` + 全部 `Agent*` 符号 + 前端类型重生成 |
 | P5 | 文档收口（反映最终命名） | `D`, `F`（可并行） | 中/低 | D: overview/features/子文档修正 + Worker/Agent 术语章；F: device_bridge + Device 抽象命名 |
@@ -273,7 +273,7 @@ verified_baseline: >
 
 - **OQ-1 `graph.py`** — ✅ 删 `graph.py`+测试，文档改指 `PipelineGraph`。
 - **OQ-2 `ChainManager`** — ✅ 类→`StateMachineEngine`，`task_type`→`'state_machine'`+别名 shim。
-- **OQ-3 `TaskStep`/`ExecutionStep`** — ✅ MERGE（`TaskStep` 遗留死模型，生产零写入；`ExecutionStep` 权威，无生产数据丢失）。
+- **OQ-3 `TaskStep`/`ExecutionStep`** — ✅ MERGE（`TaskStep` 遗留死模型，生产零写入；`ExecutionStep` 权威，无生产数据丢失） | ✅ 已完成 2026-08-30
 - **OQ-4 两 `AgentSession`** — ✅ `protocol.AgentSession`(Worker WS 会话)→`WorkerSession`；`gaf_ai.agent.AgentSession`(AI 会话)→保留 `AgentSession`（干净名给 AI）。
 - **OQ-5 范围** — ✅ 全量代码归一化，分阶段 A→D/G（§7）。
 - **OQ-6 `rotation_rule`/轮换模型** — ✅ **KEEP 双模型**（代码核实最优：共享配置 vs 每会话运行时游标，跨层不可合并）。

@@ -1,15 +1,15 @@
 """TaskExecutionViewSet.node_trace action tests.
 
-Tests the current node_trace implementation which reads from the TaskStep
+Tests the current node_trace implementation which reads from the ExecutionStep
 table (not JSONL files):
 
 - GET /api/v2/tasks/task-executions/{pk}/node-trace/?step_index=N
-- 从 TaskStep 表读取数据
+- 从 ExecutionStep 表读取数据
 - 返回字段: execution_id, step_index, step_name, status, result_data,
   screenshot_path, error_message, started_at, duration_ms, retry_count
 
 测试用例:
-    1. test_node_trace_returns_step_data — 创建 TaskExecution + TaskStep,
+    1. test_node_trace_returns_step_data — 创建 TaskExecution + ExecutionStep,
        请求 step_index=0，验证 200 和返回字段
     2. test_node_trace_invalid_step_index — 请求不存在的 step_index,
        验证 404
@@ -26,18 +26,18 @@ from rest_framework.test import APIClient
 
 from accounts.models import User
 from agents.models import Agent
-from tasks.models import Task, TaskExecution, TaskStep
+from tasks.models import Task, TaskExecution, ExecutionStep
 
 
 class TestNodeTraceAction(TestCase):
     """TaskExecutionViewSet.node_trace action tests.
 
-    Verifies reading TaskStep by step_index and returning structured
+    Verifies reading ExecutionStep by step_index and returning structured
     payload for the frontend NodeDetailDrawer.
     """
 
     def setUp(self):
-        """Initialize: admin user, agent, task, execution, and TaskStep."""
+        """Initialize: admin user, agent, task, execution, and ExecutionStep."""
         self.client = APIClient()
         self.admin = User.objects.create_user(
             username='node_trace_admin',
@@ -71,7 +71,7 @@ class TestNodeTraceAction(TestCase):
             is_enabled=True,
         )
 
-        self.execution = TaskExecution.objects.create(
+        self.task_result = TaskExecution.objects.create(
             task=self.task,
             agent=self.agent,
             triggered_by=self.admin,
@@ -79,34 +79,34 @@ class TestNodeTraceAction(TestCase):
             error_message='节点 click_1 执行失败: 设备点击未响应',
         )
 
-        self.step_0 = TaskStep.objects.create(
-            execution=self.execution,
+        self.step_0 = ExecutionStep.objects.create(
+            task_result=self.task_result,
             step_index=0,
             step_name='匹配登录按钮',
             step_type='template_match',
-            status=TaskStep.Status.SUCCESS,
-            result_data={
+            status=ExecutionStep.Status.SUCCESS,
+            recognition_result={
                 'confidence': 0.92,
                 'match_location': {'x': 50, 'y': 60},
                 'coord_system': 'logical',
             },
             screenshot_path='debug/match_1.png',
             retry_count=0,
-            duration=timedelta(milliseconds=120),
+            duration=0.12,
             started_at=timezone.now() - timedelta(minutes=5),
         )
 
-        self.step_1 = TaskStep.objects.create(
-            execution=self.execution,
+        self.step_1 = ExecutionStep.objects.create(
+            task_result=self.task_result,
             step_index=1,
             step_name='点击登录按钮',
             step_type='click',
-            status=TaskStep.Status.FAILED,
-            result_data={'attempted': True},
+            status=ExecutionStep.Status.FAILED,
+            recognition_result={'attempted': True},
             error_message='设备点击未响应 (timeout=5s)',
             screenshot_path='debug/click_1_failed.png',
             retry_count=2,
-            duration=timedelta(milliseconds=5000),
+            duration=5.0,
             started_at=timezone.now() - timedelta(minutes=4),
         )
 
@@ -118,12 +118,12 @@ class TestNodeTraceAction(TestCase):
         )
 
     def test_node_trace_returns_step_data(self):
-        """GET node-trace/?step_index=0 应返回 TaskStep 数据.
+        """GET node-trace/?step_index=0 应返回 ExecutionStep 数据.
 
         UnifiedResponseMiddleware 把成功响应包装为
         {code: 0, message: "ok", data: payload}, 实际字段在 data 子字段里.
         """
-        response = self.client.get(self._get_url(self.execution.id, 0))
+        response = self.client.get(self._get_url(self.task_result.id, 0))
         self.assertEqual(
             response.status_code,
             status.HTTP_200_OK,
@@ -134,10 +134,10 @@ class TestNodeTraceAction(TestCase):
         data = response.data.get("data") or {}
 
         # 基本信息
-        self.assertEqual(data["execution_id"], str(self.execution.id))
+        self.assertEqual(data["execution_id"], str(self.task_result.id))
         self.assertEqual(data["step_index"], 0)
         self.assertEqual(data["step_name"], "匹配登录按钮")
-        self.assertEqual(data["status"], TaskStep.Status.SUCCESS)
+        self.assertEqual(data["status"], ExecutionStep.Status.SUCCESS)
 
         # result_data
         self.assertEqual(data["result_data"]["confidence"], 0.92)
@@ -165,13 +165,13 @@ class TestNodeTraceAction(TestCase):
 
         验证失败节点的 error_message / duration_ms / retry_count 正确.
         """
-        response = self.client.get(self._get_url(self.execution.id, 1))
+        response = self.client.get(self._get_url(self.task_result.id, 1))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.data.get("data") or {}
 
         self.assertEqual(data["step_index"], 1)
         self.assertEqual(data["step_name"], "点击登录按钮")
-        self.assertEqual(data["status"], TaskStep.Status.FAILED)
+        self.assertEqual(data["status"], ExecutionStep.Status.FAILED)
 
         # 失败节点特有字段
         self.assertEqual(
@@ -190,7 +190,7 @@ class TestNodeTraceAction(TestCase):
 
     def test_node_trace_invalid_step_index(self):
         """请求不存在的 step_index → 404 + friendly message."""
-        response = self.client.get(self._get_url(self.execution.id, 99))
+        response = self.client.get(self._get_url(self.task_result.id, 99))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         # UnifiedResponseMiddleware 把 4xx 包装为 {code, message, data: None}
@@ -200,7 +200,7 @@ class TestNodeTraceAction(TestCase):
     def test_node_trace_bad_step_index(self):
         """请求非数字 step_index → 400 + friendly message."""
         response = self.client.get(
-            self._get_url(self.execution.id, "abc"),
+            self._get_url(self.task_result.id, "abc"),
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -210,5 +210,5 @@ class TestNodeTraceAction(TestCase):
     def test_node_trace_unauthorized(self):
         """未认证用户 → 401."""
         self.client.logout()
-        response = self.client.get(self._get_url(self.execution.id, 0))
+        response = self.client.get(self._get_url(self.task_result.id, 0))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

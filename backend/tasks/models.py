@@ -3,7 +3,7 @@ from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-# 执行域状态值单一权威源 (与 TaskStep/ExecutionStep 共用, 防松散字面量漂移):
+# 执行域状态值单一权威源 (与 ExecutionStep/ExecutionStep 共用, 防松散字面量漂移):
 from tasks.status_constants import (
     EXEC_STATUS_CANCELLED,
     EXEC_STATUS_FAILED,
@@ -438,96 +438,6 @@ class TaskExecution(models.Model):
         return f'{self.task.name} - {self.get_status_display()} ({self.pk})'
 
 
-class TaskStep(models.Model):
-    """任务步骤模型，记录任务执行中每个步骤的详细状态。"""
-
-    class Status(models.TextChoices):
-        PENDING = EXEC_STATUS_PENDING, 'Pending'
-        RUNNING = EXEC_STATUS_RUNNING, 'Running'
-        SUCCESS = EXEC_STATUS_SUCCESS, 'Success'
-        FAILED = EXEC_STATUS_FAILED, 'Failed'
-        SKIPPED = EXEC_STATUS_SKIPPED, 'Skipped'
-
-    execution = models.ForeignKey(
-        TaskExecution,
-        on_delete=models.CASCADE,
-        related_name='steps',
-        verbose_name='关联执行记录',
-        help_text='关联的任务执行记录',
-    )
-    step_index = models.IntegerField(
-        verbose_name='步骤序号',
-        help_text='步骤在任务中的执行序号',
-    )
-    step_name = models.CharField(
-        max_length=255,
-        verbose_name='步骤名称',
-        help_text='步骤的显示名称',
-    )
-    step_type = models.CharField(
-        max_length=50,
-        verbose_name='步骤类型',
-        help_text='步骤的类型标识',
-    )
-    status = models.CharField(
-        max_length=20,
-        choices=Status.choices,
-        default=Status.PENDING,
-        verbose_name='步骤状态',
-        help_text='状态: pending/running/success/failed/skipped',
-    )
-    result_data = models.JSONField(
-        default=dict,
-        blank=True,
-        verbose_name='结果数据',
-        help_text='步骤执行的结果数据',
-    )
-    error_message = models.TextField(
-        blank=True,
-        verbose_name='错误信息',
-        help_text='步骤执行失败的错误信息',
-    )
-    screenshot_path = models.CharField(
-        max_length=512,
-        blank=True,
-        verbose_name='截图路径',
-        help_text='步骤截图文件路径',
-    )
-    retry_count = models.IntegerField(
-        default=0,
-        verbose_name='重试次数',
-        help_text='步骤已重试的次数',
-    )
-    duration = models.DurationField(
-        null=True,
-        blank=True,
-        verbose_name='步骤耗时',
-        help_text='步骤执行的总耗时',
-    )
-    started_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name='开始时间',
-        help_text='步骤开始执行的时间',
-    )
-    completed_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name='完成时间',
-        help_text='步骤执行完成的时间',
-    )
-
-    class Meta:
-        db_table = 'tasks_taskstep'
-        ordering = ['step_index']
-        verbose_name = '任务步骤'
-        verbose_name_plural = '任务步骤'
-        unique_together = [('execution', 'step_index')]
-
-    def __str__(self):
-        return f'{self.execution.task.name} - 步骤{self.step_index}: {self.step_name}'
-
-
 class CustomTask(models.Model):
     """自定义任务模型，用户自行创建的灵活任务定义。"""
 
@@ -774,6 +684,11 @@ class ExecutionStep(models.Model):
         max_length=50,
         verbose_name='步骤类型',
         help_text='步骤的类型标识',
+    )
+    retry_count = models.IntegerField(
+        default=0,
+        verbose_name='重写次数',
+        help_text='步骤已重试的次数',
     )
     step_name = models.CharField(
         max_length=255,

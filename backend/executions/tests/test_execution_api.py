@@ -15,7 +15,7 @@ from executions.views import (
     unattended_logs_view,
 )
 from resources.models import ResourcePack
-from tasks.models import Task, TaskExecution, TaskStep
+from tasks.models import Task, TaskExecution, ExecutionStep
 
 User = get_user_model()
 
@@ -65,14 +65,14 @@ class BaseExecutionTestCase(TestCase):
             'pending', 'pending', 'pending', 'pending',
         ]
         for i, (name, status_val) in enumerate(zip(step_names, step_statuses, strict=False)):
-            TaskStep.objects.create(
-                execution=self.execution_42,
+            ExecutionStep.objects.create(
+                task_result=self.execution_42,
                 step_index=i,
                 step_name=name,
                 step_type='action',
                 status=status_val,
                 started_at=now if status_val in ('success', 'running') else None,
-                duration=timezone.timedelta(seconds=2) if status_val == 'success' else None,
+                duration=2.0 if status_val == 'success' else 0.0,
             )
 
         self.execution_1 = TaskExecution.objects.create(
@@ -85,8 +85,8 @@ class BaseExecutionTestCase(TestCase):
             duration=timezone.timedelta(minutes=5),
         )
         for i in range(3):
-            TaskStep.objects.create(
-                execution=self.execution_1,
+            ExecutionStep.objects.create(
+                task_result=self.execution_1,
                 step_index=i,
                 step_name=f'步骤{i}',
                 step_type='action',
@@ -101,8 +101,8 @@ class BaseExecutionTestCase(TestCase):
             started_at=now,
             error_message='ADB 设备断开连接',
         )
-        TaskStep.objects.create(
-            execution=self.failed_execution,
+        ExecutionStep.objects.create(
+            task_result=self.failed_execution,
             step_index=0,
             step_name='初始化连接',
             step_type='action',

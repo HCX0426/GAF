@@ -34,7 +34,7 @@ from gaf_ai.tasks import (
     _verify_evidence,
     run_agent_analysis_task,
 )
-from tasks.models import Task, TaskExecution, TaskStep
+from tasks.models import Task, TaskExecution, ExecutionStep
 
 User = get_user_model()
 
@@ -71,7 +71,7 @@ def _make_execution(task, status='failed', **kwargs):
 
 
 def _make_step(execution, index=0, name='screenshot', status='success', **kwargs):
-    """Create a minimal TaskStep."""
+    """Create a minimal ExecutionStep."""
     defaults = {
         'execution': execution,
         'step_index': index,
@@ -83,7 +83,7 @@ def _make_step(execution, index=0, name='screenshot', status='success', **kwargs
         'completed_at': timezone.now() - timedelta(minutes=3),
     }
     defaults.update(kwargs)
-    return TaskStep.objects.create(**defaults)
+    return ExecutionStep.objects.create(**defaults)
 
 
 # ── Helper functions from test_agent_async.py ────────────────────
@@ -770,8 +770,8 @@ class ToolExceptionIsolationTest(TestCase):
         self._assert_error_envelope(result, 'get_execution_detail')
 
     def test_get_execution_steps_returns_error_on_db_failure(self):
-        """Mock TaskStep.objects.filter to raise OperationalError → JSON error."""
-        with patch('tasks.models.TaskStep.objects') as mock_objects:
+        """Mock ExecutionStep.objects.filter to raise OperationalError → JSON error."""
+        with patch('tasks.models.ExecutionStep.objects') as mock_objects:
             mock_objects.filter.side_effect = OperationalError('DB connection lost')
             result = get_execution_steps.invoke({'execution_id': 1})
         self._assert_error_envelope(result, 'get_execution_steps')
@@ -807,7 +807,7 @@ class GetScreenshotBase64Test(TestCase):
     Verifies:
       - execution/step lookup (incl. auto-pick first failed step)
       - raw=True path: reads raw_screenshot_path from JSONL
-      - raw=False path: reads TaskStep.screenshot_path
+      - raw=False path: reads ExecutionStep.screenshot_path
       - 5MB cap + missing-file handling
       - error envelopes never crash the ReAct loop
     """
@@ -842,7 +842,7 @@ class GetScreenshotBase64Test(TestCase):
         self.assertIn('step_index', result['error'])
 
     def test_raw_false_reads_annotated_png_from_step(self):
-        """raw=False should read TaskStep.screenshot_path and return base64."""
+        """raw=False should read ExecutionStep.screenshot_path and return base64."""
         task = _make_task()
         ex = _make_execution(task)
         # Create a small PNG file
@@ -1596,14 +1596,14 @@ class AgentAnalyzeDispatchTest(TestCase):
         self.admin = _make_user('admin_user')
         self.client.force_authenticate(user=self.admin)
         self.task = _make_task()
-        self.execution = _make_execution(self.task, triggered_by=self.admin)
+        self.task_result = _make_execution(self.task, triggered_by=self.admin)
 
     def test_post_returns_202_with_session_id_and_pending_status(self):
         """POST creates a PENDING AgentSession and returns 202 immediately."""
         with patch('gaf_ai.tasks.run_agent_analysis_task.delay') as mock_delay:
             response = self.client.post(
                 '/api/v2/ai/agent/analyze/',
-                data=json.dumps({'execution_id': self.execution.id}),
+                data=json.dumps({'execution_id': self.task_result.id}),
                 content_type='application/json',
             )
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
@@ -1613,12 +1613,12 @@ class AgentAnalyzeDispatchTest(TestCase):
         mock_delay.assert_called_once()
         session_id = response.data['session_id']
         self.assertEqual(mock_delay.call_args[0][0], session_id)
-        self.assertEqual(mock_delay.call_args[0][1], self.execution.id)
+        self.assertEqual(mock_delay.call_args[0][1], self.task_result.id)
 
         # Session was persisted with PENDING status
         session = AgentSession.objects.get(pk=session_id)
         self.assertEqual(session.status, AgentSession.Status.PENDING)
-        self.assertEqual(session.target_id, self.execution.id)
+        self.assertEqual(session.target_id, self.task_result.id)
 
     def test_post_missing_execution_id_returns_400(self):
         response = self.client.post(
@@ -1646,7 +1646,7 @@ class AgentAnalyzeDispatchTest(TestCase):
         with patch('gaf_ai.tasks.run_agent_analysis_task.delay'):
             response = self.client.post(
                 '/api/v2/ai/agent/analyze/',
-                data=json.dumps({'execution_id': self.execution.id}),
+                data=json.dumps({'execution_id': self.task_result.id}),
                 content_type='application/json',
             )
         session_id = response.data['session_id']
@@ -1783,7 +1783,7 @@ class AgentAnalyzeEagerTest(TestCase):
         self.admin = _make_user('admin_user')
         self.client.force_authenticate(user=self.admin)
         self.task = _make_task()
-        self.execution = _make_execution(self.task, triggered_by=self.admin)
+        self.task_result = _make_execution(self.task, triggered_by=self.admin)
 
     @override_settings(CELERY_TASK_ALWAYS_EAGER=True, CELERY_TASK_EAGER_PROPAGATES=True)
     def test_eager_dispatch_runs_task_and_completes_session(self):
@@ -1802,7 +1802,7 @@ class AgentAnalyzeEagerTest(TestCase):
         try:
             response = self.client.post(
                 '/api/v2/ai/agent/analyze/',
-                data=json.dumps({'execution_id': self.execution.id}),
+                data=json.dumps({'execution_id': self.task_result.id}),
                 content_type='application/json',
             )
         finally:
@@ -1840,7 +1840,7 @@ class AgentAnalyzeEagerTest(TestCase):
         try:
             response = self.client.post(
                 '/api/v2/ai/agent/analyze/',
-                data=json.dumps({'execution_id': self.execution.id}),
+                data=json.dumps({'execution_id': self.task_result.id}),
                 content_type='application/json',
             )
         finally:
@@ -1871,7 +1871,7 @@ class RunAgentAnalysisTaskUnitTest(TestCase):
 
     def test_task_returns_failed_for_nonexistent_session(self):
         """Calling the task with a bad session_id returns failed dict."""
-        result = run_agent_analysis_task.run(session_id=999999, execution_id=42)
+        result = run_agent_analysis_task.run(session_id=999999, task_result_id=42)
         self.assertEqual(result['status'], 'failed')
         self.assertIn('not found', result['error'])
 
@@ -1880,7 +1880,7 @@ class RunAgentAnalysisTaskUnitTest(TestCase):
         with patch('gaf_ai.agent.graph.build_log_analysis_agent') as mock_build:
             mock_build.return_value.invoke.side_effect = RuntimeError('boom')
             result = run_agent_analysis_task.run(
-                session_id=self.session.id, execution_id=42,
+                session_id=self.session.id, task_result_id=42,
             )
         self.assertEqual(result['status'], 'failed')
         self.assertIn('boom', result['error'])
@@ -1901,7 +1901,7 @@ class RunAgentAnalysisTaskUnitTest(TestCase):
                 'messages': [fake_ai_message],
             }
             result = run_agent_analysis_task.run(
-                session_id=self.session.id, execution_id=42,
+                session_id=self.session.id, task_result_id=42,
             )
         self.assertEqual(result['status'], 'completed')
         self.assertEqual(result['model_used'], 'gpt-4o')
@@ -1922,7 +1922,7 @@ class RunAgentAnalysisTaskUnitTest(TestCase):
                 'messages': [fake_ai_message],
             }
             result = run_agent_analysis_task.run(
-                session_id=self.session.id, execution_id=42,
+                session_id=self.session.id, task_result_id=42,
             )
         self.assertEqual(result['evidence'], [])
         self.assertIn('请人工复核', result['summary'])
@@ -1949,7 +1949,7 @@ class RunAgentAnalysisTaskUnitTest(TestCase):
                 'messages': [fake_ai_message],
             }
             result = run_agent_analysis_task.run(
-                session_id=self.session.id, execution_id=42,
+                session_id=self.session.id, task_result_id=42,
             )
         self.assertEqual(result['evidence'], ['tool get_error_log returned exit_code=1'])
         # P2: 无工具观测 → 强校验未通过注记 (行为变化)
@@ -1981,7 +1981,7 @@ class RunAgentAnalysisTaskUnitTest(TestCase):
                 'messages': messages,
             }
             return run_agent_analysis_task.run(
-                session_id=self.session.id, execution_id=42,
+                session_id=self.session.id, task_result_id=42,
             )
 
     def test_strong_check_all_verified(self):

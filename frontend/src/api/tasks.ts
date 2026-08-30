@@ -7,7 +7,7 @@ import { generateTraceId, setLastTraceId } from '@/utils/traceId';
 import type {
   Task,
   TaskExecution,
-  TaskStep,
+  ExecutionStep,
   PaginatedResponse,
   PaginationParams,
   AccountBindingInfo,
@@ -86,8 +86,8 @@ export async function fetchExecutions(
 }
 
 /** Fetch execution step list */
-export async function fetchExecutionSteps(executionId: number): Promise<TaskStep[]> {
-  const res = await client.get<TaskStep[]>(`/tasks/task-executions/${executionId}/steps/`);
+export async function fetchExecutionSteps(executionId: number): Promise<ExecutionStep[]> {
+  const res = await client.get<ExecutionStep[]>(`/tasks/task-executions/${executionId}/steps/`);
   return res.data;
 }
 

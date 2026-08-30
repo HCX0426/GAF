@@ -7,7 +7,6 @@ from .models import (
     ScreenshotFrame,
     Task,
     TaskExecution,
-    TaskStep,
 )
 
 
@@ -29,16 +28,6 @@ class TaskExecutionAdmin(admin.ModelAdmin):
     list_filter = ('status',)
     search_fields = ('task__name', 'agent__agent_id')
     readonly_fields = ('created_at',)
-
-
-@admin.register(TaskStep)
-class TaskStepAdmin(admin.ModelAdmin):
-    """任务步骤管理后台配置。"""
-
-    list_display = ('id', 'execution', 'step_index', 'step_name', 'step_type', 'status', 'retry_count')
-    list_filter = ('status', 'step_type')
-    search_fields = ('step_name',)
-    readonly_fields = ()
 
 
 @admin.register(CustomTask)

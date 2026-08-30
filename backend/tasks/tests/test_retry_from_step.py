@@ -7,7 +7,7 @@ N192 视角 B 评估发现 B7 复现路径最弱 (4/10): 用户拿到错误后�
   Body: {"step_index": int}
   - 校验 execution 必须为 FAILED 状态 (retryable)
   - 校验 step_index 必须是已存在的失败步骤
-  - 从原 execution 的已成功 TaskStep 构造 previous_results
+  - 从原 execution 的已成功 ExecutionStep 构造 previous_results
   - 创建新 TaskExecution (PENDING)
   - 调用 dispatch_task 透传 start_step_index + previous_results
   - WS payload 包含 retry 字段, agent 跳过前 N 个节点
@@ -23,7 +23,7 @@ from rest_framework.test import APIClient
 
 from accounts.models import User
 from agents.models import Agent
-from tasks.models import Task, TaskExecution, TaskStep
+from tasks.models import Task, TaskExecution, ExecutionStep
 
 
 class TestRetryFromStepAction(TestCase):
@@ -82,31 +82,31 @@ class TestRetryFromStepAction(TestCase):
             error_message='节点 step_2 执行失败: 设备点击未响应',
         )
         # step_0 success
-        TaskStep.objects.create(
-            execution=self.failed_execution,
+        ExecutionStep.objects.create(
+            task_result=self.failed_execution,
             step_index=0,
             step_name='step_0',
             step_type='click',
-            status=TaskStep.Status.SUCCESS,
-            result_data={'x': 0, 'y': 0, 'success': True},
+            status=ExecutionStep.Status.SUCCESS,
+            recognition_result={'x': 0, 'y': 0, 'success': True},
         )
         # step_1 success
-        TaskStep.objects.create(
-            execution=self.failed_execution,
+        ExecutionStep.objects.create(
+            task_result=self.failed_execution,
             step_index=1,
             step_name='step_1',
             step_type='click',
-            status=TaskStep.Status.SUCCESS,
-            result_data={'x': 10, 'y': 10, 'success': True},
+            status=ExecutionStep.Status.SUCCESS,
+            recognition_result={'x': 10, 'y': 10, 'success': True},
         )
         # step_2 failed (this is what user wants to retry from)
-        TaskStep.objects.create(
-            execution=self.failed_execution,
+        ExecutionStep.objects.create(
+            task_result=self.failed_execution,
             step_index=2,
             step_name='step_2',
             step_type='click',
-            status=TaskStep.Status.FAILED,
-            result_data={'x': 20, 'y': 20},
+            status=ExecutionStep.Status.FAILED,
+            recognition_result={'x': 20, 'y': 20},
             error_message='设备点击未响应',
         )
 
@@ -191,7 +191,7 @@ class TestRetryFromStepAction(TestCase):
     def test_retry_from_step_invalid_step_index(self):
         """POST retry-from-step/ with non-existent step_index should 404.
 
-        step_index must correspond to an existing TaskStep in the execution.
+        step_index must correspond to an existing ExecutionStep in the execution.
         """
         response = self.client.post(
             f'/api/v2/tasks/task-executions/{self.failed_execution.id}/retry-from-step/',
@@ -268,7 +268,7 @@ class TestRetryFromStepAction(TestCase):
         self.assertIsInstance(prev, list)
         self.assertEqual(len(prev), 2,
                         f"expected 2 previous_results (step_0 + step_1), got {len(prev)}")
-        # Each entry should include node_id from the original TaskStep
+        # Each entry should include node_id from the original ExecutionStep
         node_ids = [p.get('node_id') for p in prev]
         self.assertIn('step_0', node_ids)
         self.assertIn('step_1', node_ids)
@@ -291,9 +291,9 @@ class TestRetryFromStepAction(TestCase):
         get_default_controller().reset()
 
         # Make step_0 also failed (so retry from 0 is valid)
-        TaskStep.objects.filter(
-            execution=self.failed_execution, step_index=0
-        ).update(status=TaskStep.Status.FAILED)
+        ExecutionStep.objects.filter(
+            task_result=self.failed_execution, step_index=0
+        ).update(status=ExecutionStep.Status.FAILED)
 
         response = self.client.post(
             f'/api/v2/tasks/task-executions/{self.failed_execution.id}/retry-from-step/',

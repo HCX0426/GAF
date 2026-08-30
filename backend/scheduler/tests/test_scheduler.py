@@ -2363,7 +2363,7 @@ class TestDetectAppFreezeTask(TestCase):
         self.agent = _make_agent(agent_id='freeze-agent')
         self.device = _make_device(self.agent, name='freeze-device')
         self.task = Task.objects.create(name='p048-freeze-task')
-        self.execution = TaskExecution.objects.create(
+        self.task_result = TaskExecution.objects.create(
             task=self.task,
             agent=self.agent,
             device=self.device,
@@ -2374,7 +2374,7 @@ class TestDetectAppFreezeTask(TestCase):
     def _make_frozen_step(self, freeze_seconds=200):
         """Create a RUNNING ExecutionStep started ``freeze_seconds`` ago."""
         step = ExecutionStep.objects.create(
-            task_result=self.execution,
+            task_result=self.task_result,
             step_index=0,
             node_id='frozen-node',
             step_type='pipeline_node',
@@ -2447,8 +2447,8 @@ class TestDetectAppFreezeTask(TestCase):
     def test_terminal_task_execution_not_scanned(self):
         """TaskExecution 已 FAILED 时, 其 RUNNING step 不会被扫描."""
         self._make_frozen_step(freeze_seconds=200)
-        self.execution.status = TaskExecution.Status.FAILED
-        self.execution.save(update_fields=['status'])
+        self.task_result.status = TaskExecution.Status.FAILED
+        self.task_result.save(update_fields=['status'])
 
         with patch('scheduler.recovery_engine.handle_app_freeze') as mock_handler:
             from scheduler.tasks import detect_app_freeze
@@ -2458,8 +2458,8 @@ class TestDetectAppFreezeTask(TestCase):
 
     def test_device_without_device_id_skipped(self):
         """TaskExecution.device_id 为 null 时跳过 (无法 map 到 device-level chain)."""
-        self.execution.device = None
-        self.execution.save(update_fields=['device'])
+        self.task_result.device = None
+        self.task_result.save(update_fields=['device'])
         self._make_frozen_step(freeze_seconds=200)
 
         with patch('scheduler.recovery_engine.handle_app_freeze') as mock_handler:
@@ -2634,7 +2634,7 @@ class TestExecuteRecoveryActionRealActions(TestCase):
         # 第二个 agent 作为 reassign 备用
         self.backup_agent = _make_agent(agent_id='backup-agent', status=Agent.Status.ONLINE)
         self.task = Task.objects.create(name='action-task')
-        self.execution = TaskExecution.objects.create(
+        self.task_result = TaskExecution.objects.create(
             task=self.task,
             agent=self.agent,
             triggered_by=self.user,
@@ -2730,7 +2730,7 @@ class TestExecuteRecoveryActionRealActions(TestCase):
 
         # 创建 RUNNING step, reassign 后应被重置为 PENDING
         step = ExecutionStep.objects.create(
-            task_result=self.execution,
+            task_result=self.task_result,
             step_index=0,
             node_id='running-node',
             step_type='pipeline_node',
@@ -2740,14 +2740,14 @@ class TestExecuteRecoveryActionRealActions(TestCase):
 
         result = execute_recovery_action(
             action_type='reassign',
-            target_id=self.execution.id,
+            target_id=self.task_result.id,
             config={},
         )
 
         self.assertTrue(result['success'])
-        self.execution.refresh_from_db()
-        self.assertEqual(self.execution.agent_id, self.backup_agent.id)
-        self.assertEqual(self.execution.recovery_layer, 5)  # system level
+        self.task_result.refresh_from_db()
+        self.assertEqual(self.task_result.agent_id, self.backup_agent.id)
+        self.assertEqual(self.task_result.recovery_layer, 5)  # system level
 
         step.refresh_from_db()
         self.assertEqual(step.status, ExecutionStep.Status.PENDING)
@@ -2763,7 +2763,7 @@ class TestExecuteRecoveryActionRealActions(TestCase):
 
         result = execute_recovery_action(
             action_type='reassign',
-            target_id=self.execution.id,
+            target_id=self.task_result.id,
             config={},
         )
 
@@ -2898,7 +2898,7 @@ class TestExecuteRecoveryActionRealActions(TestCase):
         # 已有 execution (RUNNING + agent) 但无 ONLINE 设备 → 设备缺失 error
         result = execute_recovery_action(
             action_type='restart',
-            target_id=self.execution.id,
+            target_id=self.task_result.id,
             config={},
         )
         self.assertFalse(result['success'])

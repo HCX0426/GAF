@@ -16,7 +16,6 @@ from tasks.models import (
     TaskDevice,
     TaskExecution,
     TaskFolder,
-    TaskStep,
     TaskVersion,
 )
 from tasks.schema_types import (
@@ -26,67 +25,17 @@ from tasks.schema_types import (
 )
 
 
-class TaskStepSerializer(serializers.ModelSerializer):
-    """任务步骤序列化器，记录每个步骤的详细状态。
-
-    注意: error_code 字段在 ExecutionStep 模型上 (不在 TaskStep),
-    通过 WS broadcast_execution_step_update signal 实时透传给前端。
-    REST /steps/ 端点 (TaskStep) 原本不含 error_code — 前端 initial load
-    只能拿到 error_message; 实时监控时 error_code 通过 WS 到达。
-    Task 3.6 (P2-6) 的 error_code 透传路径: agent → protocol/services
-    → ExecutionStep.error_code → signals.py → WS → 前端 StepProgressBar。
-
-    Task 4.5 (P1-10, 2026-07-28): 历史回看场景 (用户刷新页面查看历史执行)
-    不走 WS, 只走 REST /steps/ 端点, error_code 丢失。通过 SerializerMethodField
-    从关联 ExecutionStep (按 execution + step_index 关联) 读取 error_code,
-    让 REST 端点也返回 error_code, 前端历史回看时能展示多语言错误码 Tag。
-    """
-
-    # Task 4.5: 从 ExecutionStep 读取 error_code (TaskStep 模型本身无此字段).
-    # 避免新增 migration: TaskStep 是遗留模型, 生产代码不创建 (仅测试/seed),
-    # 实际生产数据走 ExecutionStep. 用 SerializerMethodField 关联读取.
-    error_code = serializers.SerializerMethodField(read_only=True)
-    # N192 (B1/B2): 从 ExecutionStep 读取 user_message (错误码映射后的用户友好文案).
-    user_message = serializers.SerializerMethodField(read_only=True)
+class ExecutionStepSerializer(serializers.ModelSerializer):
+    """执行步骤序列化器，记录每个步骤的详细状态。"""
 
     class Meta:
-        model = TaskStep
+        model = ExecutionStep
         fields = [
-            'id', 'execution', 'step_index', 'step_name', 'step_type',
-            'status', 'result_data', 'error_message', 'error_code', 'user_message',
+            'id', 'task_result', 'step_index', 'step_name', 'step_type',
+            'status', 'error_message', 'error_code', 'user_message',
             'screenshot_path', 'retry_count', 'duration', 'started_at', 'completed_at',
         ]
         read_only_fields = ['id']
-
-    def get_error_code(self, obj: TaskStep) -> str:
-        """Task 4.5: 从关联 ExecutionStep 读取 error_code.
-
-        按 (task_result=obj.execution, step_index=obj.step_index) 关联.
-        查不到返回空串 (老数据 / 成功步骤 / agent 未上报 error_code).
-        """
-        try:
-            es = ExecutionStep.objects.filter(
-                task_result=obj.execution,
-                step_index=obj.step_index,
-            ).only('error_code').first()
-            return es.error_code if es else ''
-        except Exception:
-            return ''
-
-    def get_user_message(self, obj: TaskStep) -> str:
-        """N192: 从关联 ExecutionStep 读取 user_message (错误码映射后的用户文案).
-
-        按 (task_result=obj.execution, step_index=obj.step_index) 关联.
-        查不到返回空串 (老数据 / 成功步骤 / 未映射).
-        """
-        try:
-            es = ExecutionStep.objects.filter(
-                task_result=obj.execution,
-                step_index=obj.step_index,
-            ).only('user_message').first()
-            return es.user_message if es else ''
-        except Exception:
-            return ''
 
 
 class TaskExecutionSerializer(serializers.ModelSerializer):
@@ -98,7 +47,7 @@ class TaskExecutionSerializer(serializers.ModelSerializer):
     a second round-trip. Display strings are included for the same reason.
     """
 
-    steps = TaskStepSerializer(many=True, read_only=True)
+    steps = ExecutionStepSerializer(many=True, read_only=True, source='execution_steps')
     # The Channels group name used for routing screenshot stream control
     # messages is `agent_{agent_id}` where agent_id is the Agent.agent_id
     # string (e.g. "td010-repro-agent"), NOT the DB primary key. Expose it

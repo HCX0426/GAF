@@ -2223,7 +2223,7 @@ export interface paths {
          * AI-analyze an execution record (step timeline + failure diagnosis)
          * @description AI 分析指定执行记录
          *
-         *     拉取 TaskExecution + TaskStep 列表，构建 prompt 调 LLM 生成分析摘要和修复建议。
+         *     拉取 TaskExecution + ExecutionStep 列表，构建 prompt 调 LLM 生成分析摘要和修复建议。
          *     返回结构匹配前端 LogAnalysisResult 接口：
          *     {steps: [{name, status, duration_ms, error?}], summary: string, suggestions: string[]}
          *
@@ -2274,7 +2274,7 @@ export interface paths {
          * List pipeline steps for an execution
          * @description 获取指定执行的 Pipeline 步骤详情列表
          *
-         *     从 TaskStep 表查询步骤数据，按 step_index 排序。
+         *     从 ExecutionStep 表查询步骤数据，按 step_index 排序。
          *     Admin 可查看任意执行；其他用户仅能查看自己触发的执行。
          */
         get: operations["executions_steps_retrieve"];
@@ -2297,7 +2297,7 @@ export interface paths {
          * Daily execution report with markdown
          * @description 获取每日执行报告
          *
-         *     从 TaskExecution 和 TaskStep 表聚合统计生成日报。
+         *     从 TaskExecution 和 ExecutionStep 表聚合统计生成日报。
          *     Admin 看全平台数据；其他用户仅看自己触发的执行。
          */
         get: operations["executions_daily_report_retrieve"];
@@ -7529,7 +7529,7 @@ export interface paths {
          * @description Get the node trace (screenshot, result, logs) for a specific step.
          *
          *     Expects ``step_index`` as a query parameter (e.g. ``?step_index=0``).
-         *     Looks up the TaskStep by execution + step_index and returns its
+         *     Looks up the ExecutionStep by execution + step_index and returns its
          *     result_data, screenshot_path, error_message, and timing info.
          */
         get: operations["tasks_task_executions_node_trace_retrieve"];
@@ -13642,7 +13642,7 @@ export interface components {
              * @description 记录创建的时间戳
              */
             readonly created_at: string;
-            readonly steps: components["schemas"]["TaskStep"][];
+            readonly steps: components["schemas"]["ExecutionStep"][];
             /**
              * 关联链执行
              * @description (spec 阶段 5) 当此执行是 TaskChain 的一部分时，指向链执行记录
@@ -13955,9 +13955,9 @@ export interface components {
         /**
          * @description 任务步骤序列化器，记录每个步骤的详细状态。
          *
-         *     注意: error_code 字段在 ExecutionStep 模型上 (不在 TaskStep),
+         *     注意: error_code 字段在 ExecutionStep 模型上 (不在 ExecutionStep),
          *     通过 WS broadcast_execution_step_update signal 实时透传给前端。
-         *     REST /steps/ 端点 (TaskStep) 原本不含 error_code — 前端 initial load
+         *     REST /steps/ 端点 (ExecutionStep) 原本不含 error_code — 前端 initial load
          *     只能拿到 error_message; 实时监控时 error_code 通过 WS 到达。
          *     Task 3.6 (P2-6) 的 error_code 透传路径: agent → protocol/services
          *     → ExecutionStep.error_code → signals.py → WS → 前端 StepProgressBar。
@@ -13967,13 +13967,13 @@ export interface components {
          *     从关联 ExecutionStep (按 execution + step_index 关联) 读取 error_code,
          *     让 REST 端点也返回 error_code, 前端历史回看时能展示多语言错误码 Tag。
          */
-        TaskStep: {
+        ExecutionStep: {
             readonly id: number;
             /**
              * 关联执行记录
              * @description 关联的任务执行记录
              */
-            execution: number;
+            task_result: number;
             /**
              * 步骤序号
              * Format: int64
@@ -14057,9 +14057,9 @@ export interface components {
         /**
          * @description 任务步骤序列化器，记录每个步骤的详细状态。
          *
-         *     注意: error_code 字段在 ExecutionStep 模型上 (不在 TaskStep),
+         *     注意: error_code 字段在 ExecutionStep 模型上 (不在 ExecutionStep),
          *     通过 WS broadcast_execution_step_update signal 实时透传给前端。
-         *     REST /steps/ 端点 (TaskStep) 原本不含 error_code — 前端 initial load
+         *     REST /steps/ 端点 (ExecutionStep) 原本不含 error_code — 前端 initial load
          *     只能拿到 error_message; 实时监控时 error_code 通过 WS 到达。
          *     Task 3.6 (P2-6) 的 error_code 透传路径: agent → protocol/services
          *     → ExecutionStep.error_code → signals.py → WS → 前端 StepProgressBar。
@@ -14069,12 +14069,12 @@ export interface components {
          *     从关联 ExecutionStep (按 execution + step_index 关联) 读取 error_code,
          *     让 REST 端点也返回 error_code, 前端历史回看时能展示多语言错误码 Tag。
          */
-        TaskStepRequest: {
+        ExecutionStepRequest: {
             /**
              * 关联执行记录
              * @description 关联的任务执行记录
              */
-            execution: number;
+            task_result: number;
             /**
              * 步骤序号
              * Format: int64

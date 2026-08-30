@@ -11,7 +11,7 @@ from agents.models import Agent, Device, DeviceGroup
 from monitors.models import MonitorEvent, MonitorRule
 from notifications.models import Notification
 from resources.models import ResourcePack
-from tasks.models import Task, TaskExecution, TaskStep
+from tasks.models import Task, TaskExecution, ExecutionStep
 
 
 class Command(BaseCommand):
@@ -400,8 +400,8 @@ class Command(BaseCommand):
                 started_at = execution.started_at + timezone.timedelta(seconds=sum(
                     s[3] for s in steps[:idx]
                 ))
-                TaskStep.objects.create(
-                    execution=execution,
+                ExecutionStep.objects.create(
+                    task_result=execution,
                     step_index=idx,
                     step_name=name,
                     step_type=stype,

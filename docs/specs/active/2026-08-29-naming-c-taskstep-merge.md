@@ -1,8 +1,10 @@
 ---
 spec: 2026-08-29-naming-c-taskstep-merge
 title: 命名归一化 C-4：TaskStep 合并入 ExecutionStep（删 TaskStep）
-status: active
+status: done
 created: 2026-08-29
+completed: 2026-08-30
+commit: (filled after commit)
 estimated_effort: 1 day
 risk: high
 depends_on: []
@@ -39,10 +41,10 @@ source: docs/analysis/concept-naming-normalization.md §1/§5(8,13,OQ-3)/§7
 
 | 阶段 | 内容 | 状态 |
 |------|------|------|
-| P1 | 数据安全检查 + ExecutionStep 加 retry_count + 迁移 | ⏳ |
-| P2 | 后端 writer 迁移（TaskExecutor/pipeline nodes → ExecutionStep） | ⏳ |
-| P3 | 后端 reader/serializers/views + 前端类型重生成 | ⏳ |
-| P4 | 删除 TaskStep 模型 + 测试 | ⏳ |
+| P1 | 数据安全检查 + ExecutionStep 加 retry_count + 迁移 | ✅ |
+| P2 | 后端 writer 迁移（TaskExecutor/pipeline nodes → ExecutionStep） | ✅ |
+| P3 | 后端 reader/serializers/views + 前端类型重生成 | ✅ |
+| P4 | 删除 TaskStep 模型 + 测试 | ✅ |
 
 #### Task P1.1: 安全与迁移
 

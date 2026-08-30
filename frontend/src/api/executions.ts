@@ -3,14 +3,14 @@
  * Covers execution detail, steps, intervene, pause/resume/skip/cancel/fail
  */
 import client from './client';
-import type { TaskExecution, TaskStep, PaginatedResponse, StepStatus } from '@/types/models';
+import type { TaskExecution, ExecutionStep, PaginatedResponse, StepStatus } from '@/types/models';
 
 /** Execution steps response */
 export interface ExecutionStepsResponse {
   execution_id: number;
   total_steps: number;
   completed_steps: number;
-  steps: TaskStep[];
+  steps: ExecutionStep[];
 }
 
 /** Intervene response */

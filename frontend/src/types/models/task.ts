@@ -13,7 +13,7 @@ export type StepStatus = API.components['schemas']['ExecutionStepStatusEnum'];
 /**
  * Task execute step — schema reference (spec-29j Phase 2b, 2026-07-19).
  *
- * Migrated from hand-written interface to `API.components['schemas']['TaskStep']`.
+ * Migrated from hand-written interface to `API.components['schemas']['ExecutionStep']`.
  *
  * Schema differences vs the pre-migration hand-written interface:
  *   - `duration`: schema `string | null` (ISO 8601 duration, e.g. "PT1H30M")
@@ -28,7 +28,7 @@ export type StepStatus = API.components['schemas']['ExecutionStepStatusEnum'];
  * `Record<string, unknown>` at runtime if shape access is required.
  */
 
-export type TaskStep = API.components['schemas']['TaskStep'];
+export type ExecutionStep = API.components['schemas']['ExecutionStep'];
 
 /**
  * Task execute record — schema reference (spec-29j Phase 2b, 2026-07-19).

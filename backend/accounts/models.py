@@ -458,7 +458,7 @@ class AuditLog(models.Model):
 
     # TD-225 (2026-07-18): migrated from inline list-of-tuples ACTION_CHOICES
     # to nested TextChoices enum, matching Django 3+ best practices and
-    # aligning with TaskExecution.Status / TaskStep.Status / Agent.Status
+    # aligning with TaskExecution.Status / ExecutionStep.Status / Agent.Status
     # / Device.Status (all already use TextChoices).
     class Action(models.TextChoices):
         LOGIN = 'login', '登录'

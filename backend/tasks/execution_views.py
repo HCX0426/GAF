@@ -29,14 +29,14 @@ from tasks.serializers import TaskExecutionSerializer
 
 # spec-59-E / TD-297: avoid top-level ``from tasks.models import ...``
 # cross-app import. executions app is the view layer for tasks (no own
-# models; all 9 view functions read TaskExecution / TaskStep). Migrating
+# models; all 9 view functions read TaskExecution / ExecutionStep). Migrating
 # 35 use sites to a service layer would require 8+ wrapper functions —
 # over-engineering per N178-A3. Use apps.get_model at module load time
 # (apps registry is ready by the time URL config imports this module) so
-# TaskExecution / TaskStep are available as module attributes for name
+# TaskExecution / ExecutionStep are available as module attributes for name
 # lookup inside functions, without a top-level cross-app import statement.
 TaskExecution = apps.get_model('tasks', 'TaskExecution')
-TaskStep = apps.get_model('tasks', 'TaskStep')
+ExecutionStep = apps.get_model('tasks', 'ExecutionStep')
 
 logger = logging.getLogger(__name__)
 
@@ -155,10 +155,10 @@ def execution_steps_view(request, pk):
     因此本函数**不**加 ``@api_view`` / ``@permission_classes`` 装饰器,
     由调用方负责 URL 路由和权限检查。
 
-    从 TaskStep 表查询步骤数据，按 step_index 排序。
+    从 ExecutionStep 表查询步骤数据，按 step_index 排序。
     Admin 可查看任意执行；其他用户仅能查看自己触发的执行。
     """
-    steps_qs = TaskStep.objects.filter(execution_id=pk).order_by('step_index')
+    steps_qs = ExecutionStep.objects.filter(task_result_id=pk).order_by('step_index')
     step_index = request.query_params.get('step_index')
 
     try:
@@ -182,7 +182,7 @@ def execution_steps_view(request, pk):
     for s in steps_qs:
         steps.append({
             'id': s.id,
-            'execution_id': s.execution_id,
+            'execution_id': s.task_result_id,
             'index': s.step_index,
             'name': s.step_name,
             'status': s.status,
@@ -320,13 +320,13 @@ def execution_intervene_view(request, pk):
             # but silently did nothing. The task executor should poll step status to
             # actually skip/fail the in-flight operation.
             step_status_map = {
-                'skip_step': TaskStep.Status.SKIPPED,
-                'fail_step': TaskStep.Status.FAILED,
+                'skip_step': ExecutionStep.Status.SKIPPED,
+                'fail_step': ExecutionStep.Status.FAILED,
             }
             if action in step_status_map:
-                running_step = TaskStep.objects.filter(
-                    execution_id=execution.pk,
-                    status=TaskStep.Status.RUNNING,
+                running_step = ExecutionStep.objects.filter(
+                    task_result_id=execution.pk,
+                    status=ExecutionStep.Status.RUNNING,
                 ).order_by('step_index').first()
                 if running_step:
                     running_step.status = step_status_map[action]
@@ -615,7 +615,7 @@ class TaskExecutionViewSet(viewsets.ReadOnlyModelViewSet):
             )
 
         # Validate that the step_index exists in the execution's steps
-        target_step = TaskStep.objects.filter(execution_id=pk, step_index=step_index).first()
+        target_step = ExecutionStep.objects.filter(task_result_id=pk, step_index=step_index).first()
         if not target_step:
             return Response(
                 {"error": f"执行记录 #{pk} 中不存在索引为 {step_index} 的步骤"},
@@ -623,7 +623,7 @@ class TaskExecutionViewSet(viewsets.ReadOnlyModelViewSet):
             )
 
         # Only allow retry from a FAILED step
-        if target_step.status != TaskStep.Status.FAILED:
+        if target_step.status != ExecutionStep.Status.FAILED:
             return Response(
                 {"error": f"只能从失败的步骤重试 (步骤 {step_index} 当前状态: {target_step.status})"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -631,11 +631,11 @@ class TaskExecutionViewSet(viewsets.ReadOnlyModelViewSet):
 
         # Build previous_results from successful steps before the retry index
         previous_results = []
-        for step in TaskStep.objects.filter(
-            execution_id=pk, step_index__lt=step_index,
+        for step in ExecutionStep.objects.filter(
+            task_result_id=pk, step_index__lt=step_index,
         ).order_by("step_index"):
-            if step.status == TaskStep.Status.SUCCESS:
-                entry = step.result_data or {}
+            if step.status == ExecutionStep.Status.SUCCESS:
+                entry = step.recognition_result or {}
                 entry["node_id"] = step.step_name
                 previous_results.append(entry)
 
@@ -677,7 +677,7 @@ class TaskExecutionViewSet(viewsets.ReadOnlyModelViewSet):
         """Get the node trace (screenshot, result, logs) for a specific step.
 
         Expects ``step_index`` as a query parameter (e.g. ``?step_index=0``).
-        Looks up the TaskStep by execution + step_index and returns its
+        Looks up the ExecutionStep by execution + step_index and returns its
         result_data, screenshot_path, error_message, and timing info.
         """
         step_index = request.query_params.get("step_index")
@@ -690,8 +690,8 @@ class TaskExecutionViewSet(viewsets.ReadOnlyModelViewSet):
             )
 
         try:
-            step = TaskStep.objects.get(execution_id=pk, step_index=step_index)
-        except TaskStep.DoesNotExist:
+            step = ExecutionStep.objects.get(task_result_id=pk, step_index=step_index)
+        except ExecutionStep.DoesNotExist:
             return Response(
                 {"error": f"未找到索引为 {step_index} 的步骤"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -702,12 +702,10 @@ class TaskExecutionViewSet(viewsets.ReadOnlyModelViewSet):
             "step_index": step_index,
             "step_name": step.step_name,
             "status": step.status,
-            "result_data": step.result_data or {},
+            "result_data": step.recognition_result or {},
             "screenshot_path": step.screenshot_path or None,
             "error_message": step.error_message or None,
             "started_at": step.started_at.isoformat() if step.started_at else None,
-            "duration_ms": (
-                int(step.duration.total_seconds() * 1000) if step.duration else 0
-            ),
+            "duration_ms": int(step.duration * 1000) if step.duration else 0,
             "retry_count": step.retry_count,
         })

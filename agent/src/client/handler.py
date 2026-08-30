@@ -214,7 +214,7 @@ class MessageHandler:
         wait_when_background = data.get("wait_when_background", {}) or {}
         # Task 1.1 (B7 重试单节点, P0-1): retry-from-step 参数. backend 在
         # retry_from_step action 中构建 previous_results (从原 execution 的
-        # 已成功 TaskStep 序列化) + start_step_index (失败节点 index), 通过
+        # 已成功 ExecutionStep 序列化) + start_step_index (失败节点 index), 通过
         # WS payload 透传. agent 转发给 orchestrator.execute_pipeline →
         # engine.execute, 跳过前 N 个节点只重跑失败节点及后续节点.
         # 默认 0 / None 保持向后兼容 (老服务器不发这两个字段 → 完整重跑).
