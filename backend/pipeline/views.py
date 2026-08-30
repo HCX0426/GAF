@@ -18,7 +18,7 @@ from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from workers.auth import AgentTokenAuthentication
+from workers.auth import WorkerTokenAuthentication
 
 from accounts.permissions import RoleBasedPermission
 from pipeline.estimator import PipelineTimeEstimator
@@ -854,7 +854,7 @@ class RecordingViewSet(AuditMixin, viewsets.ModelViewSet):
         return {}
 
     @action(detail=True, methods=["post"], url_path="screenshots",
-            authentication_classes=[JWTAuthentication, AgentTokenAuthentication],
+            authentication_classes=[JWTAuthentication, WorkerTokenAuthentication],
             permission_classes=[IsAgentOrRecordingOwner])
     def upload_screenshot(self, request, pk=None):
         """Upload one screenshot for a recording event.

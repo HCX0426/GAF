@@ -742,7 +742,7 @@ class RecordingScreenshotTests(TestCase):
         )
         self.agent = Worker.objects.create(
             agent_id='shot-agent-001', hostname='shot-agent',
-            agent_token_hash=hash_token('shot-agent-token-1234'),
+            worker_token_hash=hash_token('shot-agent-token-1234'),
         )
         self.png = b'\x89PNG\r\n\x1a\n' + b'x' * 64
 

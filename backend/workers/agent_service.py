@@ -1,15 +1,15 @@
-"""Agent domain services — single source of truth for Agent lifecycle.
+"""Worker domain services — single source of truth for Worker lifecycle.
 
-Extracted from accounts/views.py:AgentTokenViewSet (spec-41 / TD-277) to
-decouple the accounts app from the agents app. accounts.views now calls
-these services instead of importing agents.models directly, removing the
+Extracted from accounts/views.py:WorkerTokenViewSet (spec-41 / TD-277) to
+decouple the accounts app from the workers app. accounts.views now calls
+these services instead of importing workers.models directly, removing the
 top-level ``from workers.models import Worker`` cross-app import.
 
 Functions:
-- create_agent_token: create Agent + generate raw token (hash + preview stored)
-- list_agent_tokens: list all agents with token preview
-- revoke_agent_token: delete Agent by pk
-- get_agent_for_device_check: get Agent for GameAccount login test
+- create_worker_token: create Worker + generate raw token (hash + preview stored)
+- list_worker_tokens: list all workers with token preview
+- revoke_worker_token: delete Worker by pk
+- get_agent_for_device_check: get Worker for GameAccount login test
 - is_agent_offline: status helper (replaces Worker.Status.OFFLINE ref in accounts)
 """
 from __future__ import annotations
@@ -22,15 +22,15 @@ from gaf_core.utils.tokens import hash_token, make_token_preview
 from workers.models import Worker
 
 
-def create_agent_token(name: str, permissions: list[str]) -> tuple[Worker, str]:
-    """Create a new Agent record with a generated token.
+def create_worker_token(name: str, permissions: list[str]) -> tuple[Worker, str]:
+    """Create a new Worker record with a generated token.
 
     Args:
         name: Human-readable agent name (stored as hostname).
         permissions: List of permission strings (stored in capabilities.permissions).
 
     Returns:
-        Tuple of (Agent instance, raw_token). The raw_token is only available
+        Tuple of (Worker instance, raw_token). The raw_token is only available
         at creation time — only its SHA-256 hash + preview are persisted.
     """
     token = secrets.token_urlsafe(32)
@@ -39,19 +39,19 @@ def create_agent_token(name: str, permissions: list[str]) -> tuple[Worker, str]:
     agent = Worker.objects.create(
         agent_id=agent_id,
         hostname=name,
-        agent_token_hash=hash_token(token),
-        agent_token_preview=make_token_preview(token),
+        worker_token_hash=hash_token(token),
+        worker_token_preview=make_token_preview(token),
         status=Worker.Status.OFFLINE,
         capabilities={'permissions': permissions},
     )
     return agent, token
 
 
-def list_agent_tokens() -> list[dict[str, Any]]:
-    """List all agents ordered by created_at desc, with token preview.
+def list_worker_tokens() -> list[dict[str, Any]]:
+    """List all workers ordered by created_at desc, with token preview.
 
     Returns:
-        List of dicts suitable for AgentTokenListSerializer. Never includes
+        List of dicts suitable for WorkerTokenListSerializer. Never includes
         raw token values — only the stored preview.
     """
     agents = Worker.objects.all().order_by('-created_at')
@@ -61,7 +61,7 @@ def list_agent_tokens() -> list[dict[str, Any]]:
             'agent_id': agent.agent_id,
             'name': agent.hostname,
             'status': agent.status,
-            'token_preview': agent.agent_token_preview or '',
+            'token_preview': agent.worker_token_preview or '',
             'permissions': agent.capabilities.get('permissions', []),
             'created_at': agent.created_at,
         }
@@ -69,14 +69,14 @@ def list_agent_tokens() -> list[dict[str, Any]]:
     ]
 
 
-def revoke_agent_token(pk: int) -> Worker | None:
-    """Delete an Agent by primary key.
+def revoke_worker_token(pk: int) -> Worker | None:
+    """Delete a Worker by primary key.
 
     Args:
         pk: Worker.pk
 
     Returns:
-        The deleted Agent instance, or None if not found. Caller is
+        The deleted Worker instance, or None if not found. Caller is
         responsible for audit logging using the returned instance.
     """
     try:
@@ -88,13 +88,13 @@ def revoke_agent_token(pk: int) -> Worker | None:
 
 
 def get_agent_for_device_check(device_id: int) -> Worker | None:
-    """Get an Agent for GameAccount login test (device status check).
+    """Get a Worker for GameAccount login test (device status check).
 
     Args:
         device_id: Worker.pk
 
     Returns:
-        Agent instance, or None if not found.
+        Worker instance, or None if not found.
     """
     try:
         return Worker.objects.get(pk=device_id)

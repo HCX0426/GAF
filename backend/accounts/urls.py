@@ -9,7 +9,6 @@ from accounts.oauth_views import (
     GoogleOAuthView,
 )
 from accounts.views import (
-    AgentTokenViewSet,
     APIKeyViewSet,
     AuditLogViewSet,
     ChangePasswordView,
@@ -38,6 +37,7 @@ from accounts.views import (
     TOTPVerifySetupView,
     UserSessionViewSet,
     UserViewSet,
+    WorkerTokenViewSet,
 )
 
 router = DefaultRouter()
@@ -57,11 +57,11 @@ urlpatterns = [
     path('', include(router.urls)),
     path('auth/change-password/', ChangePasswordView.as_view(), name='change-password'),
     path('auth/register/', RegisterView.as_view(), name='auth-register'),
-    path('auth/agent-tokens/', AgentTokenViewSet.as_view({
+    path('auth/agent-tokens/', WorkerTokenViewSet.as_view({
         'get': 'list',
         'post': 'create',
     }), name='agent-token-list'),
-    path('auth/agent-tokens/<int:pk>/', AgentTokenViewSet.as_view({
+    path('auth/agent-tokens/<int:pk>/', WorkerTokenViewSet.as_view({
         'delete': 'destroy',
     }), name='agent-token-detail'),
     path('auth/2fa/setup/', TOTPSetupView.as_view(), name='2fa-setup'),

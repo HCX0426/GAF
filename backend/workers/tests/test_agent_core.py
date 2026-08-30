@@ -96,8 +96,8 @@ class TestAgentStatus(TestCase):
         self.assertEqual(self.agent.status, Worker.Status.BUSY)
 
 
-class TestAgentToken(TestCase):
-    """Agent Token 生成测试"""
+class TestWorkerToken(TestCase):
+    """Worker Token 生成测试"""
 
     def setUp(self):
         """初始化测试数据：操作员用户、Agent、API 客户端"""
@@ -114,10 +114,10 @@ class TestAgentToken(TestCase):
         self.client = APIClient()
         self.client.force_authenticate(user=self.operator)
 
-    def test_agent_token(self):
-        """Agent Token 生成"""
+    def test_worker_token(self):
+        """Worker Token 生成"""
         # TD-141 (2026-07-18): agent_token plaintext field removed.
-        self.assertIsNone(self.agent.agent_token_hash)
+        self.assertIsNone(self.agent.worker_token_hash)
         response = self.client.post(
             f'/api/v2/agents/{self.agent.pk}/generate-token/',
             format='json',
@@ -129,18 +129,18 @@ class TestAgentToken(TestCase):
         self.agent.refresh_from_db()
         # C4 fix: plaintext is not persisted; hash + preview are stored.
         from gaf_core.utils.tokens import hash_token, make_token_preview
-        self.assertEqual(self.agent.agent_token_hash, hash_token(body['agent_token']))
-        self.assertEqual(self.agent.agent_token_preview, make_token_preview(body['agent_token']))
+        self.assertEqual(self.agent.worker_token_hash, hash_token(body['agent_token']))
+        self.assertEqual(self.agent.worker_token_preview, make_token_preview(body['agent_token']))
 
-    def test_agent_token_regenerate(self):
-        """Agent Token 重新生成 — 新 Token 覆盖旧 Token"""
+    def test_worker_token_regenerate(self):
+        """Worker Token 重新生成 — 新 Token 覆盖旧 Token"""
         self.client.post(
             f'/api/v2/agents/{self.agent.pk}/generate-token/',
             format='json',
         )
         self.agent.refresh_from_db()
-        old_hash = self.agent.agent_token_hash
-        old_preview = self.agent.agent_token_preview
+        old_hash = self.agent.worker_token_hash
+        old_preview = self.agent.worker_token_preview
         response = self.client.post(
             f'/api/v2/agents/{self.agent.pk}/generate-token/',
             format='json',
@@ -149,5 +149,5 @@ class TestAgentToken(TestCase):
         self.agent.refresh_from_db()
         # C4 fix: hash must change after regeneration.
         self.assertIsNotNone(old_hash)
-        self.assertNotEqual(self.agent.agent_token_hash, old_hash)
-        self.assertNotEqual(self.agent.agent_token_preview, old_preview)
+        self.assertNotEqual(self.agent.worker_token_hash, old_hash)
+        self.assertNotEqual(self.agent.worker_token_preview, old_preview)

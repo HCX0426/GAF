@@ -1,4 +1,4 @@
-"""Agent Token API 单元测试：创建、列表、吊销 Token。"""
+"""Worker Token API 单元测试：创建、列表、吊销 Token。"""
 
 import pytest
 from django.test import TestCase
@@ -29,8 +29,8 @@ def _get_results(resp):
     return data
 
 
-class TestAgentTokenAPI(TestCase):
-    """Agent Token API 接口测试"""
+class TestWorkerTokenAPI(TestCase):
+    """Worker Token API 接口测试"""
 
     def setUp(self):
         """初始化测试数据：管理员用户、API 客户端。"""
@@ -54,8 +54,8 @@ class TestAgentTokenAPI(TestCase):
         """以操作员身份认证。"""
         self.client.force_authenticate(user=self.operator)
 
-    def test_create_agent_token(self):
-        """创建 Agent Token 成功，返回完整 Token 信息。"""
+    def test_create_worker_token(self):
+        """创建 Worker Token 成功，返回完整 Token 信息。"""
         self._auth_admin()
         response = self.client.post(
             '/api/v2/accounts/auth/agent-tokens/',
@@ -79,8 +79,8 @@ class TestAgentTokenAPI(TestCase):
             ['task.execute', 'device.control'],
         )
 
-    def test_create_agent_token_no_permissions(self):
-        """创建 Agent Token 不传权限参数时默认空列表。"""
+    def test_create_worker_token_no_permissions(self):
+        """创建 Worker Token 不传权限参数时默认空列表。"""
         self._auth_admin()
         response = self.client.post(
             '/api/v2/accounts/auth/agent-tokens/',
@@ -91,8 +91,8 @@ class TestAgentTokenAPI(TestCase):
         agent = Worker.objects.get(agent_id=_unwrap(response)['agent_id'])
         self.assertEqual(agent.capabilities.get('permissions'), [])
 
-    def test_create_agent_token_missing_name(self):
-        """创建 Agent Token 缺少名称时返回 400。"""
+    def test_create_worker_token_missing_name(self):
+        """创建 Worker Token 缺少名称时返回 400。"""
         self._auth_admin()
         response = self.client.post(
             '/api/v2/accounts/auth/agent-tokens/',
@@ -107,7 +107,7 @@ class TestAgentTokenAPI(TestCase):
         else:
             self.assertIsNotNone(response.data)
 
-    def test_create_agent_token_unauthorized(self):
+    def test_create_worker_token_unauthorized(self):
         """未认证用户创建 Token 返回 401。"""
         response = self.client.post(
             '/api/v2/accounts/auth/agent-tokens/',
@@ -116,7 +116,7 @@ class TestAgentTokenAPI(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_create_agent_token_operator_forbidden(self):
+    def test_create_worker_token_operator_forbidden(self):
         """操作员角色创建 Token 返回 403（需要 manage 权限）。"""
         self._auth_operator()
         response = self.client.post(
@@ -126,25 +126,25 @@ class TestAgentTokenAPI(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_list_agent_tokens(self):
-        """列出 Agent Token 时隐藏完整 Token 值。"""
+    def test_list_worker_tokens(self):
+        """列出 Worker Token 时隐藏完整 Token 值。"""
         self._auth_admin()
-        # C4 fix: agents are now created with hash + preview, no plaintext.
+        # C4 fix: workers are now created with hash + preview, no plaintext.
         long_token = 'abc12345-very-long-token-xyz98765'
         short_token = 'short'
         Worker.objects.create(
             agent_id='list-agent-001',
             hostname='list-agent-1',
-            agent_token_hash=hash_token(long_token),
-            agent_token_preview=make_token_preview(long_token),
+            worker_token_hash=hash_token(long_token),
+            worker_token_preview=make_token_preview(long_token),
             status=Worker.Status.OFFLINE,
             capabilities={'permissions': ['task.execute']},
         )
         Worker.objects.create(
             agent_id='list-agent-002',
             hostname='list-agent-2',
-            agent_token_hash=hash_token(short_token),
-            agent_token_preview=make_token_preview(short_token),
+            worker_token_hash=hash_token(short_token),
+            worker_token_preview=make_token_preview(short_token),
             status=Worker.Status.ONLINE,
         )
 
@@ -162,19 +162,19 @@ class TestAgentTokenAPI(TestCase):
         found_short = [t for t in tokens if t['name'] == 'list-agent-2']
         self.assertEqual(len(found_short), 1)
 
-    def test_list_agent_tokens_unauthorized(self):
+    def test_list_worker_tokens_unauthorized(self):
         """未认证用户列出 Token 返回 401。"""
         response = self.client.get('/api/v2/accounts/auth/agent-tokens/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_revoke_agent_token(self):
-        """吊销 Agent Token 成功，Agent 记录被删除。"""
+    def test_revoke_worker_token(self):
+        """吊销 Worker Token 成功，Agent 记录被删除。"""
         self._auth_admin()
         agent = Worker.objects.create(
             agent_id='revoke-agent-001',
             hostname='revoke-agent',
-            agent_token_hash=hash_token('token-to-revoke-12345678'),
-            agent_token_preview=make_token_preview('token-to-revoke-12345678'),
+            worker_token_hash=hash_token('token-to-revoke-12345678'),
+            worker_token_preview=make_token_preview('token-to-revoke-12345678'),
             status=Worker.Status.OFFLINE,
         )
 
@@ -191,13 +191,13 @@ class TestAgentTokenAPI(TestCase):
         response = self.client.delete('/api/v2/accounts/auth/agent-tokens/99999/')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_revoke_agent_token_unauthorized(self):
+    def test_revoke_worker_token_unauthorized(self):
         """未认证用户吊销 Token 返回 401。"""
         agent = Worker.objects.create(
             agent_id='unauth-revoke',
             hostname='unauth-revoke',
-            agent_token_hash=hash_token('unauth-token'),
-            agent_token_preview=make_token_preview('unauth-token'),
+            worker_token_hash=hash_token('unauth-token'),
+            worker_token_preview=make_token_preview('unauth-token'),
             status=Worker.Status.OFFLINE,
         )
         response = self.client.delete(f'/api/v2/accounts/auth/agent-tokens/{agent.id}/')

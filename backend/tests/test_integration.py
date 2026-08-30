@@ -143,9 +143,9 @@ class AgentLifecycleIntegrationTests(TestCase):
         self.assertEqual(token_resp.status_code, status.HTTP_200_OK)
         self.assertIn('agent_token', _unwrap(token_resp))
         agent.refresh_from_db()
-        # Token is stored as hash (agents.0007_agent_token_hash migration);
+        # Token is stored as hash (workers.0007_agent_token_hash migration);
         # assert the hash is populated instead of the deprecated plaintext field.
-        self.assertIsNotNone(agent.agent_token_hash)
+        self.assertIsNotNone(agent.worker_token_hash)
 
         online_resp = self.client.patch(f'/api/v2/agents/{agent_pk}/', {
             'status': 'online',

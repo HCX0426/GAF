@@ -45,6 +45,7 @@ root_cause_if_over: N/A (within baseline 600 min; multi-session batch)
     "2026-08-30: Fixed latent NameError workers/apps.py (worker_runtime -> agent_runtime), ruff auto-fixed 72 I001 import-sort, added F405 noqa in settings/test.py",
     "2026-08-30: Repaired 2 protocol websocket tests to P4 active_channel semantics (scope agent_id aligned to registered worker so claim guard passes); repointed dead-code test agents/ -> workers/",
     "2026-08-30: Full affected domain 930 passed; full backend 2149 passed, 22 pre-existing failures registered (21 gaf_ai/test_agent.py ExecutionStep-field-drift from naming-c + 1 tasks analytics views)",
-    "2026-08-30: ruff clean, migrate --plan acyclic, makemigrations --check clean"
+    "2026-08-30: ruff clean, migrate --plan acyclic, makemigrations --check clean",
+    "2026-08-30 P2 (G-7): DB fields agent_token_hash/agent_token_preview -> worker_token_hash/worker_token_preview via workers.0021 (RenameField x2 + AlterField x8 + AlterModelOptions, history 0007 immutable); WorkerToken class family: accounts WorkerTokenViewSet/WorkerToken{Create,Response,List}Serializer, workers WorkerTokenAuthentication, services create_worker_token/list_worker_tokens/revoke_worker_token; API paths /auth/agent-tokens/ + /agents/{pk}/generate-token/ + response/audit keys (agent_id/agent_token) kept stable (contract); Worker model verbose_name/help_text normalized Agent->Worker; makemigrations --check clean, dev DB migrated 0021 OK, migrate --plan acyclic; full backend 2149 passed with 21 pre-existing gaf_ai/test_agent.py failures (no new), affected-domain 689 passed; ruff clean; agent_token Token-VALUE prose (docs/__main__/token_store) deferred to P6 sweep"
   ]
 }

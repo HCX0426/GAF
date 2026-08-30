@@ -30,20 +30,17 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from scheduler.models import GameAccountRotation
 from scheduler.serializers import GameAccountRotationSerializer
 from workers.services import (
-    create_agent_token,
+    create_worker_token,
     get_agent_for_device_check,
     is_agent_offline,
-    list_agent_tokens,
-    revoke_agent_token,
+    list_worker_tokens,
+    revoke_worker_token,
 )
 
 from accounts import crypto
 from accounts.models import APIKey, AuditLog, GameAccount, GameAccountGroup, LoginHistory, User, UserSession
 from accounts.permissions import InitOrAuthenticatedPermission, RoleBasedPermission
 from accounts.serializers import (
-    AgentTokenCreateSerializer,
-    AgentTokenListSerializer,
-    AgentTokenResponseSerializer,
     APIKeySerializer,
     AuditLogSerializer,
     ChangePasswordSerializer,
@@ -68,6 +65,9 @@ from accounts.serializers import (
     UserCreateSerializer,
     UserSerializer,
     UserSessionSerializer,
+    WorkerTokenCreateSerializer,
+    WorkerTokenListSerializer,
+    WorkerTokenResponseSerializer,
 )
 from config.app_info import ADB_COMMAND_TIMEOUT, NODE_COMMAND_TIMEOUT
 
@@ -814,38 +814,38 @@ class CustomTokenRefreshView(TokenRefreshView):
     serializer_class = CustomTokenRefreshSerializer
 
 
-class AgentTokenViewSet(viewsets.ViewSet):
-    """Agent Token 管理视图集，提供 Token 的创建、列表和吊销功能。"""
+class WorkerTokenViewSet(viewsets.ViewSet):
+    """Worker Token 管理视图集，提供 Token 的创建、列表和吊销功能。"""
 
     permission_classes = [IsAuthenticated, RoleBasedPermission]
     required_permission = 'manage'
 
     @extend_schema(
-        request=AgentTokenCreateSerializer,
-        responses={201: AgentTokenResponseSerializer},
-        description="Generate a new Agent Token and create the Agent record.",
+        request=WorkerTokenCreateSerializer,
+        responses={201: WorkerTokenResponseSerializer},
+        description="Generate a new Worker Token and create the Worker record.",
     )
     def create(self, request):
-        """生成新的 Agent Token，创建 Agent 记录并返回完整 Token。
+        """生成新的 Worker Token，创建 Worker 记录并返回完整 Token。
 
         POST /api/auth/agent-tokens/
         入参: { "name": "my-agent", "permissions": ["task.execute", ...] }
         返回: { "token": "...", "agent_id": "...", "name": "..." }
         """
-        serializer = AgentTokenCreateSerializer(data=request.data)
+        serializer = WorkerTokenCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         name = serializer.validated_data['name']
         permissions = serializer.validated_data.get('permissions', [])
 
         # spec-58-A (TD-296): wrap token issuance + audit log in a
-        # transaction so an audit-log failure cannot leave an Agent row
+        # transaction so an audit-log failure cannot leave a Worker row
         # without an audit trail. IntegrityError (e.g. token hash collision
         # under race) returns 409 instead of leaking a 500.
         try:
             with transaction.atomic():
-                # Service handles token generation, hash + preview storage, and Agent creation.
-                agent, token = create_agent_token(name, permissions)
+                # Service handles token generation, hash + preview storage, and Worker creation.
+                agent, token = create_worker_token(name, permissions)
 
                 # Audit log: agent token issuance — never log the raw token.
                 from accounts.audit import log_audit
@@ -863,11 +863,11 @@ class AgentTokenViewSet(viewsets.ViewSet):
                 )
         except IntegrityError:
             return Response(
-                {'detail': 'Agent Token 生成失败，名称或数据冲突'},
+                {'detail': 'Worker Token 生成失败，名称或数据冲突'},
                 status=status.HTTP_409_CONFLICT,
             )
 
-        response_serializer = AgentTokenResponseSerializer({
+        response_serializer = WorkerTokenResponseSerializer({
             'token': token,
             'agent_id': agent.agent_id,
             'name': agent.hostname,
@@ -879,40 +879,40 @@ class AgentTokenViewSet(viewsets.ViewSet):
 
     @extend_schema(
         request=None,
-        responses={200: AgentTokenListSerializer(many=True)},
-        description="List all Agent Tokens (token value masked).",
+        responses={200: WorkerTokenListSerializer(many=True)},
+        description="List all Worker Tokens (token value masked).",
     )
     def list(self, request):
-        """列出当前所有 Agent Token（隐藏完整 Token 值）。
+        """列出当前所有 Worker Token（隐藏完整 Token 值）。
 
         GET /api/auth/agent-tokens/
         返回 Token 列表，token 字段仅显示前后各 4 位预览。
         """
         # Service returns list of dicts with token preview (no raw token values).
-        results = list_agent_tokens()
+        results = list_worker_tokens()
 
-        list_serializer = AgentTokenListSerializer(results, many=True)
+        list_serializer = WorkerTokenListSerializer(results, many=True)
         return Response(list_serializer.data, status=status.HTTP_200_OK)
 
     @extend_schema(
         request=None,
         responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT},
-        description="Revoke (delete) an Agent Token by id.",
+        description="Revoke (delete) a Worker Token by id.",
     )
     def destroy(self, request, pk=None):
-        """吊销指定 Agent Token，删除 Agent 记录。
+        """吊销指定 Worker Token，删除 Worker 记录。
 
         DELETE /api/auth/agent-tokens/{id}/
         """
-        agent = revoke_agent_token(pk)
+        agent = revoke_worker_token(pk)
         if agent is None:
             return Response(
-                {'detail': 'Agent Token 不存在'},
+                {'detail': 'Worker Token 不存在'},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
         agent_id = agent.agent_id
-        # Audit log: agent token revocation.
+        # Audit log: worker token revocation.
         from accounts.audit import log_audit
         log_audit(
             user=request.user,

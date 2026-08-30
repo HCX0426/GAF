@@ -40,7 +40,7 @@ class WorkerSerializer(serializers.ModelSerializer):
 
 
 class WorkerTokenSerializer(serializers.Serializer):
-    """Agent 令牌序列化器，返回 Agent ID 和生成的令牌。"""
+    """Worker 令牌序列化器，返回 Worker ID 和生成的令牌。"""
 
     agent_id = serializers.CharField()
     agent_token = serializers.CharField()

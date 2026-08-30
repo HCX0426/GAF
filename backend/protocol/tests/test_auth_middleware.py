@@ -17,13 +17,13 @@ class TestTokenAuthMiddleware(TestCase):
 
     def setUp(self):
         """初始化测试数据：创建 Agent 记录和中间件实例。"""
-        # C4 fix: middleware now queries agent_token_hash (not plaintext agent_token).
+        # C4 fix: middleware now queries worker_token_hash (not plaintext agent_token).
         self.plaintext_token = 'test-token-abc123'
         self.agent = Worker.objects.create(
             agent_id='middleware-test-agent',
             hostname='middleware-test',
-            agent_token_hash=hash_token(self.plaintext_token),
-            agent_token_preview=make_token_preview(self.plaintext_token),
+            worker_token_hash=hash_token(self.plaintext_token),
+            worker_token_preview=make_token_preview(self.plaintext_token),
             status=Worker.Status.OFFLINE,
         )
         self.middleware = TokenAuthMiddleware(MagicMock())

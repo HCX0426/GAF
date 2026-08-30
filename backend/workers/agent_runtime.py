@@ -159,11 +159,11 @@ def _get_or_create_local_agent_token():
         # persist the token across restarts. This avoids the 403 error when
         # a previously-saved token has been revoked or never existed.
         token = _secrets.token_urlsafe(32)
-        agent.agent_token_hash = hash_token(token)
-        agent.agent_token_preview = make_token_preview(token)
+        agent.worker_token_hash = hash_token(token)
+        agent.worker_token_preview = make_token_preview(token)
         # TD-141 (2026-07-18): agent_token plaintext field removed.
-        agent.save(update_fields=['agent_token_hash',
-                                  'agent_token_preview', 'updated_at'])
+        agent.save(update_fields=['worker_token_hash',
+                                  'worker_token_preview', 'updated_at'])
         logger.info('Generated token for local agent %s', agent.agent_id)
         return token
     except Exception as e:

@@ -12,11 +12,11 @@
 # Device service
 # Worker token services (from the original agents/services.py → agent_service.py)
 from workers.agent_service import (
-    create_agent_token,
+    create_worker_token,
     get_agent_for_device_check,
     is_agent_offline,
-    list_agent_tokens,
-    revoke_agent_token,
+    list_worker_tokens,
+    revoke_worker_token,
 )
 from workers.services.device_service import (
     DeviceService,
@@ -36,9 +36,9 @@ __all__ = [
     "_scale_to_native",
     "_refresh_window_handle",
     # Worker token services
-    "create_agent_token",
-    "list_agent_tokens",
-    "revoke_agent_token",
+    "create_worker_token",
+    "list_worker_tokens",
+    "revoke_worker_token",
     "get_agent_for_device_check",
     "is_agent_offline",
 ]

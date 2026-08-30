@@ -92,13 +92,13 @@ def get_agent_by_token_hash(token_h):
         token_h: Hashed token string (output of ``hash_token``).
 
     Returns:
-        ``Agent`` instance or ``None`` if not found.
+        ``Worker`` instance or ``None`` if not found.
     """
     if not token_h:
         return None
     from workers.models import Worker  # cross-app import isolated (TD-259 #29)
     try:
-        return Worker.objects.get(agent_token_hash=token_h)
+        return Worker.objects.get(worker_token_hash=token_h)
     except Worker.DoesNotExist:
         return None
 

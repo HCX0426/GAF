@@ -213,10 +213,10 @@ class SetupSerializer(serializers.Serializer):
     llm_config = serializers.JSONField(required=False, default=dict)
 
 
-class AgentTokenCreateSerializer(serializers.Serializer):
-    """Agent Token 创建序列化器，校验名称和权限列表。"""
+class WorkerTokenCreateSerializer(serializers.Serializer):
+    """Worker Token 创建序列化器，校验名称和权限列表。"""
 
-    name = serializers.CharField(max_length=255, required=True, help_text='Agent 名称')
+    name = serializers.CharField(max_length=255, required=True, help_text='Worker 名称')
     permissions = serializers.ListField(
         child=serializers.CharField(max_length=100),
         required=False,
@@ -225,8 +225,8 @@ class AgentTokenCreateSerializer(serializers.Serializer):
     )
 
 
-class AgentTokenResponseSerializer(serializers.Serializer):
-    """Agent Token 响应序列化器，返回完整 Token 信息（仅创建时返回完整 token）。"""
+class WorkerTokenResponseSerializer(serializers.Serializer):
+    """Worker Token 响应序列化器，返回完整 Token 信息（仅创建时返回完整 token）。"""
 
     token = serializers.CharField()
     agent_id = serializers.CharField()
@@ -236,8 +236,8 @@ class AgentTokenResponseSerializer(serializers.Serializer):
     created_at = serializers.DateTimeField()
 
 
-class AgentTokenListSerializer(serializers.Serializer):
-    """Agent Token 列表序列化器，隐藏完整 Token 值。"""
+class WorkerTokenListSerializer(serializers.Serializer):
+    """Worker Token 列表序列化器，隐藏完整 Token 值。"""
 
     id = serializers.IntegerField()
     agent_id = serializers.CharField()

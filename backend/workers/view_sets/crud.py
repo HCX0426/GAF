@@ -46,18 +46,18 @@ class WorkerViewSet(AuditMixin, viewsets.ModelViewSet):
     search_fields = ["agent_id", "hostname", "ip_address"]
     audit_resource_type = AuditResourceType.AGENT
 
-    # Defensive redaction set: agent_token_hash is already a SHA-256 digest
+    # Defensive redaction set: worker_token_hash is already a SHA-256 digest
     # (TD-141 removed the plaintext field), but we still redact to keep the
-    # audit payload free of any token-derived material. agent_token_preview
+    # audit payload free of any token-derived material. worker_token_preview
     # is a 4+4 char preview used in list UIs; redacted as well so the audit
     # log never carries partial token data.
-    _AUDIT_SENSITIVE_EXTRA = {"agent_token_hash", "agent_token_preview", "agent_token"}
+    _AUDIT_SENSITIVE_EXTRA = {"worker_token_hash", "worker_token_preview", "agent_token"}
 
     def _build_audit_details(self, action, instance, *, old_instance=None) -> dict:
         """Build audit details for Worker writes; token fields always redacted."""
         snapshot_keys = (
             "agent_id", "hostname", "ip_address", "os_info", "status",
-            "is_local", "agent_token_hash", "agent_token_preview",
+            "is_local", "worker_token_hash", "worker_token_preview",
         )
         if action == AuditAction.CREATE:
             return build_diff_details(
@@ -91,9 +91,9 @@ class WorkerViewSet(AuditMixin, viewsets.ModelViewSet):
         token = secrets.token_urlsafe(32)
         # C4 fix: store SHA-256 hash + preview, never persist plaintext.
         # TD-141 (2026-07-18): agent_token plaintext field removed entirely.
-        agent.agent_token_hash = hash_token(token)
-        agent.agent_token_preview = make_token_preview(token)
-        agent.save(update_fields=["agent_token_hash", "agent_token_preview", "updated_at"])
+        agent.worker_token_hash = hash_token(token)
+        agent.worker_token_preview = make_token_preview(token)
+        agent.save(update_fields=["worker_token_hash", "worker_token_preview", "updated_at"])
         serializer = WorkerTokenSerializer({"agent_id": agent.agent_id, "agent_token": token})
         return Response(serializer.data, status=status.HTTP_200_OK)
 

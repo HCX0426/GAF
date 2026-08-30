@@ -56,7 +56,7 @@ MULTI_GAME_BLOCKED_INPUT_METHODS = frozenset({
 
 
 class Worker(models.Model):
-    """Agent 模型，管理远程/本地 Agent 的注册、心跳和能力信息。"""
+    """Worker 模型，管理远程/本地 Worker 的注册、心跳和能力信息。"""
 
     class Status(models.TextChoices):
         ONLINE = 'online', 'Online'
@@ -73,19 +73,19 @@ class Worker(models.Model):
     hostname = models.CharField(
         max_length=255,
         verbose_name='主机名',
-        help_text='Agent 所在主机的名称',
+        help_text='Worker 所在主机的名称',
     )
     ip_address = models.GenericIPAddressField(
         null=True,
         blank=True,
         verbose_name='IP 地址',
-        help_text='Agent 所在主机的 IP 地址',
+        help_text='Worker 所在主机的 IP 地址',
     )
     os_info = models.CharField(
         max_length=255,
         blank=True,
         verbose_name='操作系统信息',
-        help_text='Agent 主机的操作系统描述',
+        help_text='Worker 主机的操作系统描述',
     )
     status = models.CharField(
         max_length=20,
@@ -112,26 +112,26 @@ class Worker(models.Model):
         null=True,
         blank=True,
         verbose_name='CPU 使用率 (%)',
-        help_text='Agent 进程 CPU 占用百分比',
+        help_text='Worker 进程 CPU 占用百分比',
     )
     memory_usage = models.FloatField(
         null=True,
         blank=True,
         verbose_name='内存使用率 (%)',
-        help_text='Agent 进程内存占用百分比',
+        help_text='Worker 进程内存占用百分比',
     )
     screenshot_fps = models.FloatField(
         null=True,
         blank=True,
         verbose_name='截图帧率 (FPS)',
-        help_text='Agent 支持的截图帧率',
+        help_text='Worker 支持的截图帧率',
     )
     capabilities = models.JSONField(
         default=dict,
         verbose_name='能力标签',
-        help_text='Agent 支持的能力标签字典',
+        help_text='Worker 支持的能力标签字典',
     )
-    agent_token_hash = models.CharField(
+    worker_token_hash = models.CharField(
         max_length=64,
         db_index=True,
         null=True,
@@ -139,7 +139,7 @@ class Worker(models.Model):
         verbose_name='鉴权 Token 哈希 (SHA-256)',
         help_text='C4: SHA-256(token) 十六进制摘要，用于数据库查找。',
     )
-    agent_token_preview = models.CharField(
+    worker_token_preview = models.CharField(
         max_length=20,
         blank=True,
         default='',
@@ -148,8 +148,8 @@ class Worker(models.Model):
     )
     is_local = models.BooleanField(
         default=False,
-        verbose_name='是否本地 Agent',
-        help_text='标记是否为本地 Agent',
+        verbose_name='是否本地 Worker',
+        help_text='标记是否为本地 Worker',
     )
     created_at = models.DateTimeField(
         auto_now_add=True,
@@ -166,8 +166,8 @@ class Worker(models.Model):
         app_label = 'workers'
         db_table = 'workers_worker'
         ordering = ['-id']
-        verbose_name = 'Agent'
-        verbose_name_plural = 'Agent'
+        verbose_name = 'Worker'
+        verbose_name_plural = 'Worker'
         indexes = [
             models.Index(fields=['status'], name='idx_agent_status'),
         ]

@@ -1,13 +1,13 @@
-"""Agent token authentication for DRF.
+"""Worker token authentication for DRF.
 
-Allows the agent process (started with ``--agent-token``) to authenticate
+Allows the worker process (started with ``--agent-token``) to authenticate
 HTTP calls to the backend using ``Authorization: Bearer <agent-token>``.
-The token is stored hashed (``Agent.agent_token_hash``, SHA-256) so the
+The token is stored hashed (``Worker.worker_token_hash``, SHA-256) so the
 plaintext is never persisted — we hash the presented token and look it up.
 
-The authenticated principal is attached as ``request.agent`` (an ``Agent``
-instance) instead of a Django ``User``. Callers that need to authorize an
-agent-only action must use ``IsAgentOrRecordingOwner`` or check
+The authenticated principal is attached as ``request.agent`` (a ``Worker``
+instance) instead of a Django ``User``. Callers that need to authorize a
+worker-only action must use ``IsAgentOrRecordingOwner`` or check
 ``getattr(request, "agent", None)`` directly.
 """
 
@@ -22,13 +22,13 @@ from workers.models import Worker
 logger = logging.getLogger(__name__)
 
 
-class AgentTokenAuthentication(authentication.BaseAuthentication):
+class WorkerTokenAuthentication(authentication.BaseAuthentication):
     """Authenticate via ``Authorization: Token <agent-token>``.
 
     Uses the ``Token`` scheme (not ``Bearer``) so it never collides with
     JWT authentication, which reserves ``Bearer``. Sets ``request.agent``
-    to the matching ``Agent`` instance and returns (AnonymousUser, None) so
-    DRF's permission checks still run. Endpoints that allow agents must use
+    to the matching ``Worker`` instance and returns (AnonymousUser, None) so
+    DRF's permission checks still run. Endpoints that allow workers must use
     a permission class that also accepts ``request.agent`` (e.g.
     ``IsAgentOrRecordingOwner``).
     """
@@ -52,6 +52,6 @@ class AgentTokenAuthentication(authentication.BaseAuthentication):
     def _lookup_agent(token: str):
         digest = hash_token(token)
         try:
-            return Worker.objects.get(agent_token_hash=digest)
+            return Worker.objects.get(worker_token_hash=digest)
         except Worker.DoesNotExist:
             return None
