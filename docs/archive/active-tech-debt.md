@@ -1,7 +1,7 @@
 ---
 summary: 活跃技术债务清单 — 🔧 待修/待办/待决 和 🚧 进行中 条目 (完整详情)
 applies_to: [project]
-last_updated: "2026-08-30 (TD-422 闭环迁移至 fixed.md; active 全部清零)"
+last_updated: "2026-08-31 (TD-423 登记: LLM 多 provider + AI 页签分组)"
 ---
 
 # Active Tech Debts (待修 / 进行中)
@@ -11,7 +11,7 @@ last_updated: "2026-08-30 (TD-422 闭环迁移至 fixed.md; active 全部清零)
 > 本文件只包含真正活跃的技术债务（🔧 待修/待办/待决 和 🚧 进行中）。
 > 已关闭条目（✅ FIXED / ❌ WONTFIX / ❌ INVALIDATED / ❌ EVALUATED）已迁移到 `fixed.md` 或 `wontfix.md`。
 >
-> **状态**: ✅ 全部闭环 (TD-422 已迁移至 fixed.md, 2026-08-30)
+> **状态**: 🔧 1 项待修 (TD-423, 2026-08-31 登记; TD-415~422 已闭环)
 
 ## TD 处理顺序 (2026-07-18 spec-26 强化)
 
@@ -45,6 +45,21 @@ last_updated: "2026-08-30 (TD-422 闭环迁移至 fixed.md; active 全部清零)
 - **验证标准**: <how to verify the fix>
 - **何时修**: <when to fix>
 -->
+
+---
+
+## TD-423: LLM 多服务商 Provider 配置缺失 + AI 页签分组混乱 (🔧 待修)
+
+- **状态**: 🔧 待修
+- **优先级**: P1
+- **登记时间**: 2026-08-31
+- **来源**: 2026-08-31 用户评估诉求（"API Key 管理应移到 AI 页签 + 评估 AI 页签是否乱 + 对照开源 IDE 多服务商 key 加载"）— 评估完成, 结论登记
+- **症状**: ① `settings.LLMConfig` 为**单条**模型, 前端 AiConfigPage 虽有 provider 预设 (openai/deepseek/qwen/ollama/custom) 但同一时间只能存一个 provider, 切换即覆盖 api_key — 无法多服务商并存; ② AI 页签 8 子页平铺 (assistant/qa/anomaly/log-analysis/skill-editor/skill-market/config/usage) 横跨 4 维度无分组, 侧边栏显"乱"; ③ `assistant`(LangGraph Agent) 与 `qa`(RAG QASession) 两个对话入口并存, 历史重叠
+- **根因**: LLMConfig 早期按"单活配置"设计, 未随多 provider 需求演进; AI 侧边栏按功能演进平铺, 未做信息架构分组; 对话产品历史上有 Agent/QA 两条独立实现路径
+- **影响**: 用户换服务商需重填 key; 无法"一处管理多 key + 按用途激活"（VS Code BYOK / Continue.dev 等开源标准做法）; AI 页签认知负担高
+- **修复方案**: 对齐开源两级结构 (Provider[apiKey/baseUrl] → Model[], 集中管理 + 按用途激活 + 每 provider 连通测试): ① LLMConfig 升级为多行/多 provider（或新 LLMProvider 模型 + 迁移）; ② AI 侧边栏分 4 组 (对话/分析/Skill/配置运维); ③ assistant/qa 归一做 N151 架构评估（LangGraph Agent vs QASession 取舍）
+- **验证标准**: 可同时配置 ≥2 个 provider 且互不覆盖; 各 provider 可独立 test 连通 + 一键切换激活; AI 侧边栏分组后导航清晰; (对话归一见独立评估)
+- **何时修**: 用户确认推进时（2026-08-31 已确认"仅评估暂不动"）; 触发点 = 用户明确要落地 AI 多 provider 改造时
 
 ---
 
