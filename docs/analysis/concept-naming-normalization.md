@@ -139,7 +139,7 @@ verified_baseline: >
 | D2 | overview:559,790 | `ChainManager 链式执行` | `StateMachine` 封装 | 名不副实 | P0 |
 | D3 | overview:737 | "Windows + Android + 模拟器" | Android 归入 emulator | 措辞不精确 | P1 ✅ 2026-08-30 已改（device_type∈{windows,emulator}） |
 | D4 | overview:505 | gamestate 列 GameState/GameVersionCheck/GameProfile（评估稿曾误记 GameStateRule） | 已收敛 `game_profile` FK（spec 已归档） | 时序滞后 | 已解 |
-| D5 | （缺章） | 无"线性/链式/循环" | 用户分类口径 | 缺口 | P1 ✅ 2026-08-30（overview §11.7 任务分类章） |
+| D5 | （缺章） | 无"线性/链式/循环" | 用户分类口径 | 缺口 | P1 ✅ 2026-08-30（overview §16.7 任务分类章，原 §11.7 编号冲突已重排） |
 | D7 | overview:121,207（"RotationRule"标签+3 中文类型）/ features:269,317（sequential/random/by_stamina + 松散"4 种策略"） | 文档两处均列 3 种且 **缺失 `by_last_executed`**；代码实际 **4 选**（scheduler/migrations/0001） | 标签≠模型 + 两文档均漏 1 类型 | P1 |
 | D8 | overview:474 vs features:302 | TaskStep / ExecutionStep | `TaskStep`=遗留死模型；`ExecutionStep`=运行期权威（代码核实 MERGE） | 双模型债 | P0 |
 | D9 | overview:496 vs features:526 | BackupRecord / BackupJob | 均无 ORM 模型（ZIP API） | 捏造 | P1 |
