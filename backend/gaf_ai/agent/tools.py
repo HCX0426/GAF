@@ -595,7 +595,7 @@ def _read_raw_screenshot_path(execution, step_index: int) -> str:
     """Look up ``raw_screenshot_path`` for a step from the JSONL log.
 
     The JSONL is a sequence of one-event-per-line JSON objects written
-    by ``agent/src/utils/structured_logger.py``. Its path is stored in
+    by ``worker/src/utils/structured_logger.py``. Its path is stored in
     ``TaskExecution.execution_snapshot['structured_log_path']`` when the
     agent reports results (only readable when agent + backend share a
     filesystem — local dev scenario, same as spec 阶段 3.4).

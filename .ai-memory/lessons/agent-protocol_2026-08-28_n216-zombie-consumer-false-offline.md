@@ -6,7 +6,7 @@ related_files:
   - backend/protocol/consumers.py
   - backend/protocol/services.py
   - backend/workers/agent_runtime.py
-  - agent/src/client/connection.py
+  - worker/src/client/connection.py
 created_by: AI
 priority: high
 n_id: N216

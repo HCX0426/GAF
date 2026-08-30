@@ -177,7 +177,7 @@ def check_i1_large_files(repo_root: Path, thresholds: dict) -> list[Issue]:
     Skips:
         - Auto-generated files (*.generated.ts) — large by design, tracked in tsconfig
         - __pycache__ / node_modules / .venv / venv / debug dirs
-        - agent/debug/ (runtime debug output, not source)
+        - worker/debug/ (runtime debug output, not source)
         - exclude_files (fnmatch patterns, matched against repo-relative posix path)
           — deliberately kept-large files (e.g. test_agent.py/test_scheduler.py merged
           by design, TD-365 exclusion a3e65c08)
@@ -187,7 +187,7 @@ def check_i1_large_files(repo_root: Path, thresholds: dict) -> list[Issue]:
     per_dir = cfg.get("per_dir", {})
     exclude_files = cfg.get("exclude_files", [])
     skip_dir_parts = {"__pycache__", "node_modules", ".venv", "venv", "debug"}
-    scan_dirs = ["backend", "frontend/src", "agent/src", "scripts"]
+    scan_dirs = ["backend", "frontend/src", "worker/src", "scripts"]
 
     issues: list[Issue] = []
     for scan_dir in scan_dirs:
@@ -239,7 +239,7 @@ def check_n1_empty_dirs(repo_root: Path, thresholds: dict) -> list[Issue]:
         - .git, .cache, node_modules, __pycache__, .venv, venv dirs
         - .trash (already-garbage-collected staging area)
         - MagicMock/ (test mock side-effect dirs, not real code)
-        - agent/debug/ (runtime debug output, not source)
+        - worker/debug/ (runtime debug output, not source)
         - .gitkeep / .keep / __init__.py (intentional empty files)
         - .lock files (intentional empty lock files)
         - Dirs containing only .gitkeep (intentional placeholders)

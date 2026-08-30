@@ -5,7 +5,7 @@
 - "写吧，然后开始" — 用户授权按 §7.1 顺序开始执行；P1 = A 批（删死代码 `graph.py` + 文档归一）。
 
 ## N151 5 步法评估
-1. **架构盘点**: `agent/src/engine/graph.py` 为 DAG 并行执行模块，全仓生产 import=0（仅 `agent/tests/test_pipeline_graph.py` 引用），属未接线死代码；`TaskDispatcher` 为 concurrency-design.md 画框幽灵符号（无对应类）；`GafDaemon`/`gaf_daemon`/`gaf_services` 三渲染；`TraceSpan` 模型早已删除（残骸仅存于迁移文件/注释/归档文档，无功能影响）。
+1. **架构盘点**: `worker/src/engine/graph.py` 为 DAG 并行执行模块，全仓生产 import=0（仅 `agent/tests/test_pipeline_graph.py` 引用），属未接线死代码；`TaskDispatcher` 为 concurrency-design.md 画框幽灵符号（无对应类）；`GafDaemon`/`gaf_daemon`/`gaf_services` 三渲染；`TraceSpan` 模型早已删除（残骸仅存于迁移文件/注释/归档文档，无功能影响）。
 2. **识别反模式**: 文档指向不存在/未接线的代码（`graph.py` DAG 执行、`TaskDispatcher` 框）属"幽灵符号/死路径"反模式，误导读者。
 3. **备选方案**: A) 删除死代码 + 去幽灵框（本 spec） B) 保留 graph.py 并接线 DAG 执行（超出范围，拒绝） C) 仅文档标注不删代码（留债，拒绝）。
 4. **拒绝反模式**: 拒绝 B（DAG 并行执行非当前需求，且生产零引用，接线=过度实现）、C（留死代码债）；选 A。
@@ -22,10 +22,10 @@
 - **总分**: 25（≥19 且领先次优 ≥5 → AI 自决）
 
 ## 关键实施决策
-- **删 `agent/src/engine/graph.py` + `agent/tests/test_pipeline_graph.py`**（D1/OQ-1）：生产零引用，pytest agent/tests 626 passed（pipeline/engine 子集）+ 全量 collect 2048 无 import 错误。
+- **删 `worker/src/engine/graph.py` + `agent/tests/test_pipeline_graph.py`**（D1/OQ-1）：生产零引用，pytest agent/tests 626 passed（pipeline/engine 子集）+ 全量 collect 2048 无 import 错误。
 - **concurrency-design.md:70** `TaskDispatcher` 框 → `dispatch_task`（`AgentSelector` 选 Worker），标注真实入口。
 - **GafDaemon 三渲染**：文档已区分 `GafDaemon`(权威名)/`gaf_daemon.py`(实现)/`gaf_services.ps1`(Windows 兼容层)，无需改动即一致。
-- **图执行文档归一**：overview §十 树移除 `graph.py` 行；optimal-solution #11 改指 `parser.py`(PipelineGraph) 并注 DAG 并行未接线；dispatch-flow #609 注 `ParallelExecutor` 原在 `agent/src/engine/graph.py`（OQ-1 已删）。
+- **图执行文档归一**：overview §十 树移除 `graph.py` 行；optimal-solution #11 改指 `parser.py`(PipelineGraph) 并注 DAG 并行未接线；dispatch-flow #609 注 `ParallelExecutor` 原在 `worker/src/engine/graph.py`（OQ-1 已删）。
 - **TraceSpan**：复核仅存于迁移文件/注释/归档文档，无功能影响，按"不碰 migration"原则不改动（已记入 spec P4 备注）。
 - **环境坑**：PowerShell `git commit -m` 不填充 `COMMIT_EDITMSG`，`[skip-doc-sync]` 令牌读不到 → 用 `GAF_SKIP_DOC_SYNC=1` 环境变量跳过 doc-code-sync 硬阻断（R4 为删除死代码，引用均为描述删除本身/AI 模块 `graph.py`，属有意保留）。
 

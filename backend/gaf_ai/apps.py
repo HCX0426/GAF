@@ -10,7 +10,7 @@ class GafAiConfig(AppConfig):
     """AI app — LLM Router + RAG + LangGraph Agent.
 
     Renamed from ``ai`` to ``gaf_ai`` (TD-116) to eliminate the top-level
-    package name collision with ``agent/src/ai/``. The ``db_table`` of each
+    package name collision with ``worker/src/ai/``. The ``db_table`` of each
     model is preserved with its original ``ai_*`` prefix so no DB schema
     migration is needed — only the ``app_label`` changes.
     """

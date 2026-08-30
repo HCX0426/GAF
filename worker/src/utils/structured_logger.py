@@ -125,7 +125,7 @@ def _resolve_mirror_path(main_path: str) -> str | None:
     Mirror layout (嵌套结构, 2026-07-29):
         ``<agent_cwd>/debug/<YYYYMMDD>/<safe_task_name>/<HHMMSS_suffix>/structured.jsonl``
     — 保留归一化目录的三层嵌套结构, 让 agent 本地镜像与归一化目录布局一致,
-      用户在 agent/debug/ 下浏览也能按日期→pipeline 分组.
+      用户在 worker/debug/ 下浏览也能按日期→pipeline 分组.
 
     旧扁平格式兼容: ``<agent_cwd>/debug/<exec_dir_basename>/structured.jsonl``.
 

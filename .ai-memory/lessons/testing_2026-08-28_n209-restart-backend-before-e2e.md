@@ -4,7 +4,7 @@ symptom: [stale-service, backend-not-restarted, fake-green, e2e-false-pass, stal
 solution: 改动 backend/agent 代码后，跑 E2E 前必须先确认对应服务已加载新代码（重启 Daphne/Celery/agent）；"部分入口成功"可能是旧代码恰兼容，不是新代码验证通过
 related_files:
   - backend/tasks/tasks.py
-  - agent/src/client/handler.py
+  - worker/src/client/handler.py
 created_by: AI
 priority: high
 n_id: N209

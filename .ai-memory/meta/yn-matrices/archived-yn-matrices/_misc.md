@@ -74,7 +74,7 @@ source: Merge of _concurrency.md + _browser-automation.md + _control-message-rou
 **Y/N 检查表**:
 | # | 检查项 | Y/N | 验证 |
 |:-:|--------|:---:|------|
-| 1 | 热循环（每秒/每帧调用）内是否构造 `ctypes.CDLL(path)` 实例？ | Y=有风险 | `grep -rn "ctypes.CDLL" agent/src/` 看是否在循环路径 |
+| 1 | 热循环（每秒/每帧调用）内是否构造 `ctypes.CDLL(path)` 实例？ | Y=有风险 | `grep -rn "ctypes.CDLL" worker/src/` 看是否在循环路径 |
 | 2 | 热循环内是否 `new` 包含 native 句柄的对象（CDLL/COM/Win32 handle）？ | Y=有风险 | 看构造函数是否调 `LoadLibrary`/`CoCreateInstance`/`CreateFile` |
 | 3 | native 对象方法是否访问 vtable/函数指针？ | Y=有风险 | vtable 指针在 DLL unload 后失效 → ACCESS_VIOLATION |
 | 4 | 是否有 `LoadLibrary`/`dlopen` 在循环内重复调用？ | Y=有风险 | 必须移到模块级单例初始化 |
@@ -130,8 +130,8 @@ def _capture_ldopengl(self):
 **关联**:
 - `.ai-memory/lessons/N146-ldopengl-singleton-ctypes-hot-loop.md` (L1 已升级)
 - `.ai-memory/summaries/architecture-mistakes.md` N146 条目
-- `agent/src/platforms/windows/ldopengl.py` (`get_ldopengl_capture`, `_LDOPENGL_LOCK`, `_LDOPENGL_CAPTURE_INSTANCE`)
-- `agent/src/devices/adb/device.py` (`_capture_ldopengl`)
+- `worker/src/platforms/windows/ldopengl.py` (`get_ldopengl_capture`, `_LDOPENGL_LOCK`, `_LDOPENGL_CAPTURE_INSTANCE`)
+- `worker/src/devices/adb/device.py` (`_capture_ldopengl`)
 - TD-011 (tech-debt/fixed.md ✅ FIXED), C-015 (completed-features.md)
 - commit: `-` (代码) + `-` (文档)
 
@@ -304,7 +304,7 @@ const stopStream = useCallback(() => {
 
 ### ㉛ N186/N187 agent 进程管理 + venv 依赖漂移 Y/N 矩阵 (2026-07-23 BD2 测试暴露)
 
-> **N186 (Active, 代码层)**: agent 独立进程 (`agent/src/__main__.py`) 无 PID 文件锁, 手动 `python -m src` 启动会重复进程; 与 backend 端 `agent_runtime.py` (TD-217) 是两个独立东西, 互补不重叠
+> **N186 (Active, 代码层)**: agent 独立进程 (`worker/src/__main__.py`) 无 PID 文件锁, 手动 `python -m src` 启动会重复进程; 与 backend 端 `agent_runtime.py` (TD-217) 是两个独立东西, 互补不重叠
 > **N187 (Active, 部署层)**: venv gaf-agent 与 conda gaf env 双环境隔离是官方设计 (opencv headless vs full), 但两环境都需要装的依赖 (rapidocr-onnxruntime) 必须在 agent/requirements.txt 与 backend/requirements/base.txt 同步; 懒加载掩盖缺失
 
 **同根因家族**: N154/N155 (黑屏家族, backend 自启 agent 场景) + N186 (agent 自身单例锁) + N187 (venv 依赖漂移) — 同源 (agent 启动流程不完善), 但代码层根因不同

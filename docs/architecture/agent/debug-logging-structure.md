@@ -521,8 +521,8 @@ cv2.imshow("debug", img)
 - [坐标转换全链路](./coordinate-transform-pipeline.md) — 每次坐标转换的代码位置与公式
 - `docs/business/devices/dpi-coordinate.md` — DPI 坐标系的业务层面说明
 - `env-hardrules-contextual.md` N192 — 双调试视角硬约束
-- `agent/src/utils/structured_logger.py` — JSONL 日志写入器实现
-- `agent/src/utils/debug_image_saver.py` — 标注截图生成器实现
+- `worker/src/utils/structured_logger.py` — JSONL 日志写入器实现
+- `worker/src/utils/debug_image_saver.py` — 标注截图生成器实现
 - `backend/gaf_core/task_logger.py` — backend BackendTaskLogger 实现
 - `backend/gaf_core/frontend_logger.py` — backend FrontendConsoleLogger 实现
 

@@ -333,7 +333,7 @@ if (Test-Path $BackendReq) {
 }
 
 # agent 依赖
-$AgentReq = "$ProjectRoot\agent\requirements.txt"
+$AgentReq = "$ProjectRoot\worker\requirements.txt"
 if (Test-Path $AgentReq) {
     Write-Log "正在安装 agent 依赖 (统一到 conda gaf 环境)..."
     & $GafEnvPython -m pip install --cache-dir $PipCacheDir -r $AgentReq
@@ -343,7 +343,7 @@ if (Test-Path $AgentReq) {
         Write-Log "agent 依赖安装完成"
     }
 } else {
-    Write-Log "未找到 agent/requirements.txt，跳过" "WARN"
+    Write-Log "未找到 worker/requirements.txt，跳过" "WARN"
 }
 
 # frontend 依赖

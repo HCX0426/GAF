@@ -601,7 +601,7 @@ class WindowsScreenshotHandler(PlatformScreenshotHandler):
     def capture(self, target: str, method: str = '') -> ScreenshotResult:
         # BitBlt / PrintWindow / DXGI (支持 hwnd crop, TD-124)
         # backend WGC mock 已删除 (TD-125), _capture_wgc delegate 到 PrintWindow
-        # agent 端 agent/src/platforms/windows/wgc.py 保留真实 WGC 实现
+        # agent 端 worker/src/platforms/windows/wgc.py 保留真实 WGC 实现
         ...
 
 # device_bridge/discovery/windows.py — Windows 设备发现实现

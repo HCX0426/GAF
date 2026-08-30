@@ -98,7 +98,7 @@ last_updated: 2026-08-23 (TD-391 重编号闭合)
 - **登记时间**: 2026-07-20
 - **评估时间**: 2026-07-20 (spec-39)
 - **来源**: spec-53 commit (`-`) 后 L3-1 轻量扫描 [B] 类 (维度 ② 代码层)
-- **症状**: `agent/src/utils/coord_transformer.py:114` TODO 注释 "replace with proper per-monitor detection using MonitorFromWindow + GetMonitorInfo when fullscreen support lands"
+- **症状**: `worker/src/utils/coord_transformer.py:114` TODO 注释 "replace with proper per-monitor detection using MonitorFromWindow + GetMonitorInfo when fullscreen support lands"
 - **评估结论**:
   - 当前实现用 `display_builder` 比较 client rect 设置 `display_id`, 在单显示器 + 多显示器窗口化场景下工作正常
   - 多显示器 fullscreen 场景 (窗口 fullscreen 在副屏) 坐标转换可能不准 — 但这是 BD2-AUTO 也未完全解决的边界场景
@@ -106,7 +106,7 @@ last_updated: 2026-08-23 (TD-391 重编号闭合)
   - 该 TODO 是 "when fullscreen support lands" 触发条件, 不是 "现在就修"
 - **wontfix 理由**: 当前实现工作; 多显示器 fullscreen 是后续 feature (不在当前 agent scope); 该 TODO 是 feature 触发条件而非 bug
 - **重新开放条件**: 当 agent 支持 multi-monitor fullscreen 时 (独立 feature spec), 同步实现 per-monitor detection
-- **evidence**: spec-39 审计 (`grep "TODO" agent/src/utils/coord_transformer.py` 命中 2 处)
+- **evidence**: spec-39 审计 (`grep "TODO" worker/src/utils/coord_transformer.py` 命中 2 处)
 - **commit**: spec-39
 
 ---
@@ -240,7 +240,7 @@ last_updated: 2026-08-23 (TD-391 重编号闭合)
 - **优先级**: P2
 - **登记时间**: 2026-07-11
 - **评估时间**: 2026-07-13
-- **症状**: `agent/src/client/handler.py:729` 截图流循环 1s 间隔，遍历所有设备调用 `device.capture()`。当 ldopengl 不可用时 fallback 到 `adb exec-out screencap`，每秒 N 个 subprocess（N=设备数）
+- **症状**: `worker/src/client/handler.py:729` 截图流循环 1s 间隔，遍历所有设备调用 `device.capture()`。当 ldopengl 不可用时 fallback 到 `adb exec-out screencap`，每秒 N 个 subprocess（N=设备数）
 - **根因**: 截图流设计为实时性需求（1s 帧间隔），但未考虑 ADB subprocess fallback 的开销
 - **影响**: 多设备时形成 subprocess storm，与 N154 同类反模式
 - **评估结论**: N154 修复时已加 ThreadPoolExecutor 并行优化（`max_workers = min(4, len(devices))`，最多 4 个并行 subprocess）。ADBDevice 降级链优先用原生 API（nemu→scrcpy→DroidCast→u2），ADB screencap 是最后手段。风险从"N 个 subprocess/秒"降低到"最多 4 个 subprocess/秒"，可接受。如果原生 API 不可用，应修复环境配置而非降低帧率。
@@ -336,9 +336,9 @@ last_updated: 2026-08-23 (TD-391 重编号闭合)
 - **来源**: N166 L3-1 扫描 — 月度健康检查 [I3] Ruff errors 批量修复后剩余
 - **修复总结 (2026-07-18)**:
   - 原 152 errors → 修复后剩余 60 errors (减少 92 处, 60.5%)
-  - **pyproject.toml 配置**: 加 `[tool.ruff.lint.per-file-ignores]` 段 — `"__init__.py" = ["F401"]` (re-export 豁免) + `"agent/src/recognition/cache.py" = ["F401"]` (cv2 try/except 检测豁免)
+  - **pyproject.toml 配置**: 加 `[tool.ruff.lint.per-file-ignores]` 段 — `"__init__.py" = ["F401"]` (re-export 豁免) + `"worker/src/recognition/cache.py" = ["F401"]` (cv2 try/except 检测豁免)
   - **ruff --fix --unsafe-fixes 自动修复 56 处**: I001 (unsorted-imports) / UP007 (Union → X|Y) / UP031 (printf-string) / UP035 (typing.List → list) / F401 (dccache.py 未用 Any) / F841 (unused-variable, 12 处) / B905 (zip-without-explicit-strict, 4 处) / C408 (unnecessary-collection-call, 1 处) / SIM102/SIM108/SIM118 等
-  - **手动修复 7 处**: ① `agent/src/recognition/ocr/__init__.py` 删除未用 `from typing import List`; ② `agent/src/engine/target.py` 把 `Union[...]` 改为 `X | Y` (PEP 604); ③ `agent/src/utils/screenshot_diagnostic.py:42,44` 加 `# noqa: E402`; ④ `agent/tests/test_engine_structured_log_integration.py:20,21` 加 `# noqa: E402`
+  - **手动修复 7 处**: ① `worker/src/recognition/ocr/__init__.py` 删除未用 `from typing import List`; ② `worker/src/engine/target.py` 把 `Union[...]` 改为 `X | Y` (PEP 604); ③ `worker/src/utils/screenshot_diagnostic.py:42,44` 加 `# noqa: E402`; ④ `agent/tests/test_engine_structured_log_integration.py:20,21` 加 `# noqa: E402`
 - **剩余 60 处 wontfix 分类** (ruff check backend/ agent/ --statistics 2026-07-18):
   - **命名规范类 (43 处)** — 改名会破坏现有 API 契约 / 前端字段映射 / 第三方对接:
     - 23 N806 (non-lowercase-variable-in-function) — 多为 DRF serializer 字段 / Win32 API 常量映射
@@ -535,7 +535,7 @@ last_updated: 2026-08-23 (TD-391 重编号闭合)
 - **优先级**: P3
 - **登记时间**: 2026-07-17
 - **来源**: N166 L3-1 第 2 轮评估 ⑨集成层
-- **症状**: `agent/src/client/handler.py` 等处仍用裸字符串 `'task.result'` / `'agent.heartbeat'` 而非引用 `protocol/constants.py` MessageType
+- **症状**: `worker/src/client/handler.py` 等处仍用裸字符串 `'task.result'` / `'agent.heartbeat'` 而非引用 `protocol/constants.py` MessageType
 - **根因**: agent (Python) 与 backend (Python) 共享 protocol 常量未做到位
 - **影响**: msg_type 漂移风险
 - **修复方案**: 评估 agent 是否能 import backend.protocol.constants (或提取 shared 包)；或 codegen

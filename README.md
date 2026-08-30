@@ -29,7 +29,7 @@ GAF/
 
 | 目录 | 复数/单数 | 职责 | 是否 Django app | 典型文件 |
 |------|----------|------|----------------|----------|
-| `GAF/agent/` | 单数 | **独立的 Agent 进程**。实际执行设备控制（截图/输入）、Pipeline 任务、录制回放。通过 WebSocket 与 backend 通信。 | 否 | `agent/src/devices/`, `agent/src/engine/` |
+| `GAF/agent/` | 单数 | **独立的 Agent 进程**。实际执行设备控制（截图/输入）、Pipeline 任务、录制回放。通过 WebSocket 与 backend 通信。 | 否 | `worker/src/devices/`, `worker/src/engine/` |
 | `GAF/backend/device_bridge/` | 单数 | **后端内部的 agent 辅助模块**。负责设备发现、模拟器生命周期、MAA 转换、平台注册等后台逻辑。 | 否（辅助包） | `backend/device_bridge/discovery/`, `backend/device_bridge/handlers/` |
 | `GAF/backend/agents/` | 复数 | **Django app**。管理 Agent/Device 数据模型、REST API、WebSocket consumers、迁移文件。 | 是 | `backend/agents/models.py`, `backend/agents/views.py` |
 

@@ -17,16 +17,16 @@ related_files:
   - backend/tasks/agent_selector.py
   - backend/tasks/migrations/0049_chain_to_pipeline_unification.py
   - backend/gaf_ai/tests/test_agent.py
-  - agent/src/engine/parser.py
-  - agent/src/engine/node.py
-  - agent/src/engine/target.py
-  - agent/src/engine/context.py
-  - agent/src/engine/nodes/ocr.py
-  - agent/src/engine/nodes/template_match.py
-  - agent/src/engine/nodes/click.py
-  - agent/src/platforms/windows/input.py
-  - agent/src/core/result.py
-  - agent/tests/test_ocr.py
+  - worker/src/engine/parser.py
+  - worker/src/engine/node.py
+  - worker/src/engine/target.py
+  - worker/src/engine/context.py
+  - worker/src/engine/nodes/ocr.py
+  - worker/src/engine/nodes/template_match.py
+  - worker/src/engine/nodes/click.py
+  - worker/src/platforms/windows/input.py
+  - worker/src/core/result.py
+  - worker/tests/test_ocr.py
   - docs/specs/archived/2026-07/2026-07-27-execution-path-unification.md
   - .ai-memory/lessons/N182-bug-investigation-three-dimensional-root-cause.md
 ---
@@ -148,7 +148,7 @@ rg "task_definition.*steps.*action" --glob "*test*.py"
 
 ### 10.2 发现的 bug: OCR legacy ROI 路径坐标偏移
 
-**症状**: [ocr.py](file:///d:/code/GAF/agent/src/engine/nodes/ocr.py) legacy `_crop_region` 路径只裁剪图像, 不把 region 偏移传给 `roi_offset_phys`; `transformer is None` 分支 publish `bx + bw/2` 是子图坐标。下游 click 偏移 (偏移量 = region.x/y)。
+**症状**: [ocr.py](file:///d:/code/GAF/worker/src/engine/nodes/ocr.py) legacy `_crop_region` 路径只裁剪图像, 不把 region 偏移传给 `roi_offset_phys`; `transformer is None` 分支 publish `bx + bw/2` 是子图坐标。下游 click 偏移 (偏移量 = region.x/y)。
 
 **修复**: ① legacy 分支 `roi_offset_phys = (region.get('x',0), region.get('y',0))` ② legacy 分支 `best_center_x = int(bx + bw/2) + roi_offset_phys[0]`。
 
@@ -191,7 +191,7 @@ legacy 路径 (无 coord_transformer) 默认 DPI=1.0, physical == logical。修�
 
 **§10.6.1** `BaseDevice.click` docstring 新增坐标系契约段 (Windows 期望 logical / ADB 期望 physical + 跨设备矩阵 + 新 Device 实现要求)。
 
-**§10.6.2** [long_press.py](file:///d:/code/GAF/agent/src/engine/nodes/long_press.py) 新增 `target`/`target_offset` config, 与 ClickNode 对齐 (target 优先于字面量, 支持 `_last_match_pos`/`_anchor_pos`/`${var}`/dict)。`direct_hit`/`multi_swipe`/`multi_touch`/`swipe_until` 保持字面量优先 (多指手势必须显式指定触点, 不适合自动拾取)。
+**§10.6.2** [long_press.py](file:///d:/code/GAF/worker/src/engine/nodes/long_press.py) 新增 `target`/`target_offset` config, 与 ClickNode 对齐 (target 优先于字面量, 支持 `_last_match_pos`/`_anchor_pos`/`${var}`/dict)。`direct_hit`/`multi_swipe`/`multi_touch`/`swipe_until` 保持字面量优先 (多指手势必须显式指定触点, 不适合自动拾取)。
 
 **§10.6.3** sort_select / AnchorNode 是"契约消费者", 假定上游已归一化, 风险在契约未强制校验 (未来可在 publish_match_pos 加 coord_system 标注 + resolve_target 校验)。
 
@@ -283,8 +283,8 @@ legacy 路径 (无 coord_transformer) 默认 DPI=1.0, physical == logical。修�
 
 | 改动 | 文件 | 行为 |
 |-----|------|-----|
-| `CoordType.SUB_IMAGE` 入 enum | `agent/src/utils/coord_transformer.py` | 显式标注子图坐标系 |
-| `_CoordTypeStub.SUB_IMAGE` | `agent/src/utils/adb_coord_transformer.py` | ADB 接口对齐 |
+| `CoordType.SUB_IMAGE` 入 enum | `worker/src/utils/coord_transformer.py` | 显式标注子图坐标系 |
+| `_CoordTypeStub.SUB_IMAGE` | `worker/src/utils/adb_coord_transformer.py` | ADB 接口对齐 |
 | `sub_image_to_full()` 方法 | 两个 coord_transformer.py | 语义化别名 = apply_roi_offset_to_subcoord, 转换显式化 |
 | 4 识别节点替换 + emit_coord_trace | ocr/template_match/feature_match/color_detect.py | 替换调用 + 转换后 emit_coord_trace |
 

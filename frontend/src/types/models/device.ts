@@ -322,6 +322,6 @@ export interface DeviceQueryParams {
  *
  * Coverage: 21 base types + 16 extended types (composite match, advanced
  * input, Maa protocol, neural network, sort_select). Mirrors the agent-side
- * node registry in agent/src/engine/nodes/__init__.py so the frontend editor
+ * node registry in worker/src/engine/nodes/__init__.py so the frontend editor
  * can offer the same node set the backend parser accepts.
  */

@@ -5,7 +5,7 @@
 - B 批为 agent/后端内部改名或仅文档标注，无 API 契约 / DB 迁移 / 前端生成类型冲击。
 
 ## N151 5 步法评估
-1. **架构盘点**: `ChainManager`(`agent/src/engine/chain_manager.py`) 实为 `StateMachine` 封装，名不副实；`task_type="chain"` 已废弃（handler.py TD-362 移除客户端兼容分支，backend ≥ 0049 普及 `state_machine`）；`PerformanceMonitor` 在 `gaf_core`/`agent` 双份定义、文档误称前端 TS（前端仅生成文件注释引用）；`loop_rotation` 与 `GameAccountRotation` 不同抽象层。
+1. **架构盘点**: `ChainManager`(`worker/src/engine/chain_manager.py`) 实为 `StateMachine` 封装，名不副实；`task_type="chain"` 已废弃（handler.py TD-362 移除客户端兼容分支，backend ≥ 0049 普及 `state_machine`）；`PerformanceMonitor` 在 `gaf_core`/`agent` 双份定义、文档误称前端 TS（前端仅生成文件注释引用）；`loop_rotation` 与 `GameAccountRotation` 不同抽象层。
 2. **识别反模式**: `ChainManager` 名不副实（应为 StateMachineEngine）；`PerformanceMonitor` 与前端同名类型歧义；`task_type` 双值（`chain`/`state_machine`）灰区。
 3. **备选方案**: A) `ChainManager`→`StateMachineEngine` + `task_type` 加 `chain`→`state_machine` 别名 shim（本 spec） B) 保留 ChainManager 名（拒绝，名不副实） C) PerformanceMonitor 改名 PerfMonitor（本 spec）。
 4. **拒绝反模式**: 拒绝 B（名实相符更利维护）；选 A/C；`loop_rotation` 按 OQ-6 保留双模型，仅文档标注。
@@ -22,7 +22,7 @@
 - **总分**: 26（≥19 且领先次优 ≥5 → AI 自决）
 
 ## 关键实施决策
-- **`ChainManager`→`StateMachineEngine`**: `agent/src/engine/chain_manager.py`→`state_machine_engine.py`（git mv），类改名；`executor.py` 注册表加主键 `"state_machine"` + 保留 `"chain"` 别名（指向同一实例）；`orchestrator.py` 分发改 `"state_machine"`；`engine/__init__.py` 导出更新；测试 `test_chain_manager.py`→`test_state_machine_engine.py`（16 passed）。
+- **`ChainManager`→`StateMachineEngine`**: `worker/src/engine/chain_manager.py`→`state_machine_engine.py`（git mv），类改名；`executor.py` 注册表加主键 `"state_machine"` + 保留 `"chain"` 别名（指向同一实例）；`orchestrator.py` 分发改 `"state_machine"`；`engine/__init__.py` 导出更新；测试 `test_chain_manager.py`→`test_state_machine_engine.py`（16 passed）。
 - **`PerformanceMonitor`→`PerfMonitor`**: `gaf_core/perf_monitor.py` + `agent/utils/perf_monitor.py` 类改名，7 个引用点（views/signals/system_urls/consumers/pipeline_execution 等）全部替换；`Timer` 保留。py_compile 全过。
 - **`loop_rotation` 文档标注**: `scheduler.md` 明确与 `GameAccountRotation` 互补、OQ-6 保留原名、可选 `rotation_loop_enabled` 改名 NOT DONE。
 - **文档同步**: overview/optimal-solution 引擎层描述更新为 StateMachineEngine；active 架构文档中 `ChainManager` 残留（spec B / 评估稿）为改名描述，有意保留（PowerShell 下用 `GAF_SKIP_DOC_SYNC=1` 跳过 doc-code-sync 对旧路径的 R4）。

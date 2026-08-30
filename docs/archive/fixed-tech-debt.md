@@ -97,8 +97,8 @@ last_updated: "2026-08-28 (TD-412 闭环; TD-413 闭环; TD-414 闭环; 2026-08-
 | [TD-112](#L) | tick_unattended_session device queryset 缺少 device.status 过滤 (✅ FIXED) |
 | [TD-113](#L) | routine.json 文件位置约定 (✅ FIXED — GameProfile.routine_path 字段) |
 | [TD-114](#L) | 前端 DAG editor 节点拖拽创建 (✅ FIXED) |
-| [TD-115](#L) | agent/src/core/orchestrator.py 预存 ruff 40 errors (✅ FIXED) |
-| [TD-116](#L) | backend/core/ + backend/ai/ 与 agent/src/{core,ai}/ 包名冲突 (✅ FIXED) |
+| [TD-115](#L) | worker/src/core/orchestrator.py 预存 ruff 40 errors (✅ FIXED) |
+| [TD-116](#L) | backend/core/ + backend/ai/ 与 worker/src/{core,ai}/ 包名冲突 (✅ FIXED) |
 | [TD-117](#L) | 3 个 agent test 文件引用已删除的类/模块 (✅ FIXED) |
 | [TD-118](#L) | backend/ 5 处预存 ruff errors (✅ FIXED) |
 | [TD-120](#L) | summaries/architecture/ 11 子文件编码乱码 + 未被索引 (✅ FIXED — 撤销拆分, 恢复单一权威源) |
@@ -432,8 +432,8 @@ last_updated: "2026-08-28 (TD-412 闭环; TD-413 闭环; TD-414 闭环; 2026-08-
   - `backend/gaf_ai/tests/test_agent.py` (2434 行)
   - `backend/scheduler/tests/test_scheduler.py` (2885 行)
   - ~~`frontend/src/types/models.ts` (1926 行, >1500)~~ ✅ 已拆 (s37, -: models/ 目录 10 域文件 + index.ts barrel, 引用方零改动)
-  - ~~`agent/src/devices/adb/device.py` (1976 行)~~ ✅ 已拆 (s36, -: adb_constants + ADBCaptureMixin/ADBInputMixin/ADBLifecycleMixin, 主文件 11 行)
-  - `agent/src/engine/pipeline_engine.py` (2121 行) — ✅ 已拆 (s35, -: pipeline_models/utils/lifecycle/execution/node_execution/recovery 7 模块, 主文件 51 行)
+  - ~~`worker/src/devices/adb/device.py` (1976 行)~~ ✅ 已拆 (s36, -: adb_constants + ADBCaptureMixin/ADBInputMixin/ADBLifecycleMixin, 主文件 11 行)
+  - `worker/src/engine/pipeline_engine.py` (2121 行) — ✅ 已拆 (s35, -: pipeline_models/utils/lifecycle/execution/node_execution/recovery 7 模块, 主文件 51 行)
   - ~~`scripts/bootstrap/sync_ai_memory.py` (1384 行, >1000)~~ ✅ 已拆 (s38, -: ai_memory_sync/ collect + mtime_cache + counters 3 域, 主文件 910 行)
   - ~~`scripts/bootstrap/sync_skills.py` (1064 行)~~ ✅ 已拆 (s39, -: skill_sync/ constants + io_utils + checks + changelog + timestamps 5 域, 主文件 457 行)
   - ~~`scripts/tests/test_doc_health_check.py` (1279 行)~~ ✅ 已拆 (s40, -: 10 平铺 test_doc_health_<dim>.py 文件, 各 < 300 行, 62 tests 全数保留)
@@ -482,7 +482,7 @@ last_updated: "2026-08-28 (TD-412 闭环; TD-413 闭环; TD-414 闭环; 2026-08-
 - **登记时间**: 2026-08-19
 - **修复时间**: 2026-08-19
 - **来源**: L3-1 扫描（s42, 架构层③）
-- **症状**: (1) optimal-solution.md:349 引用 `backend/agent/handlers/verify.py`（实际 backend/device_bridge/handlers/verify.py）；(2) overview.md §10.1 引用 `agent/src/core/chain.py`（实际 agent/src/engine/chain_manager.py）+ `agent/src/devices/worker_pool.py`（实际 agent/src/core/worker_pool.py）；(3) features-overview.md 仍列已移除的 tracing//metrics//i18n/ 3 app + L50 心跳 "15s/30s" vs 实际 10s/30s
+- **症状**: (1) optimal-solution.md:349 引用 `backend/agent/handlers/verify.py`（实际 backend/device_bridge/handlers/verify.py）；(2) overview.md §10.1 引用 `worker/src/core/chain.py`（实际 worker/src/engine/chain_manager.py）+ `worker/src/devices/worker_pool.py`（实际 worker/src/core/worker_pool.py）；(3) features-overview.md 仍列已移除的 tracing//metrics//i18n/ 3 app + L50 心跳 "15s/30s" vs 实际 10s/30s
 - **根因**: 架构文档未随 backend app 迁移/心跳参数调整同步（N112 四步配套违反）
 - **影响**: AI/用户按文档找文件失败；心跳数值误导排障
 - **修复方案**: 10 处文本修正（optimal-solution 2 + overview 2 + features-overview 6）
@@ -886,7 +886,7 @@ last_updated: "2026-08-28 (TD-412 闭环; TD-413 闭环; TD-414 闭环; 2026-08-
 - **根因**: `_rotate_if_needed` 日期变化时 close 旧流后 `_open_today()` 前异常/并发 → `_stream` 保持 None, 后续 emit 无守卫
 - **修复**: ① 轮转压缩失败 (OSError) 不阻塞 (`try-except` 保留原文件继续开新文件); ② `emit` 内 `if self._stream is None: self._open_today()` 自愈重建
 - **验证**: `agent/tests/test_log_rotation.py` 2 passed (旧文件缺失轮转自愈 + close 后重建自愈); ruff 通过
-- **关联**: agent/src/utils/log_rotation.py, agent/tests/test_log_rotation.py
+- **关联**: worker/src/utils/log_rotation.py, agent/tests/test_log_rotation.py
 
 ## TD-416: 消息帧日志 MessageFrameLog 无生产写入点 (✅ FIXED — 2026-08-29)
 

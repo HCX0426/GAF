@@ -40,6 +40,7 @@ def test_rotation_self_heal_when_old_file_missing() -> None:
             handler._current_log_path = str(day_dir / "missing-old.log")  # 文件不存在
 
             logger = logging.getLogger("td415_test")
+            logger.setLevel(logging.DEBUG)
             logger.handlers = [handler]
             logger.info("hello after rotation")
             # 必须成功写入当天文件
@@ -60,6 +61,7 @@ def test_emit_rebuilds_stream_after_close() -> None:
         try:
             handler.close()  # close() 会把 _stream 置 None
             logger = logging.getLogger("td415_reopen")
+            logger.setLevel(logging.DEBUG)
             logger.handlers = [handler]
             logger.info("after close self-heal")
             today = datetime.now().strftime("%Y%m%d")

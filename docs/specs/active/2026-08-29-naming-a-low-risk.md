@@ -19,7 +19,7 @@ A 批为**零 API 契约 / 零 DB 迁移 / 零前端类型**冲击的改动（�
 
 | 项 | 现状 | 目标 | 依据 |
 |----|------|------|------|
-| `agent/src/engine/graph.py` | DAG 执行+工具，仅测试 import，**生产零引用** | 删除文件 + 测试 | D1/OQ-1 |
+| `worker/src/engine/graph.py` | DAG 执行+工具，仅测试 import，**生产零引用** | 删除文件 + 测试 | D1/OQ-1 |
 | `TaskDispatcher` 文档框 | concurrency-design.md:70 画框，无对应类 | 去框 → `dispatch_task` | D18/X1 |
 | `GafDaemon`/`gaf_daemon`/`gaf_services` | 三渲染 | `GafDaemon` 权威名；`.py` 实现；`.ps1` 兼容层 | D19 |
 | `TraceSpan` 代码残骸 | 模型已删，43 处残留引用（注释/import） | 清理残骸 | D14 |
@@ -44,7 +44,7 @@ A 批为**零 API 契约 / 零 DB 迁移 / 零前端类型**冲击的改动（�
 
 #### Task P1.1: 删 graph.py
 
-- `agent/src/engine/graph.py` + 对应测试（`agent/tests/...graph*`）删除。
+- `worker/src/engine/graph.py` + 对应测试（`worker/tests/...graph*`）删除。
 - grep 确认无生产 import（评估稿：外部生产 import=0）；若有测试 import，一并迁移/删除。
 - `docs/architecture/` 中"DAG 执行"表述改指 `PipelineGraph`(`parser.py`)。
 
@@ -62,7 +62,7 @@ A 批为**零 API 契约 / 零 DB 迁移 / 零前端类型**冲击的改动（�
 
 ## 5. 测试与验收
 
-- `conda run -n gaf python -m pytest agent/tests -q` 通过（graph 相关已移）。
+- `conda run -n gaf python -m pytest worker/tests -q` 通过（graph 相关已移）。
 - 文档链接/构建检查通过；grep `TaskDispatcher`/`TraceSpan` 残留按需清零（TraceSpan 代码残骸清零）。
 - 评估稿标记 A 批完成。
 

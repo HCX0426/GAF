@@ -37,7 +37,7 @@ maintainer: auto
 symptom: [popup:agent:duplicate, 弹窗, agent 重复]
 solution: 文件锁 + SW_HIDE
 related_files:
-  - agent/src/client/connection.py
+  - worker/src/client/connection.py
 created_by: AI
 priority: high
 ---

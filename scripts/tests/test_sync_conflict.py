@@ -40,10 +40,10 @@ class ExtractSourceHintTests(unittest.TestCase):
         self.assertEqual(sync_ai_memory._extract_source_hint(body), "backend/foo.py")
 
     def test_extracts_glob_path(self):
-        body = "<!-- source: agent/src/engine/nodes/*.py -->\nBody"
+        body = "<!-- source: worker/src/engine/nodes/*.py -->\nBody"
         self.assertEqual(
             sync_ai_memory._extract_source_hint(body),
-            "agent/src/engine/nodes/*.py",
+            "worker/src/engine/nodes/*.py",
         )
 
     def test_returns_none_when_missing(self):

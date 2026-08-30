@@ -6225,7 +6225,7 @@ export interface paths {
          *     POST / action=detect   — Detect config version (explicit __config_version__ + heuristic)
          *     POST / action=migrate  — Migrate config from detected/explicit version to target version
          *
-         *     Reuses agent/src/core/config_migrator.py (Alas-style chained migration with backup/rollback).
+         *     Reuses worker/src/core/config_migrator.py (Alas-style chained migration with backup/rollback).
          *     Stateless: each call creates a fresh ConfigMigrator instance; migration_log is returned
          *     in the response so the frontend can display the audit trail.
          */
@@ -6239,7 +6239,7 @@ export interface paths {
          *     POST / action=detect   — Detect config version (explicit __config_version__ + heuristic)
          *     POST / action=migrate  — Migrate config from detected/explicit version to target version
          *
-         *     Reuses agent/src/core/config_migrator.py (Alas-style chained migration with backup/rollback).
+         *     Reuses worker/src/core/config_migrator.py (Alas-style chained migration with backup/rollback).
          *     Stateless: each call creates a fresh ConfigMigrator instance; migration_log is returned
          *     in the response so the frontend can display the audit trail.
          */

@@ -219,11 +219,11 @@ _SCHEMA_WHITELIST = frozenset({
     "backend/pipeline/recording_converter.py",
     "backend/pipeline/schema.py",
     "frontend/src/utils/schemaValidator.ts",
-    "agent/src/engine/parser.py",
+    "worker/src/engine/parser.py",
     "backend/pipeline/tests/test_validators_nested.py",
     "backend/tasks/tests/test_agent_selector.py",
     # config.max_wait legacy 兼容层
-    "agent/src/engine/nodes/wait.py",
+    "worker/src/engine/nodes/wait.py",
     # node.type @deprecated 兼容层
     "frontend/src/types/models.ts",
     "frontend/src/pages/Tasks/Editor.tsx",
@@ -261,7 +261,7 @@ CODE_RULES: list[CodeRule] = [
     CodeRule(
         id="R001", ref="N182/N183", severity="error",
         description="静默吞错 (裸/空 except)",
-        path_includes=("agent/src/**", "backend/**"),
+        path_includes=("worker/src/**", "backend/**"),
         path_excludes=("**/migrations/**",),
         check=_check_silent_except,
     ),
@@ -274,7 +274,7 @@ CODE_RULES: list[CodeRule] = [
     CodeRule(
         id="R003", ref="N197", severity="warn",
         description="硬编码 /api/v2 路径",
-        path_includes=("agent/src/**",),
+        path_includes=("worker/src/**",),
         check=_check_hardcoded_api_v2,
     ),
     CodeRule(
@@ -287,7 +287,7 @@ CODE_RULES: list[CodeRule] = [
     CodeRule(
         id="R005", ref="N191", severity="warn",
         description="节点 schema 旧字段残留",
-        path_includes=("agent/src/**", "backend/**"),
+        path_includes=("worker/src/**", "backend/**"),
         check=_check_schema_residue,
     ),
 ]

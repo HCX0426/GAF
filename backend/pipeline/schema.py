@@ -5,7 +5,7 @@ Pipeline graph_data 的 JSON Schema 定义（Draft-07）
 
 # ALL_NODE_TYPES must cover the union of frontend editor (PipelineNodeType,
 # frontend/src/types/models/pipeline.ts) and agent registry (@register_node,
-# agent/src/engine/nodes/*.py) — cross-layer contract guarded by
+# worker/src/engine/nodes/*.py) — cross-layer contract guarded by
 # scripts/tests/test_pipeline_node_contract.py (s42).
 #
 # Deprecated BD2-AUTO legacy types (no frontend/agent support, kept for

@@ -50,7 +50,7 @@ source: docs/analysis/concept-naming-normalization.md §1(Agent→Worker 多行)
 
 #### Task P2.1: 术语注释
 
-- 在 `agents/models.py`(→`workers`)、`agent/src/__main__.py`(→`worker`)、`protocol/consumers.py`(WorkerConsumer) 等加/改注释，显式标注 "Worker = 自动化执行节点；Agent = AI 智能体（见 backend/gaf_ai）"。
+- 在 `agents/models.py`(→`workers`)、`worker/src/__main__.py`(→`worker`)、`protocol/consumers.py`(WorkerConsumer) 等加/改注释，显式标注 "Worker = 自动化执行节点；Agent = AI 智能体（见 backend/gaf_ai）"。
 
 #### Task P3.1: 派生批 G
 

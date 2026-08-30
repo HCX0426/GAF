@@ -4,7 +4,7 @@ symptom: [pipeline:stuck:running, 卡住, 永远运行, stuck, timeout-fail]
 solution: 加超时 + 心跳检测
 related_files:
   - backend/pipeline/views.py
-  - agent/src/engine/pipeline_engine.py
+  - worker/src/engine/pipeline_engine.py
 created_by: AI
 priority: high
 diff_keywords: ["pipeline", "stuck", "running", "timeout", "heartbeat"]

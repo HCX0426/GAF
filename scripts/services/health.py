@@ -39,7 +39,7 @@ from services.log_scan import is_error_line, parse_line_ts
 # ---- 路径常量 (与 gaf_daemon.py 保持一致) ------------------------------------
 GAF_ROOT = Path(__file__).resolve().parent.parent.parent
 BACKEND_DIR = GAF_ROOT / "backend"
-AGENT_DIR = GAF_ROOT / "agent"
+WORKER_DIR = GAF_ROOT / "worker"
 FRONTEND_DIR = GAF_ROOT / "frontend"
 DEBUG_DIR = GAF_ROOT / "debug"
 ENV_FILE = GAF_ROOT / ".env"

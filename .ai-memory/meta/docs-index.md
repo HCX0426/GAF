@@ -237,7 +237,7 @@ generated: 2026-08-28
 
 - [docs/architecture/agent/chain-mode-structured-logging.md](docs/architecture/agent/chain-mode-structured-logging.md) — chain 模式接入 StructuredLogger 的架构决策与多维度分析（已废弃） _(updated 2026-07-27)_
   - `module`: `architecture.agent`
-  - `applies_to_code_paths`: `agent/src/**`
+  - `applies_to_code_paths`: `worker/src/**`
   - `maintainer`: `ai`
   - `doc_last_updated`: `2026-08-05`
   - 方案 C：在 TaskOrchestrator 复用 StructuredLogger（与 PipelineEngine 对称接入）
@@ -245,12 +245,12 @@ generated: 2026-08-28
   - AutoResult 新增 structured_log_path 字段（向后兼容默认空串）
 - [docs/architecture/agent/coordinate-transform-pipeline.md](docs/architecture/agent/coordinate-transform-pipeline.md) — GAF 坐标转换全链路文档，以模板匹配节点为例，从任务开始到点击落地经历的每一次坐标系变换 _(updated 2026-07-31)_
   - `module`: `architecture.agent`
-  - `applies_to_code_paths`: `agent/src/**`
+  - `applies_to_code_paths`: `worker/src/**`
   - `maintainer`: `ai`
   - `doc_last_updated`: `2026-08-21`
 - [docs/architecture/agent/debug-logging-structure.md](docs/architecture/agent/debug-logging-structure.md) — GAF 调试日志记录结构文档，覆盖 agent/backend/frontend 三端 JSONL 结构化日志、系统日志（agent.log/daemon.log/django.log）和标注截图的完整记录时机、字段定义与合理性评估 _(updated 2026-08-09)_
   - `module`: `architecture.agent`
-  - `applies_to_code_paths`: `agent/src/**`
+  - `applies_to_code_paths`: `worker/src/**`
   - `maintainer`: `ai`
   - `doc_last_updated`: `2026-08-25`
 - [docs/business/ai/input-mode-window-wait.md](docs/business/ai/input-mode-window-wait.md) — 输入模式测试 + 窗口后台等待功能设计 — BD2 get_mailbox 点击不生效问题修复方案 _(updated 2026-07-12)_
@@ -260,7 +260,7 @@ generated: 2026-08-28
   - `doc_last_updated`: `2026-08-15`
 - [docs/business/devices/dpi-coordinate.md](docs/business/devices/dpi-coordinate.md) — DPI 坐标系统设计 — 不同 DPI 缩放和分辨率下正确截图/匹配模板/点击目标 _(updated 2026-08-01)_
   - `module`: `business.devices`
-  - `applies_to_code_paths`: `backend/devices/**`, `agent/src/devices/**`
+  - `applies_to_code_paths`: `backend/devices/**`, `worker/src/devices/**`
   - `maintainer`: `ai`
   - `doc_last_updated`: `2026-08-02`
 - [docs/business/tasks/debug-mode-design.md](docs/business/tasks/debug-mode-design.md) — 调试模式设计 — 统一 GAF_DEBUG 环境变量控制所有 app 调试行为 _(updated 2026-08-01)_
@@ -350,7 +350,7 @@ generated: 2026-08-28
   - GameAccountRotation 4 策略 sequential/random/by_stamina/by_last_executed
 - [docs/business/devices/screenshot-optimization.md](docs/business/devices/screenshot-optimization.md) — GAF 截图优化设计 _(updated 2026-07-04)_
   - `module`: `business.devices`
-  - `applies_to_code_paths`: `backend/devices/**`, `agent/src/devices/**`
+  - `applies_to_code_paths`: `backend/devices/**`, `worker/src/devices/**`
   - `maintainer`: `ai`
   - `doc_last_updated`: `2026-07-26`
   - 截图降级链策略

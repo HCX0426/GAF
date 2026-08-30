@@ -179,7 +179,7 @@ def check_i1_large_files(repo_root: Path, thresholds: dict) -> list[Issue]:
         *.py: 1500 lines → P2
     """
     issues = []
-    scan_dirs = ["backend", "frontend/src", "agent/src", "scripts"]
+    scan_dirs = ["backend", "frontend/src", "worker/src", "scripts"]
     default_threshold = thresholds.get("default_lines", 1000)
     per_dir = thresholds.get("per_dir", {})
     
@@ -329,7 +329,7 @@ monthly_checks:
     per_dir:
       "backend": 2000
       "frontend/src": 1500
-      "agent/src": 1500
+      "worker/src": 1500
       "scripts": 1000
   n1_empty:
     skip_dirs: [".git", ".cache", "node_modules", "__pycache__", ".venv", "venv"]

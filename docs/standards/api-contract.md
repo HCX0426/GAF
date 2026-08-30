@@ -176,7 +176,7 @@ Sec-WebSocket-Protocol: bearer.<agent_token>
 ```
 
 **规则**：
-- Agent 默认连接 `ws://127.0.0.1:8000/ws/protocol/agents/`（见 `agent/src/__main__.py`）
+- Agent 默认连接 `ws://127.0.0.1:8000/ws/protocol/agents/`（见 `worker/src/__main__.py`）
 - 鉴权走 `TokenAuthMiddleware`（见 `backend/protocol/middleware.py`）：从 `?token=` query string 或 `Sec-WebSocket-Protocol` 子协议提取 Agent Token
 - Token 经 `hash_token` 后与 `Agent.token_hash` 比对校验
 - 校验失败关闭连接（WebSocket close code 4003）

@@ -1,6 +1,6 @@
 """
 截图 Handler 模块（向后兼容）
-已迁移到 agent.platforms 抽象层，此模块保留以兼容旧代码
+已迁移到 device_bridge.platforms 抽象层，此模块保留以兼容旧代码
 """
 import base64
 import logging

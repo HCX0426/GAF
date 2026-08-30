@@ -17,13 +17,13 @@ last_updated: 2026-07-05
 
 | 项 | 文档声称 | 现实代码 | 状态 |
 |----|----------|----------|------|
-| MonitorThread 守护线程 | 任务执行时启动 | `MonitorThread` 类实现完整 (`agent/src/monitor/manager.py:40-125`) | ✅ 类已实现 |
-| MonitorManager 启动 | Agent 启动时 start | `agent/src/__main__.py:272` 调用 `monitor_manager.start()`（Phase 1 commit `-`）。TD-339 (2026-07-23): `__main__.py` 启动入口已加 `acquire_singleton_lock()` PID 文件锁, 防止重复 agent 进程同时运行 MonitorManager 导致监控事件风暴 | ✅ Phase 1 完成 |
-| 规则热更新 | Server → Agent 下发 | `agent/src/client/handler.py:418` `handle_monitor_rule_update()` + `agent/src/client/connection.py:408` `"monitor.rule.update"` 通道（Phase 1.9 commit `-`） | ✅ Phase 1.9 完成 |
+| MonitorThread 守护线程 | 任务执行时启动 | `MonitorThread` 类实现完整 (`worker/src/monitor/manager.py:40-125`) | ✅ 类已实现 |
+| MonitorManager 启动 | Agent 启动时 start | `worker/src/__main__.py:272` 调用 `monitor_manager.start()`（Phase 1 commit `-`）。TD-339 (2026-07-23): `__main__.py` 启动入口已加 `acquire_singleton_lock()` PID 文件锁, 防止重复 agent 进程同时运行 MonitorManager 导致监控事件风暴 | ✅ Phase 1 完成 |
+| 规则热更新 | Server → Agent 下发 | `worker/src/client/handler.py:418` `handle_monitor_rule_update()` + `worker/src/client/connection.py:408` `"monitor.rule.update"` 通道（Phase 1.9 commit `-`） | ✅ Phase 1.9 完成 |
 | 事件上报 | MonitorEvent 持久化 + WebSocket 广播 | Backend `MonitorEvent` 模型 + Celery 升级任务完整 | ✅ 后端已实现 |
 | `monitor` PipelineNode | 任务中可插入监控节点 | `engine/nodes/monitor.py` 接入真实 `PopupHandler.check_and_handle()`；`context.monitor_manager` 缺失或 handler 异常时返回 `fail_result` 暴露问题（不静默 Mock 回退，Phase 1 commit `-` + 后续修复） | ✅ Phase 1 完成 |
-| PopupHandler / StorySkipper | 弹窗处理 + 剧情跳过 | 类实现完整 (`agent/src/monitor/handlers.py`)；monitor PipelineNode 在 `context.monitor_manager` 存在时调用 PopupHandler；MonitorThread 守护线程循环中也调用规则 `check_condition` / `handle_action` | ✅ Phase 1 启用 |
-| `MonitorManager.force_stop_all` | 强制停止所有监控线程 | `agent/src/monitor/manager.py:215-278`（Phase 6.3）；1 秒 join 超时 + 清空规则 | ✅ Phase 6.3 完成 |
+| PopupHandler / StorySkipper | 弹窗处理 + 剧情跳过 | 类实现完整 (`worker/src/monitor/handlers.py`)；monitor PipelineNode 在 `context.monitor_manager` 存在时调用 PopupHandler；MonitorThread 守护线程循环中也调用规则 `check_condition` / `handle_action` | ✅ Phase 1 启用 |
+| `MonitorManager.force_stop_all` | 强制停止所有监控线程 | `worker/src/monitor/manager.py:215-278`（Phase 6.3）；1 秒 join 超时 + 清空规则 | ✅ Phase 6.3 完成 |
 
 ### 0.1 当前可用功能
 

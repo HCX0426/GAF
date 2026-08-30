@@ -1,6 +1,6 @@
 ---
 maintainer: manual
-source: agent/src/devices/linux/, backend/device_bridge/platforms/linux/, xdotool/grim docs
+source: worker/src/devices/linux/, backend/device_bridge/platforms/linux/, xdotool/grim docs
 load_when:
 - 新功能 (Linux 平台)
 - 调试 Linux 截图/输入

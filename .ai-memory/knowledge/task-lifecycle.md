@@ -1,6 +1,6 @@
 ---
 maintainer: derived-manual
-source: backend/tasks/models.py, backend/scheduler/engine.py, agent/src/core/orchestrator.py
+source: backend/tasks/models.py, backend/scheduler/engine.py, worker/src/core/orchestrator.py
 load_when:
 - 新功能 (任务相关)
 - Bug修复 (任务执行异常)
@@ -16,7 +16,7 @@ related_files:
 - backend/tasks/models.py
 - backend/tasks/services.py
 - backend/scheduler/engine.py
-- agent/src/core/orchestrator.py
+- worker/src/core/orchestrator.py
 - .ai-memory/meta/auto-kb/pipeline-nodes.md
 - .ai-memory/meta/auto-kb/error-codes.md
 created_by: AI

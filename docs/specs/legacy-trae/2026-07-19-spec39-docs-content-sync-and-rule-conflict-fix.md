@@ -96,7 +96,7 @@
 
 ### Phase 8: P1 修复
 
-- tech-stack.md §4: `agent/src/devices/{windows,macos,linux,adb}/` → `agent/src/platforms/{windows,linux,macos}/` + `agent/src/devices/adb/`
+- tech-stack.md §4: `worker/src/devices/{windows,macos,linux,adb}/` → `worker/src/platforms/{windows,linux,macos}/` + `worker/src/devices/adb/`
 - GAF-optimal-solution.md §七: 日期 2026-06-21 → 2026-07-19, 补 spec-29~38 摘要
 - version-compat.md §0: 快照日期 2026-06-16 → 2026-07-19
 - 4 auto-kb 重生成: `sync_ai_memory.py --regenerate`

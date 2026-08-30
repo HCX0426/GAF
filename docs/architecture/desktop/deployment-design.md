@@ -113,7 +113,7 @@ powershell -ExecutionPolicy Bypass -File scripts\setup-dev-env.ps1
 
 | 环境 | 路径 | 安装的依赖 | 用途 |
 |------|------|----------|------|
-| conda `gaf` | `D:\code\environment\conda\envs\gaf\` | `backend/requirements/base.txt` + dev.txt + `agent/requirements.txt` | backend Django 服务器 + agent 客户端 + 脚本 |
+| conda `gaf` | `D:\code\environment\conda\envs\gaf\` | `backend/requirements/base.txt` + dev.txt + `worker/requirements.txt` | backend Django 服务器 + agent 客户端 + 脚本 |
 
 归一化原因:
 - 原双环境设计基于 opencv 差异（backend headless vs agent full GUI），实际 agent 代码未使用任何 GUI 函数（imshow/waitKey 等），`opencv-python-headless` 完全满足需求

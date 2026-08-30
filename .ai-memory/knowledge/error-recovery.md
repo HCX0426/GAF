@@ -1,6 +1,6 @@
 ---
 maintainer: derived-manual
-source: agent/src/core/retry_decorator.py, agent/src/core/recovery.py, backend/scheduler/recovery_engine.py
+source: worker/src/core/retry_decorator.py, worker/src/core/recovery.py, backend/scheduler/recovery_engine.py
 load_when:
 - 新功能 (错误处理)
 - Bug修复 (重试/降级)
@@ -14,9 +14,9 @@ symptom:
 - 重试机制
 solution: 3 层降级 (retry → fallback → manual) + 5 种错误分类 + 4 步兜底流程
 related_files:
-- agent/src/core/retry_decorator.py
-- agent/src/core/recovery.py
-- agent/src/core/recovery.py
+- worker/src/core/retry_decorator.py
+- worker/src/core/recovery.py
+- worker/src/core/recovery.py
 - backend/scheduler/recovery_engine.py
 - .ai-memory/knowledge/task-lifecycle.md
 - .ai-memory/meta/auto-kb/error-codes.md
@@ -48,7 +48,7 @@ last_manual_edit: 2026-07-20
 ### 1.1 Layer 1: Retry (重试)
 
 **触发**: 临时性错误 (网络抖动, 设备忙)
-**实现**: `agent/src/core/retry_decorator.py` 的 `@with_retry` 装饰器
+**实现**: `worker/src/core/retry_decorator.py` 的 `@with_retry` 装饰器
 **配置**:
 ```python
 @with_retry(
@@ -70,7 +70,7 @@ def screenshot_device(device_id: str) -> bytes:
 ### 1.2 Layer 2: Fallback (降级)
 
 **触发**: 重试仍失败, 但有次优方案
-**实现**: `agent/src/core/recovery.py` (原 chain.py DegradationChain 已移除, 降级逻辑并入 retry_decorator/recovery)
+**实现**: `worker/src/core/recovery.py` (原 chain.py DegradationChain 已移除, 降级逻辑并入 retry_decorator/recovery)
 **例子**:
 - 截图: `WGC → DXGI → BitBlt → PrintWindow` (高性能 → 低性能)
 - OCR: `PaddleOCR → RapidOCR → 字符串匹配` (高精度 → 低精度)
@@ -78,7 +78,7 @@ def screenshot_device(device_id: str) -> bytes:
 
 **代码模式**:
 ```python
-from agent.src.core.chain import DegradationChain
+from worker.src.core.chain import DegradationChain
 
 chain = DegradationChain([
     ('wgc_screenshot', WGCScreenshot()),

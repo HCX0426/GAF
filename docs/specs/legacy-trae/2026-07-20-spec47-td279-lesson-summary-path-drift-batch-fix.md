@@ -75,7 +75,7 @@ related_spec: [spec-46]
 修复后的路径必须满足:
 1. **repo 根相对路径** (e.g., `.ai-memory/lessons/foo.md`, `backend/skills/views.py`),不带 `GAF/` 前缀
 2. **绝对路径优先于相对路径** (避免 `../SKILL.md` 类相对引用)
-3. **已删除/已归档/临时文件用描述性文字** (e.g., "backend input module (已重构到 agent/src/input/)",不引用 `.trash/` 或 `archived-early/`)
+3. **已删除/已归档/临时文件用描述性文字** (e.g., "backend input module (已重构到 worker/src/input/)",不引用 `.trash/` 或 `archived-early/`)
 
 ### 2.3 路径修复策略 (3 类)
 
@@ -83,7 +83,7 @@ related_spec: [spec-46]
 |------|------|------|
 | 简单前缀替换 | 批量脚本 strip/add 前缀 | `GAF/X` → `X` |
 | 历史路径映射 | 逐类映射 (15 类) | `backend/agent/handlers/verify.py` → `backend/device_bridge/handlers/verify.py` |
-| 已删除文件 | 改描述性文字 | `backend/input.py` → "backend input module (已重构到 agent/src/input/)" |
+| 已删除文件 | 改描述性文字 | `backend/input.py` → "backend input module (已重构到 worker/src/input/)" |
 
 ## §3 Phase 1: 批量前缀修复
 
@@ -117,9 +117,9 @@ related_spec: [spec-46]
 |----------|----------|------|
 | `backend/agent/handlers/verify.py` | `backend/device_bridge/handlers/verify.py` | ✅ EXISTS |
 | `agent/handlers/verify.py` | `backend/device_bridge/handlers/verify.py` | ✅ EXISTS |
-| `agent/src/devices/windows/X` | `backend/device_bridge/platforms/windows/X` | ✅ EXISTS |
-| `agent/src/devices/macos/X` | `backend/device_bridge/platforms/macos/X` | ✅ EXISTS |
-| `agent/src/devices/linux/X` | `backend/device_bridge/platforms/linux/X` | ✅ EXISTS |
+| `worker/src/devices/windows/X` | `backend/device_bridge/platforms/windows/X` | ✅ EXISTS |
+| `worker/src/devices/macos/X` | `backend/device_bridge/platforms/macos/X` | ✅ EXISTS |
+| `worker/src/devices/linux/X` | `backend/device_bridge/platforms/linux/X` | ✅ EXISTS |
 | `config/urls.py` | `backend/config/urls.py` | ✅ EXISTS |
 | `Monitors/index.tsx` | `frontend/src/pages/Ops/Monitors/index.tsx` | ✅ EXISTS |
 | `frontend/src/pages/Monitors/index.tsx` | `frontend/src/pages/Ops/Monitors/index.tsx` | ✅ EXISTS |
@@ -129,7 +129,7 @@ related_spec: [spec-46]
 | `agents/urls.py` | `backend/agents/urls.py` | ✅ EXISTS |
 | `qa/views.py` | `backend/qa/views.py` | ✅ EXISTS |
 | `_shared/decision-tree-changelog.md` | `.trae/skills/gaf-orchestrator/_shared/decision-tree-changelog.md` | ✅ EXISTS |
-| `platforms/windows/ldopengl.py` | `agent/src/platforms/windows/ldopengl.py` | ✅ EXISTS |
+| `platforms/windows/ldopengl.py` | `worker/src/platforms/windows/ldopengl.py` | ✅ EXISTS |
 | `.ai-memory/lessons/2026-06-17-n118-m2a-43-tests.md` | `.ai-memory/lessons/testing_2026-06-17-n118-m2a-43-tests.md` | ✅ EXISTS |
 | `.ai-memory/lessons/2026-06-17-n119-m2b-command-hang.md` | `.ai-memory/lessons/testing_2026-06-17-n119-m2b-command-hang.md` | ✅ EXISTS |
 | `.ai-memory/lessons/2026-06-17-n121-m2f-bypass-weekly-review.md` | `.ai-memory/lessons/workflow_2026-06-17-n121-m2f-bypass-weekly-review.md` | ✅ EXISTS |
@@ -179,11 +179,11 @@ related_spec: [spec-46]
 | `meta/bug-tracker.md` | "已删除" |
 | `meta/why-skipped.md` | "已删除" |
 | `archived-early/*.md` (6 个) | "已归档到 archived-lessons.md" |
-| `backend/input.py` | "backend input module (已重构到 agent/src/input/)" |
+| `backend/input.py` | "backend input module (已重构到 worker/src/input/)" |
 | `agent/input_ctrl.py` | "agent input controller (已重构)" |
 | `backend/agent/discovery/emulator.py` | "emulator discovery (已重构到 backend/device_bridge/discovery/)" |
 | `backend/tasks/webhook.py` | "tasks webhook (未实现)" |
-| `agent/src/utils/coordinate.py` | "coordinate utility (已删除)" |
+| `worker/src/utils/coordinate.py` | "coordinate utility (已删除)" |
 | `.tsx/.ts` | "frontend source files" |
 | `frontend/src/api/*.ts` | "frontend API client files" |
 | `docs/general/specs/2026-07-17-backup-restore-security-fix.md` | "backup-restore-security-fix spec (已归档到 .trash/spec27-cleanup/)" |
@@ -208,7 +208,7 @@ related_spec: [spec-46]
 - 加载描述性文字映射表 (Dict[old, descriptive_text])
 - 对每个 P0 issue,在原文件中:
   - frontmatter `related_files`: 删除该 entry (已删除文件不应再列入)
-  - body path: 替换为描述性文字 (用反引号包裹,如 `` `backend input module (已重构到 agent/src/input/)` ``)
+  - body path: 替换为描述性文字 (用反引号包裹,如 `` `backend input module (已重构到 worker/src/input/)` ``)
 
 ### 5.3 验证
 

@@ -190,53 +190,53 @@ debug/YYYYMMDD/diag_<method>/
 
 ## 快速诊断脚本
 
-> **2026-08-09 更新**: 以下脚本已创建在 `agent/debug/` 目录，可直接使用。
+> **2026-08-09 更新**: 以下脚本已创建在 `worker/debug/` 目录，可直接使用。
 
 ### 脚本列表
 
 | 脚本 | 用途 | 用法 |
 |------|------|------|
-| `_diag_node.py` | 节点隔离测试 | `python agent/debug/_diag_node.py --node-id wait_regular_email --pipeline tasks/get_email.json` |
-| `_diag_ocr.py` | OCR 诊断 | `python agent/debug/_diag_ocr.py --text "普通邮箱" --roi "[214,10,333,276]" --compare-full` |
-| `_diag_template.py` | 模板匹配诊断 | `python agent/debug/_diag_template.py --template "邮箱.png" --roi "[1564,28,95,61]"` |
-| `_diag_popup.py` | 弹窗检测 | `python agent/debug/_diag_popup.py --popup-templates "关闭按钮.png,跳过.png"` |
-| `_diag_template_fallback.py` | 同 ROI 降级匹配 | `python agent/debug/_diag_template_fallback.py --primary-template "邮箱.png" --roi "[1564,28,95,61]" --mapping roi-template-mapping.md` |
-| `_diag_full.py` | 完整诊断 (Level 1-3) | `python agent/debug/_diag_full.py --pipeline get_email --node wait_regular_email --level 2` |
+| `_diag_node.py` | 节点隔离测试 | `python worker/debug/_diag_node.py --node-id wait_regular_email --pipeline tasks/get_email.json` |
+| `_diag_ocr.py` | OCR 诊断 | `python worker/debug/_diag_ocr.py --text "普通邮箱" --roi "[214,10,333,276]" --compare-full` |
+| `_diag_template.py` | 模板匹配诊断 | `python worker/debug/_diag_template.py --template "邮箱.png" --roi "[1564,28,95,61]"` |
+| `_diag_popup.py` | 弹窗检测 | `python worker/debug/_diag_popup.py --popup-templates "关闭按钮.png,跳过.png"` |
+| `_diag_template_fallback.py` | 同 ROI 降级匹配 | `python worker/debug/_diag_template_fallback.py --primary-template "邮箱.png" --roi "[1564,28,95,61]" --mapping roi-template-mapping.md` |
+| `_diag_full.py` | 完整诊断 (Level 1-3) | `python worker/debug/_diag_full.py --pipeline get_email --node wait_regular_email --level 2` |
 
 ### 使用示例
 
 ```bash
 # 1. 节点隔离测试
-conda run -n gaf python agent/debug/_diag_node.py \
+conda run -n gaf python worker/debug/_diag_node.py \
     --node-id wait_regular_email \
     --pipeline "resources/BrownDust II/tasks/get_email.json" \
     --save-screenshots
 
 # 2. OCR 验证 (对比全图 vs ROI 裁剪)
-conda run -n gaf python agent/debug/_diag_ocr.py \
+conda run -n gaf python worker/debug/_diag_ocr.py \
     --text "普通邮箱" \
     --roi "[214,10,333,276]" \
     --compare-full
 
 # 3. 模板匹配验证 (对比不同截图方法)
-conda run -n gaf python agent/debug/_diag_template.py \
+conda run -n gaf python worker/debug/_diag_template.py \
     --template "templates/get_email/邮箱.png" \
     --roi "[1564,28,95,61]" \
     --threshold 0.8
 
 # 4. 弹窗检测 (检查中间弹窗框 + 右上角 ×)
-conda run -n gaf python agent/debug/_diag_popup.py \
+conda run -n gaf python worker/debug/_diag_popup.py \
     --popup-templates "templates/public/关闭按钮.png,templates/public/跳过.png" \
     --roi "[600, 200, 720, 680]"  # 屏幕中央区域
 
 # 5. 同 ROI 降级匹配 (关键诊断策略)
-conda run -n gaf python agent/debug/_diag_template_fallback.py \
+conda run -n gaf python worker/debug/_diag_template_fallback.py \
     --primary-template "templates/get_email/邮箱.png" \
     --roi "[1564,28,95,61]" \
     --mapping "resources/BrownDust II/docs/roi-template-mapping.md"
 
 # 6. 完整诊断 (推荐)
-conda run -n gaf python agent/debug/_diag_full.py \
+conda run -n gaf python worker/debug/_diag_full.py \
     --pipeline get_email \
     --node wait_regular_email \
     --level 2

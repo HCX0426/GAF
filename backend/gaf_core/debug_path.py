@@ -1,6 +1,6 @@
 """Unified per-execution debug directory layout — backend mirror (N194, 2026-07-28; 嵌套结构 2026-07-29).
 
-Mirror of ``agent/src/utils/debug_path.py``. Backend cannot import agent
+Mirror of ``worker/src/utils/debug_path.py``. Backend cannot import agent
 package, so the logic is duplicated here. Keep the two copies in sync.
 
 Directory layout (嵌套结构, 2026-07-29)::

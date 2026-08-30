@@ -4,7 +4,7 @@ symptom: [agent:capability:mismatch, 能力, 匹配, capability-error, version-m
 solution: 握手时双向能力声明
 related_files:
   - backend/protocol/schemas.py
-  - agent/src/core/config.py
+  - worker/src/core/config.py
 created_by: AI
 priority: medium
 diff_keywords: ["capability", "mismatch", "handshake", "version-drift"]

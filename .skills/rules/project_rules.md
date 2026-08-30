@@ -20,7 +20,7 @@
 
 **核心约束**:
 - GAF 只控制 PC 窗口（Win/macOS/Linux）+ 模拟器（ADB），不需要手机端
-- 新模块必须定义跨平台抽象接口，Windows 专用代码封装在 `agent/src/platforms/windows/` 和 `backend/device_bridge/platforms/windows/`；禁止业务逻辑直接调用 Win32 API
+- 新模块必须定义跨平台抽象接口，Windows 专用代码封装在 `worker/src/platforms/windows/` 和 `backend/device_bridge/platforms/windows/`；禁止业务逻辑直接调用 Win32 API
 - 禁止自行发明截图/输入/任务引擎方案；状态标记诚实：✅可用 / 🔧代码存在 / ❌未实现
 - 技术债务不堆积：发现违背约束的既有代码当次任务内迁移/修复；教训入口 `.ai-memory/lessons/`
 

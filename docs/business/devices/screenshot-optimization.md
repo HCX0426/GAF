@@ -20,22 +20,22 @@ last_updated: 2026-07-04
 
 | 文档章节 | 文档声称 | 现实代码 | 状态 |
 |----------|----------|----------|------|
-| §2 截图降级链 | `ScreenshotFallbackChain` 类 + `ScreenshotStrategy` 抽象 | `agent/src/platforms/windows/screenshot.py` 的 `ScreenshotManager` 类（无抽象基类，无 `register_chain` API） | 🟡 逻辑存在，类名/接口不同 |
+| §2 截图降级链 | `ScreenshotFallbackChain` 类 + `ScreenshotStrategy` 抽象 | `worker/src/platforms/windows/screenshot.py` 的 `ScreenshotManager` 类（无抽象基类，无 `register_chain` API） | 🟡 逻辑存在，类名/接口不同 |
 | §2.1 Windows 降级链 | WGC → DXGI → GDI → PrintWindow（4 级） | WGC → DXGI → GDI → PrintWindow（4 级，已对齐） | ✅ 实现 |
-| §3 SSIM 检测 | `SSIMChecker` 类 + `SmartScreenshotManager` | `agent/src/devices/ssim_checker.py` 的 `SSIMChecker` 类（skimage + cv2.PSNR fallback）；`SmartScreenshotManager` 包装类未实现（helpers 已就绪） | 🔧 helpers 实现，集成待 P3 |
-| §4 JPEG 质量 | `AdaptiveJPEGCompressor` 类 + 自适应压缩 | `agent/src/devices/jpeg_compressor.py` 的 `AdaptiveJPEGCompressor` 类（4 预设 + RTT 自适应 + 目标大小二分搜索）；`config.jpeg_quality` 字段已激活（helpers 入参消费） | 🔧 helpers 实现，集成待 P3 |
-| §5 缓存 TTL | `ScreenshotCacheConfig` + `DynamicTTLManager` + Redis 缓存 | `agent/src/devices/screenshot_cache.py` 的 `ScreenshotCache` 类（Redis 后端 + 内存回退，LRU 驱逐）；`config.cache_ttl` 字段已激活；`test_degradation_chain.py` 已 un-skip 3 个测试 + 新增 2 个 hash 测试，全部通过 | 🔧 helpers 实现，集成待 P3 |
+| §3 SSIM 检测 | `SSIMChecker` 类 + `SmartScreenshotManager` | `worker/src/devices/ssim_checker.py` 的 `SSIMChecker` 类（skimage + cv2.PSNR fallback）；`SmartScreenshotManager` 包装类未实现（helpers 已就绪） | 🔧 helpers 实现，集成待 P3 |
+| §4 JPEG 质量 | `AdaptiveJPEGCompressor` 类 + 自适应压缩 | `worker/src/devices/jpeg_compressor.py` 的 `AdaptiveJPEGCompressor` 类（4 预设 + RTT 自适应 + 目标大小二分搜索）；`config.jpeg_quality` 字段已激活（helpers 入参消费） | 🔧 helpers 实现，集成待 P3 |
+| §5 缓存 TTL | `ScreenshotCacheConfig` + `DynamicTTLManager` + Redis 缓存 | `worker/src/devices/screenshot_cache.py` 的 `ScreenshotCache` 类（Redis 后端 + 内存回退，LRU 驱逐）；`config.cache_ttl` 字段已激活；`test_degradation_chain.py` 已 un-skip 3 个测试 + 新增 2 个 hash 测试，全部通过 | 🔧 helpers 实现，集成待 P3 |
 | §6 前端截图流 | `ScreenshotStreamManager` 类 | `frontend/src/hooks/useScreenshotStream.ts` 的 React Hook（范式不同，无类） | 🟡 逻辑存在，范式不同 |
-| — FramePool | （文档未提，版本说明中提到） | `agent/src/platforms/windows/frame_pool.py` 的 `FramePool` 类（线程安全，最多 30 帧） | ✅ 实现 |
-| — WGC 捕获 | §2.1 | `agent/src/platforms/windows/wgc.py` 的 `Win32WGC` 类 | ✅ 实现 |
-| — DXGI 捕获 | §2.1 | `agent/src/platforms/windows/dxgi_capture.py` 的 `DXGICapture` 类 (agent 端, 真实可用); backend `device_bridge/platforms/windows/_dxgi.py` 的 `DXGICapture.capture_window(hwnd)` (Spec E TD-124, 支持 per-window crop) | ✅ 实现 |
-| — 竞速 benchmark | （版本说明中提到"竞速"） | `agent/src/platforms/windows/benchmark.py` 的 `benchmark_capture_methods()`，已接入 `ScreenshotManager._detect_best_method` | ✅ 实现 |
+| — FramePool | （文档未提，版本说明中提到） | `worker/src/platforms/windows/frame_pool.py` 的 `FramePool` 类（线程安全，最多 30 帧） | ✅ 实现 |
+| — WGC 捕获 | §2.1 | `worker/src/platforms/windows/wgc.py` 的 `Win32WGC` 类 | ✅ 实现 |
+| — DXGI 捕获 | §2.1 | `worker/src/platforms/windows/dxgi_capture.py` 的 `DXGICapture` 类 (agent 端, 真实可用); backend `device_bridge/platforms/windows/_dxgi.py` 的 `DXGICapture.capture_window(hwnd)` (Spec E TD-124, 支持 per-window crop) | ✅ 实现 |
+| — 竞速 benchmark | （版本说明中提到"竞速"） | `worker/src/platforms/windows/benchmark.py` 的 `benchmark_capture_methods()`，已接入 `ScreenshotManager._detect_best_method` | ✅ 实现 |
 
-> **Backend WGC 状态 (Spec E / TD-125, 2026-07-16)**: `backend/device_bridge/platforms/windows/_wgc.py` 已删除 (原是返回固定 1920×1080 蓝色图的 mock)。`_capture_wgc` delegate 到 `_capture_printwindow` + warning log。`WINDOWS_METHODS` 移除 'WGC'。Agent 端 `agent/src/platforms/windows/wgc.py` 的 `Win32WGC` 类仍真实可用。
+> **Backend WGC 状态 (Spec E / TD-125, 2026-07-16)**: `backend/device_bridge/platforms/windows/_wgc.py` 已删除 (原是返回固定 1920×1080 蓝色图的 mock)。`_capture_wgc` delegate 到 `_capture_printwindow` + warning log。`WINDOWS_METHODS` 移除 'WGC'。Agent 端 `worker/src/platforms/windows/wgc.py` 的 `Win32WGC` 类仍真实可用。
 
 ### 0.2 实际截图机制
 
-文件：`agent/src/platforms/windows/screenshot.py`
+文件：`worker/src/platforms/windows/screenshot.py`
 
 - **类名**：`ScreenshotManager`（**非** `ScreenshotFallbackChain`）
 - **降级链**：WGC → DXGI → GDI → PrintWindow（4 级，已与文档对齐）
@@ -51,9 +51,9 @@ last_updated: 2026-07-04
 |----|--------|---------|------|
 | 修复断裂测试 `test_degradation_chain.py` | P0 | 实现 `devices.screenshot_cache` 模块 | ✅ 完成（Phase 3.3） |
 | 文档补全 WGC | P1 | §2.1 降级链改为 WGC → DXGI → GDI → PrintWindow | ✅ 完成（v2.2） |
-| 实现截图缓存 helpers | P2 | 新建 `agent/src/devices/screenshot_cache.py` | ✅ 完成（Phase 3.3） |
-| 实现 SSIM 去重 helpers | P2 | 新建 `agent/src/devices/ssim_checker.py` | ✅ 完成（Phase 3.1） |
-| 实现 AdaptiveJPEGCompressor helpers | P2 | 新建 `agent/src/devices/jpeg_compressor.py` | ✅ 完成（Phase 3.2） |
+| 实现截图缓存 helpers | P2 | 新建 `worker/src/devices/screenshot_cache.py` | ✅ 完成（Phase 3.3） |
+| 实现 SSIM 去重 helpers | P2 | 新建 `worker/src/devices/ssim_checker.py` | ✅ 完成（Phase 3.1） |
+| 实现 AdaptiveJPEGCompressor helpers | P2 | 新建 `worker/src/devices/jpeg_compressor.py` | ✅ 完成（Phase 3.2） |
 | 接入 `ScreenshotManager.capture()` 热路径 | P3 | 在 `capture()` 内嵌 SSIM/JPEG/cache 逻辑 | 🔧 待 P3 任务 |
 
 ---

@@ -530,11 +530,11 @@ redis-cli -n 0 LLEN celery
 
 ```powershell
 # 默认命令（慢，pytest-django 强制加载 Django，单测 12s+）
-D:\code\environment\conda\envs\gaf\python.exe -m pytest agent/tests/test_retry.py::TestRetryExhaustion::test_exhausts_and_reraises
+D:\code\environment\conda\envs\gaf\python.exe -m pytest worker/tests/test_retry.py::TestRetryExhaustion::test_exhausts_and_reraises
 # 耗时: ~12.44s
 
 # 禁用 Django 插件（快，2.5min 跑完全部 2154 个测试）
-D:\code\environment\conda\envs\gaf\python.exe -m pytest agent/tests/ -p no:django -o addopts=""
+D:\code\environment\conda\envs\gaf\python.exe -m pytest worker/tests/ -p no:django -o addopts=""
 # 耗时: ~2.5min（全量）, 0.02s（单测）
 ```
 
@@ -544,13 +544,13 @@ D:\code\environment\conda\envs\gaf\python.exe -m pytest agent/tests/ -p no:djang
 
 ```powershell
 # ✅ 跑所有 agent 测试（推荐）
-D:\code\environment\conda\envs\gaf\python.exe -m pytest agent/tests/ -p no:django -o addopts="" -x --durations=10
+D:\code\environment\conda\envs\gaf\python.exe -m pytest worker/tests/ -p no:django -o addopts="" -x --durations=10
 
 # ✅ 跑单个测试文件
-D:\code\environment\conda\envs\gaf\python.exe -m pytest "agent/tests/test_retry.py" -p no:django -o addopts="" -x --durations=5
+D:\code\environment\conda\envs\gaf\python.exe -m pytest "worker/tests/test_retry.py" -p no:django -o addopts="" -x --durations=5
 
 # ✅ 跑单个测试用例
-D:\code\environment\conda\envs\gaf\python.exe -m pytest "agent/tests/test_retry.py::TestRetryExhaustion::test_exhausts_and_reraises" -p no:django -o addopts="" --durations=5 --no-header
+D:\code\environment\conda\envs\gaf\python.exe -m pytest "worker/tests/test_retry.py::TestRetryExhaustion::test_exhausts_and_reraises" -p no:django -o addopts="" --durations=5 --no-header
 
 # ✅ 跑 backend 测试（需要 Django，不能加 -p no:django）
 D:\code\environment\conda\envs\gaf\python.exe -m pytest backend/

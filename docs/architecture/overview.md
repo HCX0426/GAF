@@ -322,8 +322,8 @@ Agent 启动
 
 | 层级 | 文件 | 方法/函数 | 功能 |
 |------|------|----------|------|
-| **Agent 端** | `agent/src/client/connection.py` | `_sync_devices()` | 收集设备信息并发送 device.sync |
-| **Agent 端** | `agent/src/__main__.py` | `run_agent()` Step 6 | 连接成功后调用 _sync_devices() |
+| **Agent 端** | `worker/src/client/connection.py` | `_sync_devices()` | 收集设备信息并发送 device.sync |
+| **Agent 端** | `worker/src/__main__.py` | `run_agent()` Step 6 | 连接成功后调用 _sync_devices() |
 | **Server 端** | `backend/agents/consumers.py` | `_handle_device_sync()` | 处理设备同步消息，创建/更新 Device 记录 |
 | **数据层** | `backend/agents/models.py` | `Device.agent` FK | 设备与 Agent 的外键关联 |
 
@@ -525,7 +525,7 @@ Worker 是独立 Python 进程，通过 WebSocket 连接后端，提供跨平台
 ### 10.1 模块结构
 
 ```
-agent/src/
+worker/src/
 ├── engine/                # Pipeline 执行引擎
 │   ├── nodes/             # 35+ 节点类型 (click/swipe/ocr/template_match/loop/branch/...)
 │   ├── pipeline_engine.py # 主执行器 (PipelineEngine)
@@ -620,7 +620,7 @@ Worker 进程管理分两层独立机制, 不要混淆:
 | 层 | 代码位置 | 保护范围 | 机制 |
 |----|---------|---------|------|
 | **backend 端自启 worker** | `backend/workers/worker_runtime.py` (TD-217 闭环, 原 `backend/agents/agent_runtime.py`) | backend 拉起 worker 子进程时 | `manager.lock` + `worker.pid` + `_kill_stale_worker_processes()` + DB 心跳双检测 + 指数退避重启 |
-| **worker 自身独立进程** | `worker/src/__main__.py` `acquire_singleton_lock()` (TD-339, 原 `agent/src/__main__.py`) | 手动 `python -m src` 或外部脚本调用时 | `%TEMP%\gaf_worker_lock\standalone.pid` PID 文件锁, 检测到存活 PID 则 exit(1), `--skip-singleton-check` 可绕过 (仅限调试) |
+| **worker 自身独立进程** | `worker/src/__main__.py` `acquire_singleton_lock()` (TD-339, 原 `worker/src/__main__.py`) | 手动 `python -m src` 或外部脚本调用时 | `%TEMP%\gaf_worker_lock\standalone.pid` PID 文件锁, 检测到存活 PID 则 exit(1), `--skip-singleton-check` 可绕过 (仅限调试) |
 
 **关键边界**: backend 端 `worker_runtime.py` 的 `_kill_stale_worker_processes()` 只在 backend 自启 worker 时生效; 用户手动 `python -m src` 启动完全绕过 backend 管理, 由 worker 自身的 `acquire_singleton_lock()` 兜底.
 
@@ -660,7 +660,7 @@ Worker 进程管理分两层独立机制, 不要混淆:
 
 | 平台 | 路径 | 实现 |
 |------|------|------|
-| Windows | [platforms/windows/](file:///d:/code/GAF/backend/device_bridge/platforms/windows) | `_dxgi.py` `_bitblt.py` `_printwindow.py` `_adb_*.py` `input.py` `ld_opengl.py` `discovery.py` (backend WGC mock 已删除 TD-125, `_capture_wgc` delegate 到 PrintWindow; agent 端 `agent/src/platforms/windows/wgc.py` 保留真实 WGC 实现) |
+| Windows | [platforms/windows/](file:///d:/code/GAF/backend/device_bridge/platforms/windows) | `_dxgi.py` `_bitblt.py` `_printwindow.py` `_adb_*.py` `input.py` `ld_opengl.py` `discovery.py` (backend WGC mock 已删除 TD-125, `_capture_wgc` delegate 到 PrintWindow; agent 端 `worker/src/platforms/windows/wgc.py` 保留真实 WGC 实现) |
 | macOS | [platforms/macos/](file:///d:/code/GAF/backend/device_bridge/platforms/macos) | `screenshot.py` `input.py` `discovery.py` |
 | Linux | [platforms/linux/](file:///d:/code/GAF/backend/device_bridge/platforms/linux) | `screenshot.py` `input.py` `discovery.py` |
 
@@ -684,7 +684,7 @@ platform.click(100, 200)
 
 ### 11.2 Agent 端平台实现
 
-**位置**: `agent/src/platforms/windows/` (目前仅 Windows 完整实现, macOS/Linux 在 device_bridge)
+**位置**: `worker/src/platforms/windows/` (目前仅 Windows 完整实现, macOS/Linux 在 device_bridge)
 
 ### 11.3 跨平台能力矩阵
 
@@ -742,7 +742,7 @@ desktop/
 | TaskChain 编排 | [OK] | DAG editor + Pipeline 一等公民节点 (TD-110) + routine.json → TaskChain 自动转换 |
 | 监控告警 | [OK] | 规则 + 事件 + 诊断 + 告警升级 (P1→P0) |
 | AI 模块 | [OK] | 助手 + QA + Skill + LangGraph Agent + RAG |
-| 跨平台层 | [OK] | Windows 完整 (agent 侧 `agent/src/platforms/windows/`) + macOS/Linux 已落地 (backend 侧 `backend/device_bridge/platforms/{macos,linux}/`, P-028); 注: agent 侧仅 Windows, macOS/Linux 在 backend 侧 |
+| 跨平台层 | [OK] | Windows 完整 (agent 侧 `worker/src/platforms/windows/`) + macOS/Linux 已落地 (backend 侧 `backend/device_bridge/platforms/{macos,linux}/`, P-028); 注: agent 侧仅 Windows, macOS/Linux 在 backend 侧 |
 | 运维监控 | [OK] | 链路追踪 + SLA 指标 + 崩溃报告 + 日志归档 |
 | **审计日志 (C-045)** | [OK] | AuditMixin (gaf_core/mixins/audit.py) — 114 接入点, 19 个 ViewSet 自动写 AuditLog (accounts/tasks/agents/pipeline/resources/qa/notifications/scheduler/settings/gamestate/debug/protocol/monitors/plugins); AuditLog 模型在 `accounts/models.py:454` |
 | 通知系统 | [OK] | 7 渠道 (邮件/Webhook/钉钉/飞书/企微/Telegram/自定义) |
@@ -813,7 +813,7 @@ desktop/
 | 概念 | 定义 | 代码实体 |
 |------|------|----------|
 | **循环任务** | 任务按固定/动态周期重复执行 | `TaskChain` + `LoopNode` / `UnattendedSession.loop_rotation` + `rotation_index` |
-| **监控任务** | 持续观测系统/业务指标，触发告警/恢复 | `monitors` app: `MonitorRule`/`MonitorEvent`/`SLAMetric` + `agent/src/monitor/MonitorManager` + Pipeline `monitor` 节点 |
+| **监控任务** | 持续观测系统/业务指标，触发告警/恢复 | `monitors` app: `MonitorRule`/`MonitorEvent`/`SLAMetric` + `worker/src/monitor/MonitorManager` + Pipeline `monitor` 节点 |
 
 > **澄清**："监控任务" 不是一种任务类型，而是 `monitors` 子系统 + Agent 端 `MonitorManager` + Pipeline 监控触发节点的组合。循环任务与监控不同域，勿混淆。
 

@@ -3,7 +3,7 @@ date: 2026-06-10
 symptom: [popup:agent:duplicate, 弹窗, 多开, 重复启动, agent-popup]
 solution: 文件锁 + SW_HIDE
 related_files:
-  - agent/src/client/connection.py
+  - worker/src/client/connection.py
 created_by: AI
 priority: high
 diff_keywords: ["agent", "popup", "duplicate", "singleton", "runserver-autoreload"]
@@ -27,7 +27,7 @@ Django runserver 的 autoreload 用 `spawn` 创建子进程，父子进程都执
 
 ## 解决步骤
 
-1. 在 `agent/src/client/connection.py` 启动前加 `fcntl.flock`（Linux）/ `msvcrt.locking`（Windows）
+1. 在 `worker/src/client/connection.py` 启动前加 `fcntl.flock`（Linux）/ `msvcrt.locking`（Windows）
 2. Agent 启动时检查 `ShellExecuteW(..., nShowCmd=SW_HIDE=0)` 改为 `SW_SHOWMINIMIZED`
 3. 加 `if __name__ == "__main__"` 双重保护
 

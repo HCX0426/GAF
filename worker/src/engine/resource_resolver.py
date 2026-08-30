@@ -43,11 +43,11 @@ def _candidate_roots() -> list[Path]:
     roots.append(cwd / "resources")
     roots.append(cwd.parent / "resources")
 
-    # 3. Walk up from this file (agent/src/engine/resource_resolver.py)
+    # 3. Walk up from this file (worker/src/engine/resource_resolver.py)
     #    to find the GAF root (which contains a "resources" sibling).
-    #    __file__ = agent/src/engine/resource_resolver.py
+    #    __file__ = worker/src/engine/resource_resolver.py
     #    parent chain: engine/ -> src/ -> agent/ -> GAF/
-    here = Path(__file__).resolve().parent  # agent/src/engine/
+    here = Path(__file__).resolve().parent  # worker/src/engine/
     for ancestor in [here.parent.parent, here.parent.parent.parent]:
         candidate = ancestor / "resources"
         if candidate not in roots:

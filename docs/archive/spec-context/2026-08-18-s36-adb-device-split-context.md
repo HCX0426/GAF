@@ -12,7 +12,7 @@
 
 ## 1. 用户决策原文
 
-- 2026-08-18 循环模式（"继续" 强触发延续）：TD-365 大文件治理按 backend → agent → frontend → scripts 顺序接修，s36 = `agent/src/devices/adb/device.py`（1976 行，TD-365 剩余 6 个中的 agent 层第一个）。
+- 2026-08-18 循环模式（"继续" 强触发延续）：TD-365 大文件治理按 backend → agent → frontend → scripts 顺序接修，s36 = `worker/src/devices/adb/device.py`（1976 行，TD-365 剩余 6 个中的 agent 层第一个）。
 - 方法论继承：s35（pipeline_engine.py 拆分）成功模式 + N202 lesson 8 项拆前检查清单。
 
 ## 2. N151 5 步法评估

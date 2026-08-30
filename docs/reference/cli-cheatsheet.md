@@ -287,7 +287,7 @@ Remove-Item _temp.py
 
 Agent 节点失败?
   → 看 agent/logs/ + step 节点 error_code
-  → 跑 agent/src/engine/nodes/<node>.py 单独测试
+  → 跑 worker/src/engine/nodes/<node>.py 单独测试
 
 前端页面空白?
   → F12 console → 看 network 找 4xx/5xx

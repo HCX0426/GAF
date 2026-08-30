@@ -18,7 +18,7 @@ related_files:
 - .ai-memory/games/browndust-ii/coordinate-system.md
 - resources/BrownDust II/docs/task-reference.md
 - resources/BrownDust II/manifest.json
-- agent/src/engine/resource_resolver.py
+- worker/src/engine/resource_resolver.py
 created_by: AI
 generated: 2026-06-16
 last_manual_edit: 2026-07-31
@@ -60,7 +60,7 @@ last_manual_edit: 2026-07-31
 
 ## 3. 模板路径约定
 
-> **模板用中文名**, 路径解析由 `agent/src/engine/resource_resolver.py` 处理
+> **模板用中文名**, 路径解析由 `worker/src/engine/resource_resolver.py` 处理
 
 | 类别 | 路径 |
 |------|------|
@@ -98,5 +98,5 @@ last_manual_edit: 2026-07-31
 | `tasks/*.json` | 13 个 pipeline（含 back_to_main 公共子流程） |
 | `templates/*/` | 67 个模板图片，按功能分组 |
 | `manifest.json` | 资源包清单 |
-| `agent/src/engine/resource_resolver.py` | 模板路径解析 |
-| `agent/src/utils/coord_transformer.py` | 坐标转换器 |
+| `worker/src/engine/resource_resolver.py` | 模板路径解析 |
+| `worker/src/utils/coord_transformer.py` | 坐标转换器 |

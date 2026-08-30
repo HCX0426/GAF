@@ -49,7 +49,7 @@
 - 报错检测不做告警联动（MonitorEvent），仅页面标红 + 快照计数。
 
 ## 范围外检出（本次发现的既有问题 → TD）
-- `agent/src/utils/log_rotation.py` DateRotatingFileHandler 跨天轮转偶发 `_stream=None` → AttributeError
+- `worker/src/utils/log_rotation.py` DateRotatingFileHandler 跨天轮转偶发 `_stream=None` → AttributeError
   （status/daemon 命令日志重复报错）— 已登记 active-tech-debt.md，非本次修复。
 
 ## N173 用时字段

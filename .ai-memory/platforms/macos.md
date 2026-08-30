@@ -1,6 +1,6 @@
 ---
 maintainer: manual
-source: agent/src/devices/macos/, backend/device_bridge/platforms/macos/, Apple Quartz Docs
+source: worker/src/devices/macos/, backend/device_bridge/platforms/macos/, Apple Quartz Docs
 load_when:
 - 新功能 (macOS 平台)
 - 调试 macOS 截图/输入

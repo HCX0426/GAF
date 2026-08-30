@@ -1,6 +1,6 @@
 ---
 maintainer: derived-manual
-source: backend/requirements/*.txt, frontend/package.json, agent/requirements.txt
+source: backend/requirements/*.txt, frontend/package.json, worker/requirements.txt
 load_when: [版本升级, 依赖变更, TS 严格选项, Antd 升级, Django 升级, 跨文件版本同步, 多文件版本漂移, spec-code 版本漂移, L3 按需]
 priority: medium
 symptom:
@@ -22,7 +22,7 @@ related_files:
 - backend/requirements/dev.txt
 - backend/requirements/prod.txt
 - frontend/package.json
-- agent/requirements.txt
+- worker/requirements.txt
 created_by: AI
 generated: 2026-06-15
 auto_updated: 2026-07-19
@@ -144,7 +144,7 @@ last_manual_edit: 2026-07-19
 
 | 项 | 风险 |
 |----|------|
-| Protocol 协议 (WebSocket frame) | **必须**保持 `protocol/constants.py: MESSAGE_FRAME_SCHEMA` 与 Agent 端 `agent/src/client/handler.py` 一致 |
+| Protocol 协议 (WebSocket frame) | **必须**保持 `protocol/constants.py: MESSAGE_FRAME_SCHEMA` 与 Agent 端 `worker/src/client/handler.py` 一致 |
 | TaskState 枚举 | **必须**保持 `protocol/schemas.py: TaskState` 与 Agent 端状态机一致 |
 | error_code 字符串 | 4 层分发必查 (`failure-modes.md` + lessons) |
 

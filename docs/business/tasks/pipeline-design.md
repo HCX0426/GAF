@@ -27,7 +27,7 @@ last_updated: 2026-07-27
 | 项 | 文档声称 | 现实代码 | 状态 |
 |----|----------|----------|------|
 | chain 执行模式 | 支持 find_and_click/template_match/ocr 等 11 种 action | Agent `execute_task` 的 `_run_action` **只支持 6 种基础动作**（click/swipe/key_press/text_input/screenshot/wait） | 🟡 限制（推荐用 Pipeline 路径） |
-| state_machine 执行模式 | 完整状态机执行器 | `agent/src/core/orchestrator.py:66-95` `execute_task` 按 `execution_mode` 分发，state_machine 走 `_execute_state_machine()`（Phase 7 commit `-`） | ✅ Phase 7 完成 |
+| state_machine 执行模式 | 完整状态机执行器 | `worker/src/core/orchestrator.py:66-95` `execute_task` 按 `execution_mode` 分发，state_machine 走 `_execute_state_machine()`（Phase 7 commit `-`） | ✅ Phase 7 完成 |
 | 可视化编辑器 | TaskEditorPage 完整功能 | `frontend/src/App.tsx:121` 暴露 `/tasks/:taskId/edit` 路由（Phase 7 commit `-`）；`Tasks/Editor.tsx` 完整实现（464 行） | ✅ Phase 7 完成 |
 | Task validate 端点 | Task 模型有校验 | `backend/tasks/views.py:184` `TaskViewSet.validate` action（Phase 7 commit `-`） | ✅ Phase 7 完成 |
 | 资源包目录结构 | manifest.json + tasks/ + templates/ + config/ + monitors/ | 与代码一致 | ✅ 一致 |
@@ -420,7 +420,7 @@ class TaskValidator:
         for node in task_def.get("nodes", []):
             config = node.get("config", {})
             # Task 4.43 (P1-26, 2026-07-28): 字段优先级与代码对齐
-            # (agent/src/engine/nodes/template_match.py:57 优先 template_id)
+            # (worker/src/engine/nodes/template_match.py:57 优先 template_id)
             template = config.get("template_id") or config.get("template") or config.get("templateId")
             if template and not self._template_exists(template):
                 errors.append(f"Node '{node['id']}' references missing template '{template}'")

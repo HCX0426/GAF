@@ -137,7 +137,7 @@ topic: workflow
 
 **发现违规**:
 
-- `agent/src/.trash/` (2 文件)
+- `worker/src/.trash/` (2 文件)
 
 - `backend/.trash/` (80+ 文件)
 
@@ -153,7 +153,7 @@ topic: workflow
 
 - ✅ **唯一临时目录**: `.trash/`（项目根级）
 
-- ❌ **禁止**: 在 `agent/`、`backend/`、`frontend/`、`agent/src/` 等任何子目录下另建 `.trash/`
+- ❌ **禁止**: 在 `agent/`、`backend/`、`frontend/`、`worker/src/` 等任何子目录下另建 `.trash/`
 
 - ✅ `.gitignore` 的 `.trash/` 通配规则已覆盖所有子目录（验证: `git check-ignore -v backend/.trash/test_import.py` → `.gitignore:143:.trash/`）
 

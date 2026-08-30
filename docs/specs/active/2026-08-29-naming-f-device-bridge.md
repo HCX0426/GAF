@@ -19,7 +19,7 @@ source: docs/analysis/concept-naming-normalization.md（三 agent 目录审计 2
 
 | # | 项 | 现状 | 目标 | 级 |
 |---|----|------|------|----|
-| F-1 | `DeviceInfo` 三义 | `device_bridge/platforms/base.py:32` DTO / `agent/src/devices/discovery/base.py:13` DTO / `backend/agents/view_sets/app_info.py:406` `DeviceInfoView` 端点 | 端点 `DeviceInfoView`→`DeviceDetailView`；两 DTO 文档区分（或后端 DTO→`BridgeDeviceInfo`） | med |
+| F-1 | `DeviceInfo` 三义 | `device_bridge/platforms/base.py:32` DTO / `worker/src/devices/discovery/base.py:13` DTO / `backend/agents/view_sets/app_info.py:406` `DeviceInfoView` 端点 | 端点 `DeviceInfoView`→`DeviceDetailView`；两 DTO 文档区分（或后端 DTO→`BridgeDeviceInfo`） | med |
 | F-2 | 双发现架构 | backend `device_bridge.discovery`(`scan_all_emulators`/`enum_windows`)+`EmulatorInfo`/`WindowInfo` vs `PlatformDeviceDiscoverer`+`DeviceInfo`；agent `DeviceCenter`/`EmulatorDiscovery`/`WindowDiscovery` | 使 `device_bridge.discovery.*` 为单一扫描源；文档显式区分 bridge(后端)/center(agent 进程) 两层发现 | med |
 | F-3 | `GAME_PROCESS_NAMES` 重复 | `device_bridge/discovery/windows.py:17` 与 `platforms/windows/discovery.py:14` 两份 | 单一来源（去重） | low |
 | F-4 | device_bridge docstring 错称 | `device_bridge/__init__.py:2` "GAF Agent 模块" | 改为设备抽象/桥接层说明（"Worker" 为执行节点，非 device_bridge 概念）；文档注明 "bridge" 仅为包名（无 `Bridge` 类） | low(文档) |
@@ -52,7 +52,7 @@ source: docs/analysis/concept-naming-normalization.md（三 agent 目录审计 2
 
 ## 5. 测试与验收
 
-- `pytest backend/agents backend/device_bridge agent/tests` 通过。
+- `pytest backend/agents backend/device_bridge worker/tests` 通过。
 - grep `DeviceInfoView`(→`DeviceDetailView`)/`GAME_PROCESS_NAMES` 单源/`WorkerConsumer`(原 AgentConsumer) 位置正确。
 - 评估稿标记 F 批完成。
 

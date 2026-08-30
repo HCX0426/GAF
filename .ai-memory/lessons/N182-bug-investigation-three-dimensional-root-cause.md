@@ -14,9 +14,9 @@ related_files:
   - .ai-memory/meta/failure-modes.md
   - .ai-memory/meta/ai-operating-handbook.md
   - .ai-memory/meta/yn-matrices/archived-yn-matrices/_workflow-reflection.md
-  - agent/src/engine/nodes/ocr.py
+  - worker/src/engine/nodes/ocr.py
   - docs/project-status.md
-  - agent/tests/test_ocr.py
+  - worker/tests/test_ocr.py
   - docs/standards/testing-conventions.md
 ---
 
@@ -147,8 +147,8 @@ AI 默认走"最短路径" (直接定位 fail 节点 + 写测试修复), 缺少"
 
 ## 6. 本轮交付物
 
-- **代码修复**: `agent/src/engine/nodes/ocr.py` L431-471 `_get_image` 加 device fallback (commit `-`)
-- **测试**: `agent/tests/test_ocr.py` L501 `TestOCRNodeGetImageFallback` 6 cases, 48/48 GREEN
+- **代码修复**: `worker/src/engine/nodes/ocr.py` L431-471 `_get_image` 加 device fallback (commit `-`)
+- **测试**: `worker/tests/test_ocr.py` L501 `TestOCRNodeGetImageFallback` 6 cases, 48/48 GREEN
 - **TD 登记**: TD-335 (代码层, 截图策略不归一化长期债) + TD-336 (三维元 TD, 12 项缺失规则)
 - **本 lesson**: N182-N185 家族 (bug 排查三维根因评估系统性盲区)
 - **待开 spec**: TD-336 修复方案 (4 个新 N## 5 层分发 + 3 个强化 + 5 个规则文档补全)

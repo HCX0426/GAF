@@ -1,4 +1,4 @@
-"""Tests for agent/src/utils/structured_logger.py — JSONL structured logging.
+"""Tests for worker/src/utils/structured_logger.py — JSONL structured logging.
 
 Verifies:
 - JSONL format correctness (one JSON object per line)
@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import threading
 
-# Agent tests run with agent/src on sys.path (see pyproject.toml / conftest).
+# Agent tests run with worker/src on sys.path (see pyproject.toml / conftest).
 from utils.structured_logger import (
     extract_result_fields,
     get_logger,

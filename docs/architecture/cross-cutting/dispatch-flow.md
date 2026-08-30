@@ -299,7 +299,7 @@ python scripts/gaf_daemon.py stop
 | 组件 | 位置 | 说明 |
 |------|------|------|
 | 快照 | `tasks/tasks.py:dispatch_task` | 派发前写 `execution_snapshot` (dispatch_sent_at / dispatch_attempts)，同一帧携带 `trace_id` |
-| agent ack | `agent/src/client/handler.py` | 收到 task.assign 后回发 dispatch_ack 帧（含 execution_id + trace_id） |
+| agent ack | `worker/src/client/handler.py` | 收到 task.assign 后回发 dispatch_ack 帧（含 execution_id + trace_id） |
 | backend 落盘 | `protocol/consumers.py:_record_dispatch_ack` | 收到 ack 写 `dispatch_ack_at`，标记派发闭环 |
 | 兜底扫描 | `tasks/heartbeat.py:check_dispatch_acks` | Celery Beat 每 10s 扫描 `dispatch_sent_at` 超 15s 且无 ack 的执行：重派 (attempts < DISPATCH_MAX_ATTEMPTS=3) 或标记 FAILED (error 含 "dispatch-ack") |
 | 幂等 | `heartbeat.py:_mark_dispatch_failed` | 重派前先置 FAILED 再创建新 execution，保留 trace_id 防重入 |
@@ -313,7 +313,7 @@ python scripts/gaf_daemon.py stop
 
 **问题**: agent 出站队列 (S1 引入) 是内存 deque——进程崩溃/重启即丢失，断线期间积压的 task.result 随进程一起消失，backend 执行永久 RUNNING。
 
-**机制**: 可选 SQLite 旁路存储 (`agent/src/client/outbox_store.py`)，注入 `AgentConnection(outbox_store=...)` 后启用：
+**机制**: 可选 SQLite 旁路存储 (`worker/src/client/outbox_store.py`)，注入 `AgentConnection(outbox_store=...)` 后启用：
 
 | 环节 | 行为 |
 |------|------|
@@ -497,7 +497,7 @@ python scripts/gaf_daemon.py stop
 
 ### 7.1 执行架构
 
-Agent 端 Pipeline 执行由 `PipelineEngine` (agent/src/engine/pipeline_engine.py) 驱动，线性执行节点图中的每个节点，支持 pause/resume/cancel 控制。
+Agent 端 Pipeline 执行由 `PipelineEngine` (worker/src/engine/pipeline_engine.py) 驱动，线性执行节点图中的每个节点，支持 pause/resume/cancel 控制。
 
 ```
 PipelineEngine.execute()
@@ -606,7 +606,7 @@ with self._lock:
 - 无自定义 timeout 的节点放弃超时保护，依赖节点内部自身超时机制
 - `executor.shutdown(wait=False)` 不等待后台线程，挂起的线程在进程退出时清理
 - JSONL 缓存句柄在进程异常退出时可能丢失最后几行（与 `flush()` 间隔有关），但通常不影响 LLM 诊断
-- `PipelineEngine` 不支持 DAG 并行执行（`ParallelExecutor` 原在 `agent/src/engine/graph.py`，OQ-1 已删除，未接入生产热路径）
+- `PipelineEngine` 不支持 DAG 并行执行（`ParallelExecutor` 原在 `worker/src/engine/graph.py`，OQ-1 已删除，未接入生产热路径）
 
 ---
 
@@ -680,7 +680,7 @@ GAF 提供全链路性能计量能力，覆盖 Agent 端和 Backend 端的关键
 ### 8.5 文件结构
 
 ```
-agent/src/utils/perf_monitor.py       → Timer + PerformanceMonitor (~200 行)
+worker/src/utils/perf_monitor.py       → Timer + PerformanceMonitor (~200 行)
 backend/gaf_core/perf_monitor.py       → 后端 PerformanceMonitor (~200 行)
 backend/gaf_core/middleware.py         → PerfMiddleware (新增, ~50 行)
 backend/gaf_core/views.py              → PerfAPIView (新增, ~30 行)

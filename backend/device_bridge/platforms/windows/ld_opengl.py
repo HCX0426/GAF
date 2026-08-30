@@ -2,7 +2,7 @@
 LDOpenGL screenshot module for LDPlayer emulator (backend wrapper).
 
 Ref: Alas LDOpenGL — uses ldopengl64.dll to capture OpenGL buffer directly.
-This backend implementation mirrors the agent/src/platforms/windows/ldopengl.py
+This backend implementation mirrors the worker/src/platforms/windows/ldopengl.py
 v1/v2/v3 API support so that the Django backend can serve LDPlayer screenshots
 through the test-screenshot endpoint and report the real method as 'ld_opengl'.
 

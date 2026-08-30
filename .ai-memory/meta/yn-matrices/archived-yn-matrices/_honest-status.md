@@ -117,7 +117,7 @@ source: Split from yn-matrices.md (Phase 4 Task 4.2)
 | 1 | 写 AI memory 文档前, Glob/Read 了实际代码/资源目录？ | | `Glob("<path>/**")` 或 `Read(<file>)` |
 | 2 | 文档中写的路径, 验证过存在？ | | `Glob("<path>")` 非空 |
 | 3 | 文档中写的文件名, 验证过存在？ | | `Glob("**/<filename>")` 非空 |
-| 4 | 文档中写的 API/节点类型, Grep 过实际代码？ | | `Grep("<type>" agent/src/ backend/)` 非空 |
+| 4 | 文档中写的 API/节点类型, Grep 过实际代码？ | | `Grep("<type>" worker/src/ backend/)` 非空 |
 | 5 | 标 ✅ 前, 有验证证据 (测试通过/截图/pytest)？ | | N128 3 步验证 |
 | 6 | 读 AI memory 文档后, 验证了关键路径/文件存在？ | | `Glob("<doc提到的路径>")` 非空 |
 | 7 | 文档生成后, 实际代码变更时同步更新文档？ | | 代码改了文档也要改 |

@@ -9,8 +9,8 @@ related_files:
   - frontend/src/api/ai.ts
   - backend/gaf_ai/qa_views.py
   - scripts/e2e/scenarios/ai_qa_chat.py
-  - agent/src/client/handler.py
-  - agent/src/devices/screenshot_cache.py
+  - worker/src/client/handler.py
+  - worker/src/devices/screenshot_cache.py
 created_by: AI
 merged_n_ids: [N156, N147]
 level: L1
@@ -250,4 +250,4 @@ Playwright E2E（`临时验证脚本 (已删除)`）：
 - 修复: commit -
 - 相关: N135（前端批量重构后浏览器验证）
 - 相关: N128（文档状态 3 步验证 — 代码同理需 3 步验证）
-- 文件: agent/src/client/handler.py
+- 文件: worker/src/client/handler.py

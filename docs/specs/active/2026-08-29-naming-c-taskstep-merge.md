@@ -54,7 +54,7 @@ source: docs/analysis/concept-naming-normalization.md §1/§5(8,13,OQ-3)/§7
 
 #### Task P1.2: writer 迁移
 
-- grep `TaskStep` 写入点（`TaskExecutor`、pipeline 节点 `agent/src/...`、`protocol/services.py`）：改 `TaskStep.objects.create/update` → `ExecutionStep.objects.update_or_create`（沿用 `protocol/services.py:785` 模式）。
+- grep `TaskStep` 写入点（`TaskExecutor`、pipeline 节点 `worker/src/...`、`protocol/services.py`）：改 `TaskStep.objects.create/update` → `ExecutionStep.objects.update_or_create`（沿用 `protocol/services.py:785` 模式）。
 
 #### Task P1.3: reader + 前端
 

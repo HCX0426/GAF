@@ -4,12 +4,12 @@ symptom: [agent-platform, screenshot, gdi, printwindow, occluded-window, benchma
 solution: GDI BitBlt cannot capture occluded windows — benchmark picks fastest method not most reliable. For game windows (UnityWndClass/UnrealWindow/etc.), always prefer PrintWindow. Apply DPI awareness at module load or GDI returns logical pixels (1024x576) instead of physical (1536x864).
 diff_keywords: ["screenshot", "device", "benchmark", "dpi", "diagnostic", "screenshot_diagnostic", "template", "match", "template_match", "settings", "agent-platform", "gdi"]
 related_files:
-  - agent/src/platforms/windows/screenshot.py
-  - agent/src/platforms/windows/device.py
-  - agent/src/platforms/windows/benchmark.py
-  - agent/src/platforms/windows/dpi.py
-  - agent/src/utils/screenshot_diagnostic.py
-  - agent/src/engine/nodes/template_match.py
+  - worker/src/platforms/windows/screenshot.py
+  - worker/src/platforms/windows/device.py
+  - worker/src/platforms/windows/benchmark.py
+  - worker/src/platforms/windows/dpi.py
+  - worker/src/utils/screenshot_diagnostic.py
+  - worker/src/engine/nodes/template_match.py
   - resources/BrownDust II/config/settings.json
 created_by: AI
 priority: high

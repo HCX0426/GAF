@@ -187,7 +187,7 @@ export const DEFAULT_NODE_CONFIGS: Record<PipelineNodeType, Record<string, unkno
   notify: { channel: 'webhook', message: '', level: 'info' },
   sub_pipeline: { pipeline_id: '', parameters: {} },
   // Phase 2.5 extension: 16 new node types — skeleton configs mirror agent
-  // node defaults (see agent/src/engine/nodes/*) where applicable.
+  // node defaults (see worker/src/engine/nodes/*) where applicable.
   and_match: { conditions: [], match_mode: 'all' },
   or_match: { conditions: [], match_mode: 'any' },
   custom_match: { script: '', params: {} },

@@ -18,7 +18,7 @@ commit: -
 
 | Phase | 标题 | 状态 | 完成时间 | Commit | 验收 evidence |
 |-------|------|------|---------|--------|---------------|
-| Phase 1 | 扩展 `agent/src/core/constants.py` 加 3 新 enum (ServerStatus / EventType / AgentStatus) | ✅ | 2026-07-20 | (本次 commit) | constants.py 追加 3 enum + 6 enum 全升级为 StrEnum; ruff UP042 合规 |
+| Phase 1 | 扩展 `worker/src/core/constants.py` 加 3 新 enum (ServerStatus / EventType / AgentStatus) | ✅ | 2026-07-20 | (本次 commit) | constants.py 追加 3 enum + 6 enum 全升级为 StrEnum; ruff UP042 合规 |
 | Phase 2 | 迁移 NodeType 比较点 (node_type == "click" 等 → NodeType.CLICK) — str-Enum 直接替换 | ✅ | 2026-07-20 | (本次 commit) | structured_logger.py:297 + debug_image_saver.py:312,317,324 + engine.py:731,737,745,754 |
 | Phase 3 | 迁移其他 enum 比较点 (PipelineState / TaskState / StepState / DeviceStatus — 用 .value 模式) | ✅ | 2026-07-20 | (本次 commit) | orchestrator.py:932,934 (drop .value) + step_recorder.py:177,178 + health_checker.py:535 + handler.py:165 |
 | Phase 4 | 迁移新 enum 比较点 (ServerStatus / EventType / AgentStatus) + 验证 | ✅ | 2026-07-20 | (本次 commit) | recording_to_pipeline.py:39,83,103,153,155 + connection.py:576; pytest 1554 passed 2 skipped (0 回归); ruff All checks passed |
@@ -41,7 +41,7 @@ commit: -
 
 ## §3 Phase 1: 扩展 constants.py 加 3 新 enum
 
-在 `agent/src/core/constants.py` 追加:
+在 `worker/src/core/constants.py` 追加:
 
 ```python
 class ServerStatus(str, Enum):
@@ -87,31 +87,31 @@ class AgentStatus(str, Enum):
  NodeType (spec-40 已建, str-Enum) compares equal to its string value, so `node_type == "click"` → `node_type == NodeType.CLICK` is behavior-equivalent.
 
 **Files to migrate** (grep evidence):
-- `agent/src/utils/structured_logger.py:297` — `node_type == "template_match"` → `NodeType.TEMPLATE_MATCH`
-- `agent/src/utils/debug_image_saver.py:312,317,324` — `"click"` / `"swipe"` / `"long_press"` → NodeType enum
-- `agent/src/engine/engine.py:731,737,745,754` — `"branch"` / `"goto"` / `"loop"` → NodeType enum
-- `agent/src/monitor/handlers.py:37,161` — `action_type == "click"` (NOT NodeType — defer to Phase 4 or keep as string)
+- `worker/src/utils/structured_logger.py:297` — `node_type == "template_match"` → `NodeType.TEMPLATE_MATCH`
+- `worker/src/utils/debug_image_saver.py:312,317,324` — `"click"` / `"swipe"` / `"long_press"` → NodeType enum
+- `worker/src/engine/engine.py:731,737,745,754` — `"branch"` / `"goto"` / `"loop"` → NodeType enum
+- `worker/src/monitor/handlers.py:37,161` — `action_type == "click"` (NOT NodeType — defer to Phase 4 or keep as string)
 
 ## §5 Phase 3: 其他 enum 比较点迁移 (.value 模式)
 
 Existing enums (StepState, PipelineState, TaskState, DeviceStatus) are plain `Enum` (NOT str-Enum), so `StepState.COMPLETED == "completed"` is False. Use `.value` pattern: `s.status == StepState.COMPLETED.value`.
 
 **Files to migrate**:
-- `agent/src/core/orchestrator.py:932,934` — `result.state.value == "completed"` → `result.state == PipelineState.COMPLETED` (state is already enum, drop .value)
-- `agent/src/core/step_recorder.py:177,178` — `s.status == 'completed'` → `s.status == StepState.COMPLETED.value` (status is str field)
-- `agent/src/devices/health_checker.py:535` — `parts[1] == 'offline'` → `parts[1] == AgentStatus.OFFLINE.value` (parts[1] is str from split)
-- `agent/src/client/handler.py:165` — `status == "error"` → `status == ServerStatus.ERROR.value` (status is str from JSON)
+- `worker/src/core/orchestrator.py:932,934` — `result.state.value == "completed"` → `result.state == PipelineState.COMPLETED` (state is already enum, drop .value)
+- `worker/src/core/step_recorder.py:177,178` — `s.status == 'completed'` → `s.status == StepState.COMPLETED.value` (status is str field)
+- `worker/src/devices/health_checker.py:535` — `parts[1] == 'offline'` → `parts[1] == AgentStatus.OFFLINE.value` (parts[1] is str from split)
+- `worker/src/client/handler.py:165` — `status == "error"` → `status == ServerStatus.ERROR.value` (status is str from JSON)
 
 ## §6 Phase 4: 新 enum 比较点迁移 + 验证 + commit
 
 **Files to migrate** (新 enum):
-- `agent/src/core/recording_to_pipeline.py:39,83,103,153,155` — `event.event_type == 'click'/'key'/'wait'` → `EventType.CLICK`/`KEY`/`WAIT` (event_type is str field, str-Enum compares equal)
-- `agent/src/client/connection.py:576` — `msg_type != "error"` → `msg_type != ServerStatus.ERROR.value` (msg_type is str from JSON)
-- `agent/src/engine/nodes/notify.py:79` — `level == "error"` → keep as string (LogLevel not defined; only one occurrence, not worth new enum)
+- `worker/src/core/recording_to_pipeline.py:39,83,103,153,155` — `event.event_type == 'click'/'key'/'wait'` → `EventType.CLICK`/`KEY`/`WAIT` (event_type is str field, str-Enum compares equal)
+- `worker/src/client/connection.py:576` — `msg_type != "error"` → `msg_type != ServerStatus.ERROR.value` (msg_type is str from JSON)
+- `worker/src/engine/nodes/notify.py:79` — `level == "error"` → keep as string (LogLevel not defined; only one occurrence, not worth new enum)
 
 **验证**:
 - `pytest agent/tests/` 0 回归
-- `grep -E '(==|!=)\s*["'"'"'](online|offline|busy|idle|error|running|paused|completed|failed|success|for|while|branch|goto|loop|click|swipe|long_press|template_match|eq|neq|gt|lt|gte|lte|contains)["'"'"']' agent/src/` ≤ 5 (residual: notify.py level, monitor action_type, etc.)
+- `grep -E '(==|!=)\s*["'"'"'](online|offline|busy|idle|error|running|paused|completed|failed|success|for|while|branch|goto|loop|click|swipe|long_press|template_match|eq|neq|gt|lt|gte|lte|contains)["'"'"']' worker/src/` ≤ 5 (residual: notify.py level, monitor action_type, etc.)
 
 ## §7 Phase 5: 文档同步 + commit + hash 回填 (spec-41 hash -)
 

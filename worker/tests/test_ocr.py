@@ -509,7 +509,7 @@ class TestOCRNodeGetImageFallback:
     （如 BD2 daily_missions）首个 OCR 节点会 fail with
     'No image available (context empty + device capture failed/unavailable)'。
 
-    重现日志：agent/debug/YYYYMMDD/agent/<pipeline>/HH/structured.jsonl
+    重现日志：worker/debug/YYYYMMDD/agent/<pipeline>/HH/structured.jsonl
     """
 
     @pytest.fixture

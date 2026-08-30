@@ -27,7 +27,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from engine.context import PipelineContext
 
-# Agent tests run with agent/src on sys.path (see agent/conftest.py).
+# Agent tests run with worker/src on sys.path (see agent/conftest.py).
 from ai.llm_client import WorkerLlmClient
 
 pytestmark = pytest.mark.e2e

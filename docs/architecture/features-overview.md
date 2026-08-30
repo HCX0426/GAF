@@ -24,7 +24,7 @@ last_updated: 2026-08-08
 |------|------|---------|
 | **前端** | React + TypeScript + Vite + Ant Design + Zustand + React Router + React Flow (Pipeline) + WebSocket | React 19.2 / TS 6.0 / Vite 8.0 / Antd 6.4 |
 | **后端** | Django + DRF + Celery + Celery Beat + Redis + SQLite + WAL + Channels (Daphne) + drf-spectacular | Django 5.2 / DRF 3.15 / Channels 4.1 / Python 3.11 |
-| **Worker** | Python 独立进程，WebSocket 连后端；平台抽象层 `agent/src/platforms/{windows,linux,macos}` + 设备发现注册表 DeviceDiscoveryRegistry + 统一执行引擎 TaskExecutor | Python 3.11 自研 |
+| **Worker** | Python 独立进程，WebSocket 连后端；平台抽象层 `worker/src/platforms/{windows,linux,macos}` + 设备发现注册表 DeviceDiscoveryRegistry + 统一执行引擎 TaskExecutor | Python 3.11 自研 |
 | **Desktop** | Electron 桌面应用（封装前端 + 后端 + Worker 一体化分发） | 见 `desktop/` |
 | **认证** | SimpleJWT + pyotp (TOTP 2FA) + OAuth2 (GitHub/Google) + AES-256-GCM (游戏账号密码加密) | — |
 | **AI** | OpenAI 兼容 LLM (统一客户端 BaseLLMClient) + ChromaDB RAG + LangGraph Agent + WebSocket RPC | — |
@@ -593,17 +593,17 @@ Worker 是独立 Python 进程，通过 WebSocket 连接后端，提供跨平台
 
 | 平台 | 截图 | 输入 | 发现 | 实现位置 |
 |------|------|------|------|---------|
-| **Windows** | BitBlt / PrintWindow / WGC / DXGI (支持 hwnd crop, Spec E TD-124) / LDOpenGL / NemuIpc / ADB screencap | SendInput (串行化 Spec C TD-121) / PostMessage (client 坐标 Spec B TD-122) / RegisterHotKey / minitouch (动态端口 Spec D TD-123) / ADB input | EnumWindows + ADB devices | `agent/src/platforms/windows/` (agent 侧, 完整) + `backend/device_bridge/platforms/windows/` (backend 侧抽象) |
+| **Windows** | BitBlt / PrintWindow / WGC / DXGI (支持 hwnd crop, Spec E TD-124) / LDOpenGL / NemuIpc / ADB screencap | SendInput (串行化 Spec C TD-121) / PostMessage (client 坐标 Spec B TD-122) / RegisterHotKey / minitouch (动态端口 Spec D TD-123) / ADB input | EnumWindows + ADB devices | `worker/src/platforms/windows/` (agent 侧, 完整) + `backend/device_bridge/platforms/windows/` (backend 侧抽象) |
 | **macOS** | CGWindowListCreateImage (Quartz) + screencapture CLI 双方式 | CGEventPost (Quartz Event) | 待补充 | `backend/device_bridge/platforms/macos/` (P-028 ✅, backend 侧; agent 侧暂无 macOS 实现) |
 | **Linux** | XGetImage + xdg_portal (grim/gnome-screenshot); XShmGetImage 回退到 XGetImage (python-xlib 限制, N129 审计) | XTest (python-xlib) | 待补充 | `backend/device_bridge/platforms/linux/` (P-028 ✅, backend 侧; agent 侧暂无 Linux 实现) |
 
 **核心模块**:
-- `agent/src/engine/` — DAG 并行执行 + StateMachine + 断点续跑
-- `agent/src/devices/` — 设备抽象 + ADB + 模拟器 (adb/ 子目录)
-- `agent/src/platforms/windows/` — Win32 截图/输入 + LDPlayer/MuMu 专用 (agent 侧仅 Windows)
+- `worker/src/engine/` — DAG 并行执行 + StateMachine + 断点续跑
+- `worker/src/devices/` — 设备抽象 + ADB + 模拟器 (adb/ 子目录)
+- `worker/src/platforms/windows/` — Win32 截图/输入 + LDPlayer/MuMu 专用 (agent 侧仅 Windows)
 - `backend/device_bridge/platforms/{windows,macos,linux}/` — backend 侧跨平台抽象层 (P-028 ✅, 纯 Python 包非 Django app)
-- `agent/src/core/` — retry / timeout / 配置
-- `agent/src/client/` — WebSocket 连接 + 设备同步 (走 `/ws/protocol/workers/`)
+- `worker/src/core/` — retry / timeout / 配置
+- `worker/src/client/` — WebSocket 连接 + 设备同步 (走 `/ws/protocol/workers/`)
 
 ---
 

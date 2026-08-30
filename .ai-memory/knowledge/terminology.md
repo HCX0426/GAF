@@ -100,11 +100,11 @@ last_manual_edit: 2026-06-16
 
 | 术语 | 含义 | 出处 |
 |------|------|------|
-| **FramePool** | 截图帧缓存池, 避免重复截图 | `agent/src/devices/windows/frame_pool.py` |
-| **DCache** | 窗口 DeviceContext 缓存 | `agent/src/devices/windows/dccache.py` |
-| **BatchOCR** | 批量 OCR 识别 (避免单次调用开销) | `agent/src/core/batch_ocr.py` |
-| **PipelineEngine** | Pipeline 解释执行器 | `agent/src/engine/engine.py` |
-| **ConfigMigrator** | 配置文件版本迁移器 | `agent/src/core/config_migrator.py` |
+| **FramePool** | 截图帧缓存池, 避免重复截图 | `worker/src/devices/windows/frame_pool.py` |
+| **DCache** | 窗口 DeviceContext 缓存 | `worker/src/devices/windows/dccache.py` |
+| **BatchOCR** | 批量 OCR 识别 (避免单次调用开销) | `worker/src/core/batch_ocr.py` |
+| **PipelineEngine** | Pipeline 解释执行器 | `worker/src/engine/engine.py` |
+| **ConfigMigrator** | 配置文件版本迁移器 | `worker/src/core/config_migrator.py` |
 
 ## 7. 易混淆辨析 (5 对)
 

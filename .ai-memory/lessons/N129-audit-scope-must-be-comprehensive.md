@@ -11,12 +11,12 @@ solution: 'Audit scope must cover all three code trees: GAF/backend/, GAF/agent/
   and GAF/frontend/. Searching only one tree creates false negatives.'
 diff_keywords: ["script", "dsl", "script_dsl", "audit"]
 related_files:
-- agent/src/core/script_dsl.py
-- agent/src/engine/nodes/maa_actions.py
-- agent/src/core/wait_freezes.py
-- agent/src/devices/emulator_discovery.py
-- agent/src/core/worker_pool.py
-- agent/src/recognition/ocr/onnx_paddle_engine.py
+- worker/src/core/script_dsl.py
+- worker/src/engine/nodes/maa_actions.py
+- worker/src/core/wait_freezes.py
+- worker/src/devices/emulator_discovery.py
+- worker/src/core/worker_pool.py
+- worker/src/recognition/ocr/onnx_paddle_engine.py
 created_by: AI
 level: L1
 n_id: N129
@@ -44,7 +44,7 @@ topic: honest-status
 
 
 
-After N128 (which found 6/7 N126-F tasks falsely marked ✅ in pending-roadmap.md), AI started "real implementation" of N126-F3 Script DSL. On checking `agent/src/core/script_dsl.py`:
+After N128 (which found 6/7 N126-F tasks falsely marked ✅ in pending-roadmap.md), AI started "real implementation" of N126-F3 Script DSL. On checking `worker/src/core/script_dsl.py`:
 
 
 
@@ -68,21 +68,21 @@ After N128 (which found 6/7 N126-F tasks falsely marked ✅ in pending-roadmap.m
 
 | N126-F1 VerifyHandler | ❌ (real impl by N128) | ✅ N128 real impl | `backend/device_bridge/handlers/verify.py` (39 tests) |
 
-| N126-F2 Maa JumpBack/WaitFreezes | ❌ not implemented | ✅ real impl | `agent/src/engine/nodes/maa_actions.py` + `agent/src/core/wait_freezes.py` |
+| N126-F2 Maa JumpBack/WaitFreezes | ❌ not implemented | ✅ real impl | `worker/src/engine/nodes/maa_actions.py` + `worker/src/core/wait_freezes.py` |
 
-| N126-F3 DSLCompiler | ❌ not implemented | ✅ real impl | `agent/src/core/script_dsl.py` (626 lines, 46 tests) |
+| N126-F3 DSLCompiler | ❌ not implemented | ✅ real impl | `worker/src/core/script_dsl.py` (626 lines, 46 tests) |
 
-| N126-F4 MuiCache/UserAssist/vbox-conf | 🔧 partial | ✅ real impl | `agent/src/devices/emulator_discovery.py` |
+| N126-F4 MuiCache/UserAssist/vbox-conf | 🔧 partial | ✅ real impl | `worker/src/devices/emulator_discovery.py` |
 
-| N126-F5 WorkerPool | ❌ not implemented | ✅ real impl | `agent/src/core/worker_pool.py` |
+| N126-F5 WorkerPool | ❌ not implemented | ✅ real impl | `worker/src/core/worker_pool.py` |
 
-| N126-F6 ONNXPaddleOCR/DGOCR | ❌ not implemented | ✅ real impl | `agent/src/recognition/ocr/onnx_paddle_engine.py` + `dgocr_engine.py` + `opencc_converter.py` |
+| N126-F6 ONNXPaddleOCR/DGOCR | ❌ not implemented | ✅ real impl | `worker/src/recognition/ocr/onnx_paddle_engine.py` + `dgocr_engine.py` + `opencc_converter.py` |
 
-| N126-F7 ascreencap_nc | ❌ not implemented | ✅ real impl | `agent/src/devices/adb/device.py` |
+| N126-F7 ascreencap_nc | ❌ not implemented | ✅ real impl | `worker/src/devices/adb/device.py` |
 
 
 
-**Test verification**: `pytest GAF/agent/tests/test_maa_actions.py test_script_dsl.py test_emulator_discovery.py test_worker_pool.py test_ocr_engines_extended.py test_adb_device_extended.py -p no:django` → **223 passed, 2 skipped**.
+**Test verification**: `pytest GAF/worker/tests/test_maa_actions.py test_script_dsl.py test_emulator_discovery.py test_worker_pool.py test_ocr_engines_extended.py test_adb_device_extended.py -p no:django` → **223 passed, 2 skipped**.
 
 
 

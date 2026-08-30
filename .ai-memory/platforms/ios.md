@@ -13,7 +13,7 @@ symptom:
 - WebDriverAgent
 solution: 3 自动化方案 (WebDriverAgent/libimobiledevice/Mac Xcode) + 4 限制 + 2 推荐 (实际多走模拟器)
 related_files:
-- agent/src/devices/adb/device.py
+- worker/src/devices/adb/device.py
 - backend/device_bridge/platforms/windows/_adb_input.py
 created_by: AI
 generated: 2026-06-16
@@ -225,9 +225,9 @@ ideviceinstaller -i app.ipa
 
 ## 8. 相关文件
 
-- `agent/src/devices/adb/device.py` - 参考 ADB 模式设计 iOS 设备
+- `worker/src/devices/adb/device.py` - 参考 ADB 模式设计 iOS 设备
 - `backend/device_bridge/platforms/windows/_adb_input.py` - 跨平台参考
-- (待) `agent/src/devices/ios/device.py` - iOS 设备 (未实现)
+- (待) `worker/src/devices/ios/device.py` - iOS 设备 (未实现)
 
 ## 9. 反思 (Reflection)
 

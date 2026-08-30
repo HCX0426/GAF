@@ -1,6 +1,6 @@
 ---
 maintainer: derived-manual
-source: backend/protocol/routing.py, agent/src/client/connection.py, backend/tasks/webhook.py
+source: backend/protocol/routing.py, worker/src/client/connection.py, backend/tasks/webhook.py
 load_when:
 - 新功能 (前后端数据流)
 - Bug修复 (WebSocket 断连/REST 404)
@@ -16,8 +16,8 @@ solution: 3 链路 (REST CRUD / WS 实时 / Webhook 回调) + 4 转换节点 + 5
 related_files:
 - backend/protocol/routing.py
 - backend/protocol/consumers.py
-- agent/src/client/connection.py
-- agent/src/client/handler.py
+- worker/src/client/connection.py
+- worker/src/client/handler.py
 - .ai-memory/meta/auto-kb/agent-protocol.md
 - .ai-memory/meta/auto-kb/api-endpoints.md
 created_by: AI
@@ -142,13 +142,13 @@ def task_saved(sender, instance, created, **kwargs):
 ### 2.2 WS → Agent 推送
 
 **触发**: 后端 → Agent 发送指令 (启动任务/暂停/取消)
-**实现**: `agent/src/client/handler.py` 接收 WS 消息
+**实现**: `worker/src/client/handler.py` 接收 WS 消息
 **协议**: `agent-protocol.md` 定义的 frame
 
 ### 2.3 Agent → 后端 报告
 
 **触发**: Agent 完成任务/失败/进度更新
-**实现**: `agent/src/client/connection.py` 发送消息
+**实现**: `worker/src/client/connection.py` 发送消息
 **协议**: 同上, 反向
 
 ### 2.4 后端 → Webhook 回调

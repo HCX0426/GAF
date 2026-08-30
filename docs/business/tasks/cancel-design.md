@@ -17,11 +17,11 @@ last_updated: 2026-07-05
 
 | 项 | 文档声称 | 现实代码 | 状态 |
 |----|----------|----------|------|
-| 取消信号传播 | Server → WebSocket → Agent | `TaskViewSet.cancel` (`backend/tasks/views.py:146-182`) + Agent `MessageHandler.handle_task_cancel` (`agent/src/client/handler.py:322`) | ✅ 一致 |
+| 取消信号传播 | Server → WebSocket → Agent | `TaskViewSet.cancel` (`backend/tasks/views.py:146-182`) + Agent `MessageHandler.handle_task_cancel` (`worker/src/client/handler.py:322`) | ✅ 一致 |
 | `TaskExecutionViewSet.force_terminate` 端点 | POST `/api/v2/tasks/task-executions/{id}/force-terminate/` | `backend/tasks/views.py:340-407`（Phase 6.4）；跳过宽限期，直接标记 `force_terminated` + 发送 WS `task.force_terminate` ——⚠️ 2026-08-28 实查: force_terminate action 已随重构移除（execution_views.py 仅剩 steps/replay/cancel/pause/resume/skip/retry-from-step/node-trace）；强制终止仅经 Celery check_cancel_timeout 超时路径 | ✅ Phase 6.4 完成 |
-| `MonitorManager.force_stop_all` | 强制停止所有监控线程 | `agent/src/monitor/manager.py:215-278`（Phase 6.3）；1 秒 join 超时 + 清空规则 + 返回线程是否退出 | ✅ Phase 6.3 完成 |
-| `SafePointChecker` 类 | 链式管理器集成取消检查 | `agent/src/core/safe_point.py`（Phase 6.1）；`SafePointChecker` + `TaskCancelledError`；4 个方法：`check()` / `wait_for_safe_point()` / `raise_if_cancelled()` / `reset()` | ✅ Phase 6.1 完成 |
-| `CleanupManager` 类 | 资源清理管理器 | `agent/src/core/cleanup.py`（Phase 6.2）；优先级排序清理栈；4 个优先级常量；`register()` / `cleanup()` / `clear()` API | ✅ Phase 6.2 完成 |
+| `MonitorManager.force_stop_all` | 强制停止所有监控线程 | `worker/src/monitor/manager.py:215-278`（Phase 6.3）；1 秒 join 超时 + 清空规则 + 返回线程是否退出 | ✅ Phase 6.3 完成 |
+| `SafePointChecker` 类 | 链式管理器集成取消检查 | `worker/src/core/safe_point.py`（Phase 6.1）；`SafePointChecker` + `TaskCancelledError`；4 个方法：`check()` / `wait_for_safe_point()` / `raise_if_cancelled()` / `reset()` | ✅ Phase 6.1 完成 |
+| `CleanupManager` 类 | 资源清理管理器 | `worker/src/core/cleanup.py`（Phase 6.2）；优先级排序清理栈；4 个优先级常量；`register()` / `cleanup()` / `clear()` API | ✅ Phase 6.2 完成 |
 | `force_terminate` Celery 任务 | 调用 `MonitorManager.force_stop_all(agent_id)` | `backend/tasks/services/monitor_service.py` 的 `check_cancel_timeout` Celery 任务实现等价功能（10s 超时 → `force_terminated`）；未直接调用 agent 方法，而是依赖 WS 信号 | 🟡 实现等价但路径不同 |
 | `ResourceLock.release_all_for_task` | 强制释放设备锁 | **方法不存在**；`ResourceLock` 本身也未接入 `dispatch_task`（见 `resource_lock.py:1-9` docstring） | 🟡 推后（ResourceLock 接入 dispatch_task 后再补） |
 

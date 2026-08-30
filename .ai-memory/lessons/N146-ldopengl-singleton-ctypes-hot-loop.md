@@ -4,8 +4,8 @@ symptom: [ldopengl, ctypes, singleton, hot-loop, access-violation, td-011, free-
 solution: Cache ctypes.CDLL as module-level singleton to avoid repeated LoadLibrary/FreeLibrary in screenshot hot loops (TD-011 fix).
 diff_keywords: ["ldopengl", "screenshot", "ctypes", "singleton", "hot-loop", "access-violation", "td-011", "free-library"]
 related_files:
-  - agent/src/platforms/windows/ldopengl.py
-  - agent/src/platforms/windows/screenshot.py
+  - worker/src/platforms/windows/ldopengl.py
+  - worker/src/platforms/windows/screenshot.py
 created_by: AI
 level: L1
 n_id: N146
@@ -89,7 +89,7 @@ capture = get_ldopengl_capture()  # 单例，DLL 只加载一次
 
 ## 验证
 
-1. **单元测试**：`agent/tests/test_ldopengl.py` 73/73 PASS（66 既有 + 7 单例回归）
+1. **单元测试**：`worker/tests/test_ldopengl.py` 73/73 PASS（66 既有 + 7 单例回归）
 2. **单例验证**：`临时验证脚本 (已删除)` 6/6 PASS（api_version 在 5 次 is_available() 后稳定为 3）
 3. **端到端验证**：`临时验证脚本 (已删除)` 5/5 真实 LDPlayer 截图 PASS
    - "ldopengl64.dll v3 API loaded" 日志只出现 **1 次**（修复前每秒 1 次）

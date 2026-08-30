@@ -17,8 +17,8 @@ solution: 文档 ✅ 标记必须代码级验证, 不能凭印象; GAF-optimal-s
 diff_keywords: ["optimal", "solution", "optimal-solution", "audit"]
 related_files:
 - docs/architecture/optimal-solution.md
-- agent/src/engine/nodes/color_detect.py
-- agent/src/engine/nodes/feature_match.py
+- worker/src/engine/nodes/color_detect.py
+- worker/src/engine/nodes/feature_match.py
 - .trae/rules/project_rules.md
 created_by: AI
 level: L1

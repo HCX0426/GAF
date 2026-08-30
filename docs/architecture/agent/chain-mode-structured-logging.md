@@ -190,6 +190,6 @@ backend → WS task.execute → handler.execute_task
 ## 6. 关联文档
 
 - logging-pipeline-hardening spec（历史 spec 文档未留存） — pipeline 模式 StructuredLogger 接入设计
-- [structured_logger.py](../../../agent/src/utils/structured_logger.py) — 工具类实现
-- [pipeline_engine.py](../../../agent/src/engine/pipeline_engine.py) — pipeline 模式接入参考（L413-422 初始化、L545-617 记录事件）
-- [orchestrator.py](../../../agent/src/core/orchestrator.py) — chain 模式接入目标
+- [structured_logger.py](../../../worker/src/utils/structured_logger.py) — 工具类实现
+- [pipeline_engine.py](../../../worker/src/engine/pipeline_engine.py) — pipeline 模式接入参考（L413-422 初始化、L545-617 记录事件）
+- [orchestrator.py](../../../worker/src/core/orchestrator.py) — chain 模式接入目标

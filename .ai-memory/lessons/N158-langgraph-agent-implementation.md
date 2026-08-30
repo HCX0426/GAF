@@ -45,7 +45,7 @@ class AgentSession(models.Model):
 from gaf_ai.agent.models import AgentSession  # noqa: E402,F401  re-export
 ```
 
-> 注: 路径原为 `backend/ai/` + `app_label='ai'`, 2026-07-15 由 TD-116 重命名为 `backend/gaf_ai/` + `app_label='gaf_ai'` 以消除与 `agent/src/ai/` 的顶层包名冲突. 教学要点 (子包模型需显式 app_label + re-export) 不变.
+> 注: 路径原为 `backend/ai/` + `app_label='ai'`, 2026-07-15 由 TD-116 重命名为 `backend/gaf_ai/` + `app_label='gaf_ai'` 以消除与 `worker/src/ai/` 的顶层包名冲突. 教学要点 (子包模型需显式 app_label + re-export) 不变.
 
 **Y/N 检查**: 在 Django 子包添加模型时 — (1) Meta 是否设 `app_label`? (2) app 根 `models.py` 是否 re-export?
 

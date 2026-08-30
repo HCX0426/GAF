@@ -59,7 +59,7 @@
 - **测试**: 跑 `backend/agents/tests/` 验证无回归
 
 ### 2.2 Agent handle_error 死代码
-- **文件**: `agent/src/client/connection.py:568` + `agent/src/client/handler.py:159`
+- **文件**: `worker/src/client/connection.py:568` + `worker/src/client/handler.py:159`
 - **问题**: backend spec-29c 已移除 `"error"` type, 改用 `agent.status` + `status=error`. agent 的 `handler_map` 仍含 `"error": handler.handle_error` 条目 + `handle_error` 方法, 永远不会被调用
 - **修复**:
   - 删除 `connection.py:568` 的 `"error": handler.handle_error` 条目
@@ -119,7 +119,7 @@
 
 ### 4.3 Agent `"device.screenshot"` 协议漂移
 - **文件**:
-  - `agent/src/client/handler.py:602,625,636,646,656` (5 处发送 `"device.screenshot"`)
+  - `worker/src/client/handler.py:602,625,636,646,656` (5 处发送 `"device.screenshot"`)
   - `backend/protocol/constants.py:14-56` (`MessageType` enum 不含)
   - `backend/protocol/serializers.py:19` (`ChoiceField(choices=MessageType.all_types())` 会拒绝)
 - **问题**: agent 发送的 frame 类型 backend 不识别, `MessageFrameSerializer` 拒绝 + `AgentConsumer._handle_unknown` 返回 error frame
@@ -130,9 +130,9 @@
 
 ### 4.4 Agent 孤立 handler `handle_device_command` + `handle_config_update`
 - **文件**:
-  - `agent/src/client/handler.py:591` (`handle_device_command`)
-  - `agent/src/client/handler.py:664` (`handle_config_update`)
-  - `agent/src/client/connection.py:554-569` (`handler_map` 9 个 type, 不含 `device.command` / `device.action` / `config.update`)
+  - `worker/src/client/handler.py:591` (`handle_device_command`)
+  - `worker/src/client/handler.py:664` (`handle_config_update`)
+  - `worker/src/client/connection.py:554-569` (`handler_map` 9 个 type, 不含 `device.command` / `device.action` / `config.update`)
 - **问题**: `handler_map` 未引用这两个方法, backend `MessageType` 不含对应 type, backend 无法发送. 死代码
 - **修复**:
   - 删除 `handler.py:591` 的 `handle_device_command` 方法
@@ -146,7 +146,7 @@
 ### Phase 4 验收
 - [x] `executions/consumers.py` `ExecutionConsumer` 删除 (整个文件删除)
 - [x] `agents/consumers.py` `ScreenshotStreamConsumer` 删除
-- [x] `agent/src/client/handler.py` `handle_device_command` + `handle_config_update` 删除
+- [x] `worker/src/client/handler.py` `handle_device_command` + `handle_config_update` 删除
 - [x] `backend/protocol/constants.py` `MessageType` 不含 `device.screenshot` (因为 agent 不再发送)
 - [x] `tasks/signals.py` `broadcast_execution_update` 调用删除
 - [x] `config/asgi.py` WS routing 注册表更新

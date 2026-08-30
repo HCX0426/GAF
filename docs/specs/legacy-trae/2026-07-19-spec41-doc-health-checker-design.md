@@ -262,7 +262,7 @@ scripts/tests/
 - **applies_to → 目录映射规则** (在 thresholds.yaml 配置):
   - `backend` → `backend/`
   - `frontend` → `frontend/src/`
-  - `agent` → `agent/src/`
+  - `agent` → `worker/src/`
   - `scripts` → `scripts/`
   - `docs` → 跳过 (docs 自身变更不影响代码文档时效)
   - `project` → 全仓 (除 docs/, .ai-memory/)
@@ -478,7 +478,7 @@ d6_staleness:
   applies_to_dir_mapping:
     backend: "backend/"
     frontend: "frontend/src/"
-    agent: "agent/src/"
+    agent: "worker/src/"
     scripts: "scripts/"
     docs: null             # null = 跳过 (docs 自身变更不影响代码文档时效)
     project: "*"           # 全仓 (除 docs/, .ai-memory/)

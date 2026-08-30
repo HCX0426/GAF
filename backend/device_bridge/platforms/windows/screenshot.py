@@ -33,7 +33,7 @@ _METHOD_NAME_MAP = {
 # these, GDI BitBlt cannot capture occluded content (it captures whatever is
 # visible on screen, which may be a foreground IDE window). PrintWindow sends
 # WM_PRINT directly to the target window, so it can capture occluded game
-# content. Kept in sync with agent/src/platforms/windows/screenshot.py.
+# content. Kept in sync with worker/src/platforms/windows/screenshot.py.
 _GAME_WINDOW_CLASSES = frozenset({
     "UnityWndClass",        # Unity engine (BD2, etc.)
     "UnrealWindow",         # Unreal engine

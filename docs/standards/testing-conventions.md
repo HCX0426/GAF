@@ -24,7 +24,7 @@ key_decisions:
 | 前端单测 | Vitest + jsdom + @testing-library/react | `frontend/src/<dir>/__tests__/<Component>.test.tsx` | `npm run test` / `npm run test:coverage` |
 | E2E (Python) | Playwright (sync_playwright) | `scripts/e2e/scenarios/` | `python scripts/e2e/run_all.py <scenario>` |
 | E2E (TypeScript) | @playwright/test (async) | `frontend/e2e/` | `npx playwright test` / `npm run e2e` |
-| agent 节点测试 | pytest + MagicMock | `agent/tests/`（参考 `test_ocr.py`） | `D:\code\environment\conda\envs\gaf\python.exe -m pytest agent/tests/ -q` |
+| agent 节点测试 | pytest + MagicMock | `worker/tests/`（参考 `test_ocr.py`） | `D:\code\environment\conda\envs\gaf\python.exe -m pytest worker/tests/ -q` |
 
 > **agent 节点测试层**：测试范围覆盖 agent 引擎节点（`template_match` / `OCR` / `click` / `wait` 等）。覆盖要求：节点关键方法（非 happy path）必须有单测（如 `_get_image` fallback / `execute` fail_result），详见 §7。
 

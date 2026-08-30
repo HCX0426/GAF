@@ -49,7 +49,7 @@ TD-335 短期 fix (OCR `_get_image` device fallback) 已在本轮交付 (commit 
    - OCR 行 能力边界: "requires-upstream (修复后半 self-sufficient)" → "self-sufficient"
    - 契约说明: 移除 "修复后" / "修复方向" 措辞, 改为现状描述
 
-2. **`agent/src/engine/nodes/ocr.py`**:
+2. **`worker/src/engine/nodes/ocr.py`**:
    - L86 注释: "Step 2: Acquire image from context" → "Step 2: Acquire image (context override → device fallback)"
    - L91 错误信息: 'No image available in context for OCR' → 'No image available (context empty + device capture failed/unavailable)'
    - L443-445 docstring: 移除 "Without it, the OCR node fails with..." (短期 fix 已交付, 现状描述)

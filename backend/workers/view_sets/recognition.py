@@ -172,7 +172,7 @@ class DeviceTemplateMatchView(APIView):
 
             # For Windows devices, convert screenshot coordinates to client coordinates
             # This handles DPI scaling (screenshot may be physical pixels, client area is logical)
-            # B001 fix: delegate to agent.platforms.windows.window_info.
+            # B001 fix: delegate to device_bridge.platforms.windows.window_info.
             client_scale = 1.0
             if device.device_type == Device.DeviceType.WINDOWS and device.window_handle:
                 from device_bridge.platforms.windows.window_info import get_client_scale

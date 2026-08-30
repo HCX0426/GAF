@@ -5,7 +5,7 @@ Guards the invariant:
     frontend PipelineNodeType            ⊆ backend ALL_NODE_TYPES
     backend − agent                      == deprecated legacy set
 
-Text-scan based (no imports): agent registry from agent/src/engine/nodes/*.py,
+Text-scan based (no imports): agent registry from worker/src/engine/nodes/*.py,
 frontend from frontend/src/types/models/pipeline.ts, backend from
 backend/pipeline/schema.py. Rooted at repo root (tests run from repo root).
 """
@@ -28,7 +28,7 @@ LEGACY_NODE_TYPES = {
 
 
 def _agent_registered_types() -> set[str]:
-    nodes_dir = REPO_ROOT / "agent" / "src" / "engine" / "nodes"
+    nodes_dir = REPO_ROOT / "worker" / "src" / "engine" / "nodes"
     names: set[str] = set()
     for f in nodes_dir.glob("*.py"):
         text = f.read_text(encoding="utf-8", errors="ignore")

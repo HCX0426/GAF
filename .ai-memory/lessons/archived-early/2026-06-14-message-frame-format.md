@@ -5,7 +5,7 @@ solution: 统一 4 字节长度前缀 + JSON body
 related_files:
   - backend/protocol/constants.py
   - backend/protocol/consumers.py
-  - agent/src/client/handler.py
+  - worker/src/client/handler.py
 created_by: AI
 priority: high
 diff_keywords: ["websocket", "frame", "message", "ws-protocol"]
@@ -30,7 +30,7 @@ Agent 与 Backend 通信时，WebSocket 偶发"消息帧格式错误"日志，�
 ## 解决步骤
 
 1. 后端：`backend/protocol/constants.py` 定义 `MSG_HEADER_SIZE = 4`
-2. Agent：`agent/src/client/handler.py` 改为 `struct.unpack('>I', header)[0]` 解析
+2. Agent：`worker/src/client/handler.py` 改为 `struct.unpack('>I', header)[0]` 解析
 3. 加 `protocol_version` 字段，握手时校验
 
 ## 验证

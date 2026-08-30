@@ -7,7 +7,7 @@ last_updated: 2026-07-29
 # 调试产物时间链路设计
 
 > **日期**: 2026-07-24
-> **状态**: 已废弃 (2026-07-29) — 原计划的 timeline_generator.py / diagnosis_generator.py / score_curve_generator.py 三个工具从未实现到 agent/src/utils/, N192 双调试视角改用 JSONL trace + 前端节点详情抽屉 (ExecutionMonitorPanel + node-trace 端点) 替代。本文档保留作为设计参考。
+> **状态**: 已废弃 (2026-07-29) — 原计划的 timeline_generator.py / diagnosis_generator.py / score_curve_generator.py 三个工具从未实现到 worker/src/utils/, N192 双调试视角改用 JSONL trace + 前端节点详情抽屉 (ExecutionMonitorPanel + node-trace 端点) 替代。本文档保留作为设计参考。
 > **来源**: 用户反馈 — "用户要能通过日志和截图的时间链发现问题，目前 IDE 的 AI 也要能读出哪里出现了问题，就和前面你自己调试一样"
 > **前置文档**: [debug-mode-design.md](debug-mode-design.md)（2026-07-12，基础调试模式架构）
 
@@ -35,8 +35,8 @@ BD2 get_email pipeline 测试中发现模板匹配评分低（0.47），根因�
 
 | 组件 | 位置 | 作用 | 评估 |
 |------|------|------|------|
-| DebugImageSaver | [debug_image_saver.py](file:///d:/code/GAF/agent/src/utils/debug_image_saver.py) | 保存带标注的调试图（ROI 蓝框/匹配红框/模板缩略图/scale 信息） | ✅ 信息密度高，AI 可读，无需重写 |
-| StructuredLogger | [structured_logger.py](file:///d:/code/GAF/agent/src/utils/structured_logger.py) | JSONL 结构化日志，每行一个事件，含 screenshot_path 关联调试图 | ✅ LLM 友好设计，schema 完整 |
+| DebugImageSaver | [debug_image_saver.py](file:///d:/code/GAF/worker/src/utils/debug_image_saver.py) | 保存带标注的调试图（ROI 蓝框/匹配红框/模板缩略图/scale 信息） | ✅ 信息密度高，AI 可读，无需重写 |
+| StructuredLogger | [structured_logger.py](file:///d:/code/GAF/worker/src/utils/structured_logger.py) | JSONL 结构化日志，每行一个事件，含 screenshot_path 关联调试图 | ✅ LLM 友好设计，schema 完整 |
 | 执行 ID | `exec-<uuid12>` | 一次 pipeline 跑一个 ID，JSONL 文件名含 ID | ✅ 可追溯，但调试图文件名未含 |
 | screenshot_path 关联 | JSONL 字段 | 每个事件记录对应调试图路径 | ✅ 已串联，但分散目录 |
 
@@ -59,7 +59,7 @@ BD2 get_email pipeline 测试中发现模板匹配评分低（0.47），根因�
 
 **方案**: 失败时保存最后 N 次 check 的截图（默认 N=3）。
 
-**实现位置**: [wait.py](file:///d:/code/GAF/agent/src/engine/nodes/wait.py) `_wait_template` / `_wait_disappear` / `_wait_ocr` 超时失败分支
+**实现位置**: [wait.py](file:///d:/code/GAF/worker/src/engine/nodes/wait.py) `_wait_template` / `_wait_disappear` / `_wait_ocr` 超时失败分支
 
 **新增数据结构**:
 ```python
@@ -128,7 +128,7 @@ if check_history:
 - 旧: `match_success_主界面_143025123.png`
 - 新: `step03_template_match_success_open_mailbox_exec-abc123_143025123.png`
 
-**实现位置**: [debug_image_saver.py](file:///d:/code/GAF/agent/src/utils/debug_image_saver.py) `save_template_debug` / `save_ocr_debug` / `save_action_debug` 签名新增 `step_index` + `execution_id` 参数
+**实现位置**: [debug_image_saver.py](file:///d:/code/GAF/worker/src/utils/debug_image_saver.py) `save_template_debug` / `save_ocr_debug` / `save_action_debug` 签名新增 `step_index` + `execution_id` 参数
 
 **调用方改动**: 所有调用 `_save_debug` 的节点（template_match / ocr / wait / click / swipe / key_press）从 PipelineContext 读取 `step_index` 和 `execution_id` 传入
 
@@ -176,7 +176,7 @@ if check_history:
   - [wait_claim_all_rewards_fail_check3.png](../wait_failure/wait_claim_all_rewards_fail_check3.png)
 ```
 
-**实现位置**: 新增 `agent/src/utils/timeline_generator.py`，在 [orchestrator.py](file:///d:/code/GAF/agent/src/core/orchestrator.py#L982) `execute_pipeline` 结束时调用
+**实现位置**: 新增 `worker/src/utils/timeline_generator.py`，在 [orchestrator.py](file:///d:/code/GAF/worker/src/core/orchestrator.py#L982) `execute_pipeline` 结束时调用
 
 **数据来源**: 
 - StructuredLogger 的 JSONL 文件（读所有事件）
@@ -231,7 +231,7 @@ if check_history:
   - [ ] 是否需要截图时 DPI 归一化（base_resolution=1920x1080 vs 截图分辨率）？
 ```
 
-**实现位置**: 新增 `agent/src/utils/diagnosis_generator.py`，在 orchestrator 结束时调用
+**实现位置**: 新增 `worker/src/utils/diagnosis_generator.py`，在 orchestrator 结束时调用
 
 **诊断规则引擎**:
 - score 接近阈值（margin < 0.05）→ 提示风险
@@ -271,7 +271,7 @@ debug/agent/
 ```
 
 **实现位置**: 
-- [orchestrator.py](file:///d:/code/GAF/agent/src/core/orchestrator.py#L785) `effective_debug_dir` 改为 `<debug_dir>/<execution_id>/`
+- [orchestrator.py](file:///d:/code/GAF/worker/src/core/orchestrator.py#L785) `effective_debug_dir` 改为 `<debug_dir>/<execution_id>/`
 - 所有 `DebugImageSaver(debug_dir=...)` 调用方改用 `effective_debug_dir + 子目录`
 - StructuredLogger 的 `get_logger(execution_id, debug_dir)` 改为 `debug_dir=<debug_dir>/<execution_id>/structured/`
 
@@ -335,23 +335,23 @@ result.score_curve_path = <execution_id>/structured/<execution_id>_score_curve.p
 
 | 文件 | 作用 |
 |------|------|
-| `agent/src/utils/timeline_generator.py` | 读 JSONL 生成 timeline.md |
-| `agent/src/utils/diagnosis_generator.py` | 读 JSONL + 调试图生成 diagnosis.md |
-| `agent/src/utils/score_curve_generator.py` | 读 JSONL 生成 score_curve.png |
+| `worker/src/utils/timeline_generator.py` | 读 JSONL 生成 timeline.md |
+| `worker/src/utils/diagnosis_generator.py` | 读 JSONL + 调试图生成 diagnosis.md |
+| `worker/src/utils/score_curve_generator.py` | 读 JSONL 生成 score_curve.png |
 
 ### 修改
 
 | 文件 | 改动 |
 |------|------|
-| [wait.py](file:///d:/code/GAF/agent/src/engine/nodes/wait.py) | `_wait_template`/`_wait_disappear`/`_wait_ocr` 失败时保存最后 3 次 check 截图到 `wait_failure/`；每次 check 记录 `wait.check.fail` JSONL 事件 |
-| [debug_image_saver.py](file:///d:/code/GAF/agent/src/utils/debug_image_saver.py) | `save_template_debug`/`save_ocr_debug`/`save_action_debug` 签名新增 `step_index` + `execution_id` 可选参数，文件名格式改为 `step{NN}_{node_type}_{status}_{node_id}_{exec_id}_{ts}.png` |
-| [template_match.py](file:///d:/code/GAF/agent/src/engine/nodes/template_match.py) | `_save_debug` 调用传入 `step_index` + `execution_id` |
-| [ocr.py](file:///d:/code/GAF/agent/src/engine/nodes/ocr.py) | 同上 |
-| [click.py](file:///d:/code/GAF/agent/src/engine/nodes/click.py) | 同上 |
-| [swipe.py](file:///d:/code/GAF/agent/src/engine/nodes/swipe.py) | 同上 |
-| [key_press.py](file:///d:/code/GAF/agent/src/engine/nodes/key_press.py) | 同上 |
-| [orchestrator.py](file:///d:/code/GAF/agent/src/core/orchestrator.py) | `effective_debug_dir` 改为 `<debug_dir>/<execution_id>/`；结束时调用 TimelineGenerator + DiagnosisGenerator + ScoreCurveGenerator；result 新增 timeline_path/diagnosis_path/score_curve_path |
-| [structured_logger.py](file:///d:/code/GAF/agent/src/utils/structured_logger.py) | `get_logger` 的 `debug_dir` 参数支持新归档路径；新增 `log_wait_check_fail` 便捷方法 |
+| [wait.py](file:///d:/code/GAF/worker/src/engine/nodes/wait.py) | `_wait_template`/`_wait_disappear`/`_wait_ocr` 失败时保存最后 3 次 check 截图到 `wait_failure/`；每次 check 记录 `wait.check.fail` JSONL 事件 |
+| [debug_image_saver.py](file:///d:/code/GAF/worker/src/utils/debug_image_saver.py) | `save_template_debug`/`save_ocr_debug`/`save_action_debug` 签名新增 `step_index` + `execution_id` 可选参数，文件名格式改为 `step{NN}_{node_type}_{status}_{node_id}_{exec_id}_{ts}.png` |
+| [template_match.py](file:///d:/code/GAF/worker/src/engine/nodes/template_match.py) | `_save_debug` 调用传入 `step_index` + `execution_id` |
+| [ocr.py](file:///d:/code/GAF/worker/src/engine/nodes/ocr.py) | 同上 |
+| [click.py](file:///d:/code/GAF/worker/src/engine/nodes/click.py) | 同上 |
+| [swipe.py](file:///d:/code/GAF/worker/src/engine/nodes/swipe.py) | 同上 |
+| [key_press.py](file:///d:/code/GAF/worker/src/engine/nodes/key_press.py) | 同上 |
+| [orchestrator.py](file:///d:/code/GAF/worker/src/core/orchestrator.py) | `effective_debug_dir` 改为 `<debug_dir>/<execution_id>/`；结束时调用 TimelineGenerator + DiagnosisGenerator + ScoreCurveGenerator；result 新增 timeline_path/diagnosis_path/score_curve_path |
+| [structured_logger.py](file:///d:/code/GAF/worker/src/utils/structured_logger.py) | `get_logger` 的 `debug_dir` 参数支持新归档路径；新增 `log_wait_check_fail` 便捷方法 |
 
 ## 6. 验收标准
 

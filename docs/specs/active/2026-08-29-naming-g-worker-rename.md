@@ -22,15 +22,15 @@ source: docs/analysis/concept-naming-normalization.md §1(Agent→Worker 多行)
 |---|------|------|------|
 | G-1 | `Agent`(模型) | `backend/agents/models.py:58` | `Worker` |
 | G-2 | `backend/agents`(Django app) | app 名 | `backend/workers` |
-| G-3 | `agent/`(进程目录) | `agent/src/__main__.py` 等 | `worker/` |
-| G-4 | `AgentConnection`(WS 客户端) | `agent/src/client/connection.py:153` | `WorkerConnection` |
-| G-5 | `AgentStatus`(agent 端常量) | `agent/src/core/constants.py:141` | `WorkerStatus` |
+| G-3 | `agent/`(进程目录) | `worker/src/__main__.py` 等 | `worker/` |
+| G-4 | `AgentConnection`(WS 客户端) | `worker/src/client/connection.py:153` | `WorkerConnection` |
+| G-5 | `AgentStatus`(agent 端常量) | `worker/src/core/constants.py:141` | `WorkerStatus` |
 | G-6 | `AgentConsumer`(protocol) | `backend/protocol/consumers.py:123` | `WorkerConsumer` |
 | G-7 | `AgentToken`(字段/端点) | `backend/agents/models.py:134` + 端点 | `WorkerToken`(字段 `worker_token_hash`) |
 | G-8 | `agent_runtime` | `backend/agents/agent_runtime.py` | `worker_runtime` |
 | G-9 | `AgentViewSet` | `backend/agents/view_sets/crud.py:38` | `WorkerViewSet` |
-| G-10 | `run_agent` | `agent/src/__main__.py:436` | `run_worker` |
-| G-11 | `AgentLLMClient` | `agent/src/ai/llm_client.py:92` | `WorkerLlmClient` |
+| G-10 | `run_agent` | `worker/src/__main__.py:436` | `run_worker` |
+| G-11 | `AgentLLMClient` | `worker/src/ai/llm_client.py:92` | `WorkerLlmClient` |
 | G-12 | `AgentSelector` | `tasks/agent_selector.py:132` | `WorkerSelector` |
 | G-13 | `agents.Device`(ORM) | `backend/agents/models.py:178` | `workers.Device` |
 | G-14 | `protocol.AgentSession`(WS 会话) | protocol 域 | `WorkerSession`（详见 C-3，本批同步收口） |
@@ -51,7 +51,7 @@ source: docs/analysis/concept-naming-normalization.md §1(Agent→Worker 多行)
 |------|------|------|
 | P1 | 后端 Django app 重命名 `agents`→`workers` + 迁移(含数据迁移) + settings/urls/import | ✅ |
 | P2 | 模型/字段改名：G-1 `Agent`→`Worker`、G-7 `agent_token_hash`→`worker_token_hash`、G-13 `agents.Device`→`workers.Device` | ✅ |
-| P3 | agent 进程目录 `agent/`→`worker/` + 符号 G-4/G-5/G-10/G-11 + `__main__` 入口 | ⏳ |
+| P3 | agent 进程目录 `agent/`→`worker/` + 符号 G-4/G-5/G-10/G-11 + `__main__` 入口 | ✅ |
 | P4 | protocol/WS 符号 G-6 `AgentConsumer`→`WorkerConsumer`、G-14 `AgentSession`→`WorkerSession`(C-3) + consumers.py 路由(随 F-5) | ⏳ |
 | P5 | 其余后端符号 G-8/G-9/G-12 + `tasks` 选 Worker + `agent_runtime`→`worker_runtime` | ⏳ |
 | P6 | 前端类型重生成 + 全仓 import/文案改写（约全仓 Agent 执行节点语义处） | ⏳ |

@@ -49,7 +49,7 @@
 **排查步骤**:
 ```bash
 # Step 1: 截取当前屏幕，检查弹窗 (重点检查屏幕中央区域)
-conda run -n gaf python agent/debug/_diag_popup.py \
+conda run -n gaf python worker/debug/_diag_popup.py \
     --popup-templates "templates/public/关闭按钮.png,templates/public/跳过.png" \
     --roi "[600, 200, 720, 680]"  # 屏幕中央区域
 
@@ -79,7 +79,7 @@ conda run -n gaf python agent/debug/_diag_popup.py \
 **排查步骤**:
 ```bash
 # Step 1: 全图 OCR 看目标文本在哪里
-conda run -n gaf python agent/debug/_diag_ocr.py \
+conda run -n gaf python worker/debug/_diag_ocr.py \
     --text "普通邮箱" \
     --compare-full
 
@@ -104,12 +104,12 @@ conda run -n gaf python agent/debug/_diag_ocr.py \
 **排查步骤**:
 ```bash
 # Step 1: 对比不同截图方法
-conda run -n gaf python agent/debug/_diag_template.py \
+conda run -n gaf python worker/debug/_diag_template.py \
     --template "templates/get_email/邮箱.png" \
     --roi "[1564,28,95,61]"
 
 # Step 2: 同 ROI 降级匹配
-conda run -n gaf python agent/debug/_diag_template_fallback.py \
+conda run -n gaf python worker/debug/_diag_template_fallback.py \
     --primary-template "templates/get_email/邮箱.png" \
     --roi "[1564,28,95,61]" \
     --mapping "resources/BrownDust II/docs/roi-template-mapping.md"
@@ -179,28 +179,28 @@ conda run -n gaf python agent/debug/_diag_template_fallback.py \
 
 ```bash
 # 1. 完整诊断 (推荐)
-conda run -n gaf python agent/debug/_diag_full.py \
+conda run -n gaf python worker/debug/_diag_full.py \
     --pipeline get_email --node wait_regular_email
 
 # 2. 节点隔离测试
-conda run -n gaf python agent/debug/_diag_node.py \
+conda run -n gaf python worker/debug/_diag_node.py \
     --node-id wait_regular_email \
     --pipeline resources/BrownDust\ II/tasks/get_email.json
 
 # 3. OCR 验证
-conda run -n gaf python agent/debug/_diag_ocr.py \
+conda run -n gaf python worker/debug/_diag_ocr.py \
     --text "普通邮箱" --roi "[214,10,333,276]" --compare-full
 
 # 4. 模板匹配验证
-conda run -n gaf python agent/debug/_diag_template.py \
+conda run -n gaf python worker/debug/_diag_template.py \
     --template "templates/get_email/邮箱.png" --roi "[1564,28,95,61]"
 
 # 5. 弹窗检测
-conda run -n gaf python agent/debug/_diag_popup.py \
+conda run -n gaf python worker/debug/_diag_popup.py \
     --popup-templates "templates/public/返回键1.png,templates/public/跳过.png"
 
 # 6. 同 ROI 降级匹配
-conda run -n gaf python agent/debug/_diag_template_fallback.py \
+conda run -n gaf python worker/debug/_diag_template_fallback.py \
     --primary-template "templates/get_email/邮箱.png" \
     --roi "[1564,28,95,61]" \
     --mapping "resources/BrownDust II/docs/roi-template-mapping.md"
@@ -307,7 +307,7 @@ debug/YYYYMMDD/diag_<method>/
 
 ```bash
 # Level 3: 设计级诊断
-conda run -n gaf python agent/debug/_diag_full.py \
+conda run -n gaf python worker/debug/_diag_full.py \
     --pipeline get_email --node wait_regular_email --level 3
 ```
 

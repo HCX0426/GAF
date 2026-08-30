@@ -50,7 +50,7 @@ maintainer: auto
 symptom: [popup:agent:duplicate, 弹窗, agent 重复]
 solution: 文件锁 + SW_HIDE
 related_files:
-  - agent/src/client/connection.py
+  - worker/src/client/connection.py
 created_by: AI
 priority: high
 ---
@@ -157,7 +157,7 @@ class YamlParseWithChineseTests(unittest.TestCase):
         self.assertEqual(data["solution"], "文件锁 + SW_HIDE")
         self.assertEqual(data["created_by"], "AI")
         self.assertEqual(data["maintainer"], "auto")
-        self.assertIn("agent/src/client/connection.py", data["related_files"])
+        self.assertIn("worker/src/client/connection.py", data["related_files"])
         self.assertIn("popup", body)
 
 

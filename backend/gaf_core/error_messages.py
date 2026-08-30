@@ -8,7 +8,7 @@ Purpose:
 
     Why a separate file (not inline in error_codes.py):
     - error_codes.py is shared between backend and agent (imports in
-      agent/src/core/error_codes.py) — user-facing Chinese text does not
+      worker/src/core/error_codes.py) — user-facing Chinese text does not
       belong on the agent side.
     - Keeping the mapping here makes it easy to diff / extend / i18n later
       (when the frontend ever switches away from hard-coded Chinese UI).

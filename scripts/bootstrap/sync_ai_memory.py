@@ -384,7 +384,7 @@ def _extract_source_hint(body: str) -> Optional[str]:
 
     Returns:
         Source path string (may contain glob wildcards, e.g.
-        `agent/src/engine/nodes/*.py`); returns None if not found.
+        `worker/src/engine/nodes/*.py`); returns None if not found.
     """
     m = _SOURCE_HINT_RE.search(body)
     return m.group(1) if m else None

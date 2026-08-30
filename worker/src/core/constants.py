@@ -1,7 +1,7 @@
 """Consolidated enums shared across agent modules.
 
 This module is the single source of truth for status/type/operator
-enums used by string-literal comparisons throughout agent/src/. Phase 1
+enums used by string-literal comparisons throughout worker/src/. Phase 1
 (spec-40) introduces the module and dedups ComparisonOperator/LoopType/
 NodeType. Phase 2 (spec-44) migrates the remaining 80+ string literals
 to these enums.

@@ -1,10 +1,10 @@
 """降级链集成测试：截图降级、输入降级.
 
 现实状态（2026-07-04，per N126 诚实标记）：
-- ScreenshotCache 类已实现（agent/src/devices/screenshot_cache.py，🔧 骨架），
+- ScreenshotCache 类已实现（worker/src/devices/screenshot_cache.py，🔧 骨架），
   使用 Redis 后端 + 内存回退。Redis 不可用时自动回退到内存后端，
   以下 3 个 ScreenshotCache 测试基于内存后端运行。
-- HumanizedInput 类已实现（agent/src/devices/humanize.py:130），测试正常运行。
+- HumanizedInput 类已实现（worker/src/devices/humanize.py:130），测试正常运行。
 """
 import time
 from unittest.mock import MagicMock, patch

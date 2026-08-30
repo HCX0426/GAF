@@ -13,7 +13,7 @@ source: docs/analysis/concept-naming-normalization.md §1/§4(D23①)/§7
 
 ## 1. 背景与动机 (Background)
 
-评估稿 §4-D23① 核实：代码存在协议层命名漂移——WS 帧名为 `task.assign`（`agent/src/client/connection.py:870` `"task.assign": handler.handle_task_assign`），而消费方法为 `handle_task_assign`（下划线，`agent/src/client/handler.py:186`）。且 `task.dispatch` 也已别名到同一 handler（兼容历史）。这属 wire-contract 级不一致（评估稿 §1/§7 标高危）。
+评估稿 §4-D23① 核实：代码存在协议层命名漂移——WS 帧名为 `task.assign`（`worker/src/client/connection.py:870` `"task.assign": handler.handle_task_assign`），而消费方法为 `handle_task_assign`（下划线，`worker/src/client/handler.py:186`）。且 `task.dispatch` 也已别名到同一 handler（兼容历史）。这属 wire-contract 级不一致（评估稿 §1/§7 标高危）。
 
 后端方法名 `handle_task_assign` 为内部实现，无需改；**最优**是统一 WS 帧名为单一规范名，并保留 alias 兼容存量客户端。
 

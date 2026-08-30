@@ -135,7 +135,7 @@ routes:
       fallback: "查 .ai-memory/meta/failure-modes.md N## entries"
     diagnose:
       skill: "pipeline-task-diagnosis (N204: 任务失败/节点异常时必调, 见 env-hardrules-contextual.md §诊断触发硬约束)"
-      tools: [".ai-memory/checklists/data-chain-checklist.md", "docs/business/tasks/troubleshooting.md", "agent/src/utils/screenshot_diagnostic.py"]
+      tools: [".ai-memory/checklists/data-chain-checklist.md", "docs/business/tasks/troubleshooting.md", "worker/src/utils/screenshot_diagnostic.py"]
 
   new_feature:
     by_domain:

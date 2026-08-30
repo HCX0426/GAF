@@ -144,7 +144,7 @@ bug_fix:
     - "{symptom 涉及 pipeline 节点执行/OCR超时/模板匹配失败/坐标偏移} → 调用 Skill(name='pipeline-task-diagnosis') (方法论参考) 获取节点任务诊断方法论"
     - "用 .ai-memory/checklists/data-chain-checklist.md 8 步检查"
     - "用 docs/business/tasks/troubleshooting.md 排查任务执行问题"
-    - "用 agent/src/utils/screenshot_diagnostic.py 截图诊断"
+    - "用 worker/src/utils/screenshot_diagnostic.py 截图诊断"
   step_5_fix_and_reflect:
     - "调用 Skill(name='test-driven-development') (方法论参考) 先写复现测试"
     - "修复后写 lessons（必填 symptom/solution/related_files）"

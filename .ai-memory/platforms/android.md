@@ -1,6 +1,6 @@
 ---
 maintainer: manual
-source: agent/src/devices/adb/, Android Debug Bridge docs
+source: worker/src/devices/adb/, Android Debug Bridge docs
 load_when:
 - 新功能 (Android 设备)
 - 调试 ADB 截图/输入
@@ -13,9 +13,9 @@ symptom:
 - 真机
 solution: 4 ADB 命令 (screencap/input) + 5 模拟器 (LDPlayer/BlueStacks/Nox/MuMu/Android Studio) + 4 易错点
 related_files:
-- agent/src/devices/adb/device.py
-- agent/src/devices/adb/pool.py
-- agent/src/devices/emulator_discovery.py
+- worker/src/devices/adb/device.py
+- worker/src/devices/adb/pool.py
+- worker/src/devices/emulator_discovery.py
 - backend/device_bridge/discovery/emulator.py
 created_by: AI
 generated: 2026-06-16
@@ -58,7 +58,7 @@ adb exec-out screencap -p > screenshot.png
 
 **GAF 实现**:
 ```python
-# agent/src/devices/adb/device.py
+# worker/src/devices/adb/device.py
 import subprocess
 
 def screenshot(serial: str) -> bytes:
@@ -170,7 +170,7 @@ def list_adb_devices() -> list:
 
 **GAF 自动发现**:
 ```python
-# agent/src/devices/emulator_discovery.py
+# worker/src/devices/emulator_discovery.py
 import socket
 import subprocess
 
@@ -273,11 +273,11 @@ adb devices
 
 ## 7. 相关文件
 
-- `agent/src/devices/adb/device.py` - ADB 设备控制
-- `agent/src/devices/adb/pool.py` - 设备池管理
-- `agent/src/devices/emulator_discovery.py` - 模拟器自动发现
+- `worker/src/devices/adb/device.py` - ADB 设备控制
+- `worker/src/devices/adb/pool.py` - 设备池管理
+- `worker/src/devices/emulator_discovery.py` - 模拟器自动发现
 - `backend/device_bridge/discovery/emulator.py` - 后端模拟器发现
-- `agent/src/devices/window_discovery.py` - 窗口发现
+- `worker/src/devices/window_discovery.py` - 窗口发现
 
 ## 8. 反思 (Reflection)
 

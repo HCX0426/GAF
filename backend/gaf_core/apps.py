@@ -5,7 +5,7 @@ class GafCoreConfig(AppConfig):
     """Core shared utilities for the GAF Django backend.
 
     Renamed from ``core`` to ``gaf_core`` (TD-116) to eliminate the
-    top-level package name collision with ``agent/src/core/``. The
+    top-level package name collision with ``worker/src/core/``. The
     ``db_table`` of ``LogEntry`` is preserved as ``core_log_entry`` so no
     DB schema migration is needed — only the ``app_label`` changes.
     """

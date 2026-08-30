@@ -8,8 +8,8 @@ related_files:
   - backend/workers/views.py
   - backend/config/settings/base.py
   - backend/device_bridge/platforms/windows/_adb_screenshot.py
-  - agent/src/devices/health_checker.py
-  - agent/src/monitor/manager.py
+  - worker/src/devices/health_checker.py
+  - worker/src/monitor/manager.py
   - .trae/rules/project_rules.md
 created_by: AI
 merged_n_ids: [N154, N155]
@@ -201,7 +201,7 @@ def _get_adb_devices_output(cls, adb_exe):
 
 > **触发原话**: "刚才电脑又黑屏了，我又重启了，是你造成的吗"
 
-**根因**: N154 修复时**遗漏了 MonitorManager 的 5s 截图间隔**。虽然心跳和 health_checker 都改到了 30s，但 `agent/src/monitor/manager.py` 的 `DEFAULT_CHECK_INTERVAL = 5.0` 没有改。
+**根因**: N154 修复时**遗漏了 MonitorManager 的 5s 截图间隔**。虽然心跳和 health_checker 都改到了 30s，但 `worker/src/monitor/manager.py` 的 `DEFAULT_CHECK_INTERVAL = 5.0` 没有改。
 
 **触发链**:
 1. AI 修改了 ~10 个 backend 文件 → Django autoreload **多次重启**

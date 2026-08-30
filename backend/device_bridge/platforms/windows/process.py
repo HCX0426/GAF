@@ -173,7 +173,7 @@ def kill_processes_by_commandline(pattern: str) -> int:
 
     Args:
         pattern: Substring to match in process command line (e.g.
-            ``agent\\src\\__main__.py``). Case-insensitive.
+            ``worker\\src\\__main__.py``). Case-insensitive.
 
     Returns:
         Number of processes killed.

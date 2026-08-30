@@ -284,9 +284,9 @@ scheduler 不直接调用 tasks 的 Task 模型，而是通过 `pipeline.service
 - 常量: `protocol/constants.py::MessageType.DEVICE_COMMAND = "device.command"`
 - backend 转发: `protocol/consumers.py::AgentConsumer.device_command`
 - backend 发送: `scheduler/recovery_engine.py::_action_device_command` (通过 `channel_layer.group_send(f"agent_{agent_id}", {"type": "device.command", ...})`)
-- agent 路由: `agent/src/client/connection.py::handler_map["device.command"]`
-- agent 处理: `agent/src/client/handler.py::handle_device_command` (异步线程执行 + `device.action_result` 帧上报)
-- agent 路由实现: `agent/src/client/handler.py::_execute_device_command` (按 command 路由到 EmulatorController/ADBDevice/WindowsDevice)
+- agent 路由: `worker/src/client/connection.py::handler_map["device.command"]`
+- agent 处理: `worker/src/client/handler.py::handle_device_command` (异步线程执行 + `device.action_result` 帧上报)
+- agent 路由实现: `worker/src/client/handler.py::_execute_device_command` (按 command 路由到 EmulatorController/ADBDevice/WindowsDevice)
 
 ### 9.4 `_execute_warmup_step` 真实化 (P-048 升级)
 
@@ -300,5 +300,5 @@ scheduler 不直接调用 tasks 的 Task 模型，而是通过 `pipeline.service
 ### 9.5 测试覆盖
 
 - `backend/scheduler/tests/test_recovery_link_wiring.py` (29 个测试): signal transition / dedup / fallback / 真实 action 执行 / device_command 派发 / 端到端 RecoveryLog 写入
-- `agent/tests/test_s27_recovery_wiring.py` (17 个测试): 6 种 command 路由 + 异常路径 + action_result 帧上报
+- `worker/tests/test_s27_recovery_wiring.py` (17 个测试): 6 种 command 路由 + 异常路径 + action_result 帧上报
 - `backend/protocol/tests/test_protocol.py` (常量数量更新): all_types=22 / server_to_agent=12

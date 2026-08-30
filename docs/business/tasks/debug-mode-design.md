@@ -41,7 +41,7 @@ config default (False)
 
 | app | 读取位置 | 行为 |
 |-----|---------|------|
-| Agent | `agent/src/__main__.py` `build_config()` | 读取 `GAF_DEBUG` 环境变量，CLI `--debug` 可覆盖 |
+| Agent | `worker/src/__main__.py` `build_config()` | 读取 `GAF_DEBUG` 环境变量，CLI `--debug` 可覆盖 |
 | Backend | `backend/config/settings/base.py` `settings.GAF_DEBUG` | 读取 `.env` 中的 `GAF_DEBUG` |
 | Backend tasks | `backend/tasks/tasks.py` `settings.GAF_DEBUG` | 派发任务时传递 `debug_mode` |
 | Backend pipeline | `backend/pipeline/tasks.py` `settings.GAF_DEBUG` | 执行管道时传递 `debug_mode` |

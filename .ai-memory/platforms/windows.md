@@ -1,6 +1,6 @@
 ---
 maintainer: manual
-source: agent/src/devices/windows/, backend/device_bridge/platforms/windows/, Microsoft Docs
+source: worker/src/devices/windows/, backend/device_bridge/platforms/windows/, Microsoft Docs
 load_when:
 - 新功能 (Windows 平台)
 - 调试 Windows 截图/输入
@@ -16,9 +16,9 @@ solution: 3 截图 API 降级链 (WGC→DXGI→BitBlt) + 4 输入 API + 5 易错
 related_files:
 - backend/device_bridge/platforms/windows/screenshot.py
 - backend/device_bridge/platforms/windows/input.py
-- agent/src/platforms/windows/dxgi_capture.py
-- agent/src/platforms/windows/wgc.py
-- agent/src/platforms/windows/window.py
+- worker/src/platforms/windows/dxgi_capture.py
+- worker/src/platforms/windows/wgc.py
+- worker/src/platforms/windows/window.py
 - backend/device_bridge/platforms/windows/
 created_by: AI
 generated: 2026-06-16
@@ -62,7 +62,7 @@ last_manual_edit: 2026-06-16
 
 **优势**: 高性能, 截屏含 GPU 内容, 支持现代应用
 **限制**: Win10 1903+ 必须
-**实现**: `agent/src/platforms/windows/wgc.py` (基于 `windows-capture` 库)
+**实现**: `worker/src/platforms/windows/wgc.py` (基于 `windows-capture` 库)
 **性能**: 60+ FPS, 16ms 延迟
 
 ```python
@@ -76,7 +76,7 @@ screenshot = wgc.capture(hwnd=hwnd)  # bytes, PNG
 
 **优势**: 截屏含 GPU, 兼容性较好
 **限制**: Win8+, 需 DirectX 11+
-**实现**: `agent/src/platforms/windows/dxgi_capture.py`
+**实现**: `worker/src/platforms/windows/dxgi_capture.py`
 **性能**: 30-60 FPS, 30ms 延迟
 
 ```python
@@ -103,7 +103,7 @@ screenshot = bitblt.capture(hwnd=hwnd, region=(0, 0, 1920, 1080))
 ### 2.4 降级链自动选择
 
 ```python
-# agent/src/devices/windows/benchmark.py
+# worker/src/devices/windows/benchmark.py
 def select_best_screenshot_method() -> ScreenshotMethod:
     if is_wgc_available():
         return WGCScreenshot()
@@ -292,11 +292,11 @@ def scale_to_physical(hwnd: int, x: int, y: int) -> tuple:
 ## 8. 相关文件
 
 - `backend/device_bridge/platforms/windows/screenshot.py` - BitBlt 实现
-- `agent/src/platforms/windows/dxgi_capture.py` - DXGI 实现
-- `agent/src/platforms/windows/wgc.py` - WGC 实现
+- `worker/src/platforms/windows/dxgi_capture.py` - DXGI 实现
+- `worker/src/platforms/windows/wgc.py` - WGC 实现
 - `backend/device_bridge/platforms/windows/input.py` - PostMessage/SendInput
-- `agent/src/platforms/windows/window.py` - 窗口管理
-- `agent/src/devices/windows/benchmark.py` - 性能测试
+- `worker/src/platforms/windows/window.py` - 窗口管理
+- `worker/src/devices/windows/benchmark.py` - 性能测试
 - `backend/device_bridge/platforms/windows/` - 后端平台抽象
 
 ## 9. 反思 (Reflection)

@@ -30,10 +30,10 @@ from pathlib import Path
 
 import numpy as np
 
-# Add agent/src to path when run as script
-AGENT_SRC = Path(__file__).resolve().parent.parent
-if str(AGENT_SRC) not in sys.path:
-    sys.path.insert(0, str(AGENT_SRC))
+# Add worker/src to path when run as script
+WORKER_SRC = Path(__file__).resolve().parent.parent
+if str(WORKER_SRC) not in sys.path:
+    sys.path.insert(0, str(WORKER_SRC))
 
 # Apply DPI awareness BEFORE any GDI/PrintWindow capture — otherwise GDI
 # returns DPI-virtualized logical pixels (e.g. 1024x576) instead of physical

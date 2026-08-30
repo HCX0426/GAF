@@ -65,7 +65,7 @@ d6_staleness:
   applies_to_dir_mapping:
     backend: "backend/"
     frontend: "frontend/src/"
-    agent: "agent/src/"
+    agent: "worker/src/"
     scripts: "scripts/"
     docs: null
     project: "*"
@@ -133,7 +133,7 @@ monthly_checks:
     per_dir:
       "backend": 2000
       "frontend/src": 1500
-      "agent/src": 1500
+      "worker/src": 1500
       "scripts": 1000
     # Deliberately kept large (TD-365 exclusion, merged by design 2026-08-04
     # a3e65c08, evidence: .ai-memory/evidence/active/2026-08-04-test-file-merge/):

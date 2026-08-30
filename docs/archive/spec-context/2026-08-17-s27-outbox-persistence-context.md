@@ -10,7 +10,7 @@
 
 ## 2. N151 5 步法评估过程
 
-1. **架构盘点**: `AgentConnection._outbox` (agent/src/client/connection.py:176) 内存 deque(maxlen=50);
+1. **架构盘点**: `AgentConnection._outbox` (worker/src/client/connection.py:176) 内存 deque(maxlen=50);
    `_enqueue_outbox` (:367) 断线入队; `_flush_outbox` (:389) 重连后 FIFO 重放;
    backend `update_task_execution_result` 终态守卫 (S1 P2) → 重复发送安全;
    agent 已有文件存储先例 (token_store.py / offline_cache.py)

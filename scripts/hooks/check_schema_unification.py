@@ -86,7 +86,7 @@ SKIP_DIRS = frozenset({
 
 # Scope: only scan these top-level dirs (避免全文件遍历)
 SCAN_DIRS = frozenset({
-    "agent/src", "backend", "frontend/src", "resources", "docs/business",
+    "worker/src", "backend", "frontend/src", "resources", "docs/business",
 })
 
 
@@ -114,7 +114,7 @@ LEGACY_FIELD_RULES = [
             "backend/pipeline/schema.py",  # PIPELINE_GRAPH_SCHEMA 定义
             "frontend/src/utils/schemaValidator.ts",  # canvas schema 校验
             # parser.py 注释描述 React Flow 输入格式 (L230), 兼容层代码 L240 归一化
-            "agent/src/engine/parser.py",
+            "worker/src/engine/parser.py",
             # 测试用例有意测试 legacy/canvas schema 兼容性
             "backend/pipeline/tests/test_validators_nested.py",  # test_canvas_schema_still_passes
             "backend/pipeline/tests/test_validators.py",  # test_canvas_schema_still_passes (canvas 用 type)
@@ -130,7 +130,7 @@ LEGACY_FIELD_RULES = [
             # canvas schema (React Flow) config 用 max_wait 是 legacy 兼容, 前端 NodePropertyPanel 兼容读取
             "backend/pipeline/recording_converter.py",  # 输出 canvas graph_data
             # agent wait.py _get_timeout 兼容读取 legacy max_wait (canonical=timeout)
-            "agent/src/engine/nodes/wait.py",
+            "worker/src/engine/nodes/wait.py",
         ],
     ),
     # 3. execution_mode = "chain" (已废弃)
@@ -180,8 +180,8 @@ CANVAS_LEGACY_RULES = [
             "frontend/src/types/models/debug.ts",  # @deprecated 旧 chain schema UI-internal 注释
             "frontend/src/pages/Tasks/Editor.tsx",  # @deprecated serializeNode
             "backend/scheduler/",  # recovery 领域术语: action_type=恢复动作类型, 非 canvas 残留
-            "agent/src/monitor/handlers.py",  # monitor 弹窗模板内部配置字段
-            "agent/tests/test_monitor_coord_trace.py",  # 对应 monitor 测试
+            "worker/src/monitor/handlers.py",  # monitor 弹窗模板内部配置字段
+            "worker/tests/test_monitor_coord_trace.py",  # 对应 monitor 测试
             "docs/business/ops/monitor-design.md",  # monitor 事件 payload 设计文档
         ],
     ),
@@ -344,15 +344,15 @@ def check_node_data_flow(repo_root: Path) -> list[dict]:
     在 agent 代码中存在且未被误删. 完整的运行时数据流验证需跑 e2e.
     """
     violations: list[dict] = []
-    agent_nodes_dir = repo_root / "agent" / "src" / "engine" / "nodes"
-    if not agent_nodes_dir.is_dir():
+    worker_nodes_dir = repo_root / "worker" / "src" / "engine" / "nodes"
+    if not worker_nodes_dir.is_dir():
         return violations
 
     # 检查 publish_match_pos 在识别类节点中调用
     recognition_nodes = ["template_match.py", "template_match_any.py", "ocr.py",
                          "feature_match.py", "color_detect.py"]
     for fname in recognition_nodes:
-        fpath = agent_nodes_dir / fname
+        fpath = worker_nodes_dir / fname
         if not fpath.is_file():
             continue
         try:
@@ -361,7 +361,7 @@ def check_node_data_flow(repo_root: Path) -> list[dict]:
             continue
         if "publish_match_pos" not in content:
             violations.append({
-                "file": f"agent/src/engine/nodes/{fname}",
+                "file": f"worker/src/engine/nodes/{fname}",
                 "line": 0,
                 "severity": "warn",
                 "desc": f"{fname} 识别类节点未调用 publish_match_pos (N191 节点间数据流)",

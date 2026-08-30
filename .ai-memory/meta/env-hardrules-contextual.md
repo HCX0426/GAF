@@ -258,7 +258,7 @@ rg "\"mode\":\s*\"chain\"|execution_mode.*chain" resources docs
 - Python 版本: 3.11.15
 - 启动方式: `scripts/gaf_services.ps1 start`（一键启动全部）
 - 禁止手动 `python -m src` 启动 agent，必须通过 `gaf_services.ps1` 管理
-- 代理端依赖统一在 `agent/requirements.txt` 中维护，安装到 conda gaf 环境
+- 代理端依赖统一在 `worker/requirements.txt` 中维护，安装到 conda gaf 环境
 - 旧 venv 目录 `D:\code\environment\venvs\gaf-agent` 已废弃，不再使用
 
 ## 测试运行硬约束 (N194, 已退役)
@@ -266,14 +266,14 @@ rg "\"mode\":\s*\"chain\"|execution_mode.*chain" resources docs
 > **状态**: 退役 — 仅历史追溯 — 由 orchestrator 触发加载，非 L0 常驻
 
 > 触发场景: **任何跑 pytest 命令** (agent/backend/scripts 全量或单测, 验收 / 调试 / 回归任意目的)。
-> 根因: `pyproject.toml` 配置 `DJANGO_SETTINGS_MODULE = "config.settings.dev"` + `pythonpath = ["backend"]`, pytest-django 插件检测到此配置后, 在 **每个测试 session** 都强制 `django.setup()` (加载 settings + apps + channels Redis 连接)。agent 测试根本不依赖 Django, 但 pytest-django 仍强制加载, 导致: (a) 单测试 12s 起步 (channels Redis 连接超时); (b) 全量 agent 测试 ~2h; (c) PowerShell 调 `conda run` 还会序列化 stdout 为 CLIXML 流, 进度完全看不到。AI 历史上多次跑 agent 测试都用默认命令 `python -m pytest agent/tests/`, 慢但未深究根因, 误判为 retry 真睡 / Windows IO 慢。
+> 根因: `pyproject.toml` 配置 `DJANGO_SETTINGS_MODULE = "config.settings.dev"` + `pythonpath = ["backend"]`, pytest-django 插件检测到此配置后, 在 **每个测试 session** 都强制 `django.setup()` (加载 settings + apps + channels Redis 连接)。agent 测试根本不依赖 Django, 但 pytest-django 仍强制加载, 导致: (a) 单测试 12s 起步 (channels Redis 连接超时); (b) 全量 agent 测试 ~2h; (c) PowerShell 调 `conda run` 还会序列化 stdout 为 CLIXML 流, 进度完全看不到。AI 历史上多次跑 agent 测试都用默认命令 `python -m pytest worker/tests/`, 慢但未深究根因, 误判为 retry 真睡 / Windows IO 慢。
 
 ### 核心约束
 
 1. **跑 agent 测试必用 `-p no:django -o addopts=""`** 禁用 pytest-django 插件:
    ```powershell
    # ✅ 正确 (2.5 分钟, 2154 passed)
-   D:\code\environment\conda\envs\gaf\python.exe -m pytest agent/tests/ -p no:django -o addopts=""
+   D:\code\environment\conda\envs\gaf\python.exe -m pytest worker/tests/ -p no:django -o addopts=""
    ```
 2. **跑 backend 测试保持默认** (需要 Django):
    ```powershell
@@ -284,14 +284,14 @@ rg "\"mode\":\s*\"chain\"|execution_mode.*chain" resources docs
 
 ### 触发条件 (任一即触发)
 
-- AI 跑 `pytest agent/tests/` 或 `pytest agent/tests/test_xxx.py` 命令
+- AI 跑 `pytest worker/tests/` 或 `pytest worker/tests/test_xxx.py` 命令
 - AI 跑 `pytest scripts/tests/` (脚本测试, 同样不依赖 Django)
 - 用户反馈"测试慢" / "测试卡住" / "测试没结果"
 
 ### 失败模式（禁止）
 
-- ❌ `conda run -n gaf python -m pytest agent/tests/` (默认配置, pytest-django 强制加载 Django, ~2h) → ✅ 加 `-p no:django -o addopts=""` (2.5min)
-- ❌ `python -m pytest agent/tests/test_xxx.py` (单测也 12s) → ✅ 加 `-p no:django -o addopts=""` (0.02s)
+- ❌ `conda run -n gaf python -m pytest worker/tests/` (默认配置, pytest-django 强制加载 Django, ~2h) → ✅ 加 `-p no:django -o addopts=""` (2.5min)
+- ❌ `python -m pytest worker/tests/test_xxx.py` (单测也 12s) → ✅ 加 `-p no:django -o addopts=""` (0.02s)
 - ❌ `conda run -n gaf python -m pytest ... | Tee-Object log.txt` (CLIXML 序列化, 进度看不到) → ✅ 直调 `D:\code\environment\conda\envs\gaf\python.exe`
 - ❌ 测试慢就归因"代码本身慢" / "retry 真睡" / "Windows IO 慢", 不做对比实验 → ✅ 用 `--durations=20` + `python _time_xxx.py` 直跑对比, 区分 pytest 环境开销 vs 代码本身慢
 - ❌ 长时间后台跑测试不检查 CPU 占用 → ✅ `Get-Process python | Select CPU, WorkingSet` 看 CPU 占用, CPU < 1% 说明在 sleep/IO 等待, 不是 CPU 计算
@@ -303,9 +303,9 @@ rg "\"mode\":\s*\"chain\"|execution_mode.*chain" resources docs
 Get-Content pyproject.toml | Select-String "DJANGO_SETTINGS_MODULE"
 
 # 单测试对比验证 (加 -p no:django 应快 600x)
-D:\code\environment\conda\envs\gaf\python.exe -m pytest "agent/tests/test_retry.py::TestRetryExhaustion::test_exhausts_and_reraises" --durations=5 --no-header
+D:\code\environment\conda\envs\gaf\python.exe -m pytest "worker/tests/test_retry.py::TestRetryExhaustion::test_exhausts_and_reraises" --durations=5 --no-header
 # 默认: 12.44s call
-D:\code\environment\conda\envs\gaf\python.exe -m pytest "agent/tests/test_retry.py::TestRetryExhaustion::test_exhausts_and_reraises" --durations=5 --no-header -p no:django -o addopts=""
+D:\code\environment\conda\envs\gaf\python.exe -m pytest "worker/tests/test_retry.py::TestRetryExhaustion::test_exhausts_and_reraises" --durations=5 --no-header -p no:django -o addopts=""
 # 禁用 django: 0.02s call
 ```
 

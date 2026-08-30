@@ -113,8 +113,8 @@ Desktop.ini
 # Debug (root-level only — /debug/ anchored to avoid matching backend/debug/ app)
 debug_screenshots/
 /debug/
-agent/debug/
-agent/src/debug/
+worker/debug/
+worker/src/debug/
 backend/debug/
 
 # Test mock side-effect dirs (tests that fail to set MagicMock return_value create these)

@@ -59,7 +59,7 @@ last_updated: 2026-07-22
 
 ### 1.3 通用生命周期字段（所有节点共享）
 
-> 来自 Maa 协议，在 `agent/src/engine/pipeline_engine.py` 的 `_apply_pre_lifecycle` / `_apply_post_lifecycle` 中实现，**对所有节点类型生效**。
+> 来自 Maa 协议，在 `worker/src/engine/pipeline_engine.py` 的 `_apply_pre_lifecycle` / `_apply_post_lifecycle` 中实现，**对所有节点类型生效**。
 
 | 字段 | 类型 | 默认 | 作用 |
 |------|------|------|------|
@@ -79,7 +79,7 @@ last_updated: 2026-07-22
 
 ## 2. 节点类型目录（48 类，后端 catalog 52 含 legacy 4）
 
-> 来源：`agent/src/engine/nodes/__init__.py` 中 `@register_node` 装饰器注册的全部类型。
+> 来源：`worker/src/engine/nodes/__init__.py` 中 `@register_node` 装饰器注册的全部类型。
 > 状态标记：✅ 生产可用 | 🔧 Mock/骨架 | ⚠️ 前端未支持
 
 ### 2.1 画面识别（8 类）
@@ -451,7 +451,7 @@ verify_at_main → click_guild_icon ──success──→ verify_guild_shop →
 ## 7. 校验工具
 
 - **后端校验**：`POST /api/v2/pipeline/pipelines/validate/`（`PipelineValidateSerializer`，见 `backend/pipeline/urls.py:27`）。注意路径前缀为 `/api/v2/pipeline/`（pipeline 单数应用名），而非 `/api/v2/tasks/`。
-- **Agent 校验**：`agent/src/engine/validator.py` 的 `PipelineValidator`（检查 `node_type` 合法性、`next_node_id` 引用完整性）
+- **Agent 校验**：`worker/src/engine/validator.py` 的 `PipelineValidator`（检查 `node_type` 合法性、`next_node_id` 引用完整性）
 - **前端预览**：PipelineEditorPage 的 PreviewPanel（已支持全部 48 类节点，2026-08-26 解除限制）
 
 ---

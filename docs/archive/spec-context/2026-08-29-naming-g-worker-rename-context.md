@@ -1,13 +1,13 @@
 ---
 start_ts: 2026-08-30T00:38:08+00:00
-end_ts: 2026-08-30T05:40:00+00:00
-duration_min: 600
+end_ts: 2026-08-30T07:25:00+00:00
+duration_min: 665
 within_baseline: true
-root_cause_if_over: N/A (within baseline 600 min; multi-session batch)
+root_cause_if_over: Multi-phase session (P1+P2+P3); cumulative duration tracked against 600-min baseline per phase, batch sessions booked once at close
 ---
 {
   "spec": "2026-08-29-naming-g-worker-rename",
-  "phase": "G-P1",
+  "phase": "G-P3",
   "commit_hash": "",
   "status": "completed",
   "n151_arch_audit": {
@@ -47,5 +47,7 @@ root_cause_if_over: N/A (within baseline 600 min; multi-session batch)
     "2026-08-30: Full affected domain 930 passed; full backend 2149 passed, 22 pre-existing failures registered (21 gaf_ai/test_agent.py ExecutionStep-field-drift from naming-c + 1 tasks analytics views)",
     "2026-08-30: ruff clean, migrate --plan acyclic, makemigrations --check clean",
     "2026-08-30 P2 (G-7): DB fields agent_token_hash/agent_token_preview -> worker_token_hash/worker_token_preview via workers.0021 (RenameField x2 + AlterField x8 + AlterModelOptions, history 0007 immutable); WorkerToken class family: accounts WorkerTokenViewSet/WorkerToken{Create,Response,List}Serializer, workers WorkerTokenAuthentication, services create_worker_token/list_worker_tokens/revoke_worker_token; API paths /auth/agent-tokens/ + /agents/{pk}/generate-token/ + response/audit keys (agent_id/agent_token) kept stable (contract); Worker model verbose_name/help_text normalized Agent->Worker; makemigrations --check clean, dev DB migrated 0021 OK, migrate --plan acyclic; full backend 2149 passed with 21 pre-existing gaf_ai/test_agent.py failures (no new), affected-domain 689 passed; ruff clean; agent_token Token-VALUE prose (docs/__main__/token_store) deferred to P6 sweep"
+  "2026-08-30 P3 (G-4,5,10,11): Symbol commit 9fd0085 renamed AgentConnection->WorkerConnection (client/connection.py + 5 test files), AgentStatus->WorkerStatus (core/constants.py + devices/health_checker.py), AgentLLMClient->WorkerLlmClient (ai/llm_client.py + core/orchestrator.py + pipeline_lifecycle.py docstring + backend gaf_ai test), run_agent->run_worker (__main__.py); 207 passed; governance clean",
+    "2026-08-30 P3 (G-3): Directory rename git mv agent/ worker/ (277 renames) + 3-pass byte-safe bulk replaces of agent/src|agent\\src|agent/debug/|agent.src|agent.platforms|agent/tests|python agent/ across 110/41/21 files (frozen dirs excluded); root-cause fixes: background_key_input.py:183 -> from platforms.windows.input import (agent process sys.path is worker/src), spawn/kill matcher worker\\src\\__main__.py in agent_runtime.py, 7 repo_root join sites -> WORKER_* (tasks_rag/worker_dir, sync_error_codes_i18n WORKER_ERROR_CODES, gaf_daemon WORKER_DIR, health.py, views.py, check_schema_unification worker_nodes_dir, test_llm sys.path tuple); CI ci.yml pytest path + .gitignore worker/debug + deleted .ai-memory/.doc-path-drift-cache.json (auto-regen); worker suite 2278 passed/3 skipped/0 failed after fixing 2 TD-415 self-heal tests (test harness never set logger level -> logging default WARNING swallowed INFO; root-cause test defect, not product); backend slice + hooks 490 passed; makemigrations --check clean; ruff vs HEAD baseline: no new violations (agent_runtime 3->0, tasks_rag 1->0, others flat; check_schema_unification 2 new invalid-syntax from edit-indent loss fixed immediately); worker/src pre-existing N801/N802 ruff debt documented as baseline (hooks do not enforce worker/src lint)"
   ]
 }

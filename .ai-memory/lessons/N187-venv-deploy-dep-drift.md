@@ -4,10 +4,10 @@ source: BD2 get_email pipeline 测试
 load_when: [venv-deploy, dep-drift, rapidocr, OCR-engine, 部署脚本]
 priority: high
 symptom: [kb:venv-dep-drift, rapidocr-missing, N187, TD-337]
-solution: venv gaf-agent 与 conda gaf env 双环境都需要装的依赖必须同步; agent/requirements.txt 补 rapidocr-onnxruntime
+solution: venv gaf-agent 与 conda gaf env 双环境都需要装的依赖必须同步; worker/requirements.txt 补 rapidocr-onnxruntime
 diff_keywords: ["requirements", "base", "setup", "dev", "env", "setup-dev-env", "tech", "stack", "tech-stack", "deployment", "design", "deployment-design"]
 related_files:
-  - agent/requirements.txt
+  - worker/requirements.txt
   - backend/requirements/base.txt
   - scripts/setup-dev-env.ps1
   - docs/reference/tech-stack.md
@@ -30,16 +30,16 @@ RapidOCR 未安装, 请执行: pip install rapidocr-onnxruntime
 触发条件: 在 venv gaf-agent 环境下跑含 OCR 节点的 pipeline.
 
 根因链:
-1. `agent/requirements.txt` 未列 `rapidocr-onnxruntime`
-2. `scripts/setup-dev-env.ps1` L351-363 用 `pip install -r agent/requirements.txt` 装 venv gaf-agent → venv 缺 rapidocr
+1. `worker/requirements.txt` 未列 `rapidocr-onnxruntime`
+2. `scripts/setup-dev-env.ps1` L351-363 用 `pip install -r worker/requirements.txt` 装 venv gaf-agent → venv 缺 rapidocr
 3. `backend/requirements/base.txt` L16 列了 `rapidocr-onnxruntime>=1.3`, 但装到 conda gaf env, 不装到 venv gaf-agent
-4. `agent/src/recognition/ocr/rapid_engine.py` 是默认 OCR 引擎 (orchestrator 启动时注册), 但用懒加载 — agent 启动时无 rapidocr 不报错, pipeline OCR 节点首次执行才报错
+4. `worker/src/recognition/ocr/rapid_engine.py` 是默认 OCR 引擎 (orchestrator 启动时注册), 但用懒加载 — agent 启动时无 rapidocr 不报错, pipeline OCR 节点首次执行才报错
 
 影响范围: 任何含 OCR 节点的 pipeline 在 venv gaf-agent 跑必失败, 用户需手动 `pip install rapidocr-onnxruntime` 兜底.
 
 ## Solution（解决步骤）
 
-1. `agent/requirements.txt` 加 `rapidocr-onnxruntime>=1.3,<2.0` (与 `backend/requirements/base.txt` 版本对齐, 加上界 `<2.0` 防止 breaking change)
+1. `worker/requirements.txt` 加 `rapidocr-onnxruntime>=1.3,<2.0` (与 `backend/requirements/base.txt` 版本对齐, 加上界 `<2.0` 防止 breaking change)
 2. `docs/reference/tech-stack.md` §3.1 agent 依赖表补 `rapidocr-onnxruntime` 行 + `msgpack` 行 (顺带补齐 spec-42/TD-287 遗漏)
 3. `docs/architecture/desktop/deployment-design.md` §2.4 补"双环境依赖说明"表格, 明确两环境装的依赖清单 + 刻意隔离原因 (opencv headless vs full)
 4. `README.md` 技术栈表 Agent 行补 "RapidOCR (TD-337)" 标注
@@ -48,13 +48,13 @@ RapidOCR 未安装, 请执行: pip install rapidocr-onnxruntime
 - **双环境隔离是官方设计** (README L88-110 / scripts/setup-dev-env.ps1 / deployment-design.md §2.3 明确), 不可合并
 - conda gaf env (backend) 用 `opencv-python-headless` (服务器无 GUI)
 - venv gaf-agent (agent) 用 `opencv-python` (含 GUI, 录制/显示需要)
-- **两环境都需要装的依赖** (rapidocr-onnxruntime / numpy / Pillow / cryptography 等) 必须在 `agent/requirements.txt` 与 `backend/requirements/base.txt` 同步, 不能假设一边装了另一边就有
+- **两环境都需要装的依赖** (rapidocr-onnxruntime / numpy / Pillow / cryptography 等) 必须在 `worker/requirements.txt` 与 `backend/requirements/base.txt` 同步, 不能假设一边装了另一边就有
 
 ## Verification（验证）
 
 ```bash
-# 1. 验证 agent/requirements.txt 已列 rapidocr
-grep rapidocr d:/code/GAF/agent/requirements.txt
+# 1. 验证 worker/requirements.txt 已列 rapidocr
+grep rapidocr d:/code/GAF/worker/requirements.txt
 # 预期: rapidocr-onnxruntime>=1.3,<2.0
 
 # 2. 验证 venv gaf-agent 已装 (临时 mitigation 已手动装)
@@ -70,7 +70,7 @@ grep "rapidocr" d:/code/GAF/docs/reference/tech-stack.md
 # 预期: 2 行 (§1.1 backend + §3.1 agent)
 ```
 
-预期: `agent/requirements.txt` 包含 rapidocr, venv gaf-agent 可 import, tech-stack.md 双环境都列.
+预期: `worker/requirements.txt` 包含 rapidocr, venv gaf-agent 可 import, tech-stack.md 双环境都列.
 
 ## 反思
 

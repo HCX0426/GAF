@@ -1,6 +1,6 @@
 """Convert recording data to Pipeline JSON.
 
-This module mirrors agent/src/core/recording_to_pipeline.py so the backend
+This module mirrors worker/src/core/recording_to_pipeline.py so the backend
 can convert recordings without spawning an agent subprocess.
 
 P-008: migrated from tasks app — Recording conversion is a pipeline-app

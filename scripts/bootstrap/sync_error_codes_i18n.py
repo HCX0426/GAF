@@ -1,7 +1,7 @@
 """sync_error_codes_i18n.py — 后端 ErrorCode ↔ 前端 i18n error.codes.* 同步工具.
 
 Task 5.2 (P4, 2026-07-29, N193 已知限制解决): 后端新增 ErrorCode 时前端不会自动同步,
-本脚本扫描后端 ``backend/gaf_core/error_codes.py`` 与 agent ``agent/src/core/error_codes.py``
+本脚本扫描后端 ``backend/gaf_core/error_codes.py`` 与 agent ``worker/src/core/error_codes.py``
 中定义的 ``ErrorCode`` (IntEnum) / ``NodeErrorCode`` (StrEnum) 成员, 与前端
 ``frontend/src/i18n/locales/common.ts`` 中的 ``error.codes.*`` key 对比, 报告
 缺失 / 多余的 key, 并在 ``--update`` 模式下自动补全缺失的 key (用源码行内注释作为
@@ -53,7 +53,7 @@ from typing import Dict, List, Optional, Tuple
 
 REPO_ROOT = _Path(__file__).resolve().parents[2]
 BACKEND_ERROR_CODES = REPO_ROOT / "backend" / "gaf_core" / "error_codes.py"
-AGENT_ERROR_CODES = REPO_ROOT / "agent" / "src" / "core" / "error_codes.py"
+WORKER_ERROR_CODES = REPO_ROOT / "worker" / "src" / "core" / "error_codes.py"
 FRONTEND_COMMON_TS = REPO_ROOT / "frontend" / "src" / "i18n" / "locales" / "common.ts"
 
 LOCALES = ("zh-CN", "en-US", "ja-JP", "ko-KR")
@@ -165,7 +165,7 @@ def scan_backend_and_agent() -> Tuple[List[EnumMember], List[EnumMember]]:
     ErrorCode (IntEnum) 仅 backend 定义.
     """
     backend = _parse_enum_file(BACKEND_ERROR_CODES, "backend")
-    agent = _parse_enum_file(AGENT_ERROR_CODES, "agent")
+    agent = _parse_enum_file(WORKER_ERROR_CODES, "agent")
     return backend, agent
 
 

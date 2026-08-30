@@ -832,9 +832,9 @@
 - **根因**: helper 实现后未在 AgentConsumer / Agent 端 ws_client 接入, 缺握手协议 (Hello frame 协商 compression envelope)
 - **影响**: 大消息帧 (如 screenshot base64) 仍走原始 JSON, 网络带宽浪费; 单 worker 模式下影响小, 多 worker / 跨机部署时显著
 - **修复方案** (spec-42, 5 Phase):
-  - **Phase 1**: `backend/protocol/message_compressor.py` 加 Hello/Hello.ack frame helpers (`build_hello_frame` / `build_hello_ack_frame` / `parse_hello_capabilities` / `parse_hello_ack_capabilities`) + 协议常量 (`COMPRESSION_ALGORITHM_MSGPACK_ZLIB` / `DEFAULT_COMPRESS_THRESHOLD`); 镜像到 `agent/src/utils/message_compressor.py` (双端共享 wire format)
+  - **Phase 1**: `backend/protocol/message_compressor.py` 加 Hello/Hello.ack frame helpers (`build_hello_frame` / `build_hello_ack_frame` / `parse_hello_capabilities` / `parse_hello_ack_capabilities`) + 协议常量 (`COMPRESSION_ALGORITHM_MSGPACK_ZLIB` / `DEFAULT_COMPRESS_THRESHOLD`); 镜像到 `worker/src/utils/message_compressor.py` (双端共享 wire format)
   - **Phase 2**: `backend/protocol/consumers.py` `AgentConsumer` 加 `_compression_negotiated` + `_compressor` state; `receive()` 支持 bytes_data (decompress + dispatch); `send()` override 走压缩路径 (negotiated + size ≥ threshold); `_handle_hello()` 接受/拒绝协商; **关键顺序不变量**: Hello.ack 必须在 flip `_compression_negotiated = True` 之前发送 (否则 ack 帧本身被压缩, agent 解不开)
-  - **Phase 3**: `agent/src/client/connection.py` `AgentConnection` 加压缩 state; `connect()` 在 `_send_register()` 后发 Hello; `send_message()` 走压缩路径 (post-negotiation + size ≥ threshold, compress 失败回退 JSON); `listen()` 拦截 `hello.ack` (transport-level control frame, 不 dispatch); `disconnect()` + `_try_reconnect()` reset 压缩 state
+  - **Phase 3**: `worker/src/client/connection.py` `AgentConnection` 加压缩 state; `connect()` 在 `_send_register()` 后发 Hello; `send_message()` 走压缩路径 (post-negotiation + size ≥ threshold, compress 失败回退 JSON); `listen()` 拦截 `hello.ack` (transport-level control frame, 不 dispatch); `disconnect()` + `_try_reconnect()` reset 压缩 state
   - **Phase 4**: 端到端测试 — `backend/protocol/tests/test_compression_e2e.py` (6 tests: 协商 + 压缩率 + round-trip + legacy 兼容 + small frame 不压缩) + `agent/tests/test_compression_e2e.py` (6 tests: agent 侧 wire-level properties); 修复 `test_ws_reconnect.py` 2 处 stale assertion (connect 现在发 register + hello 两帧, 不再是单帧)
   - **Phase 5**: 文档同步 (concurrency-design.md §5 + completed-features.md + pending-roadmap.md + active.md TD-287 迁出 + fixed.md 本条目)
 - **修复方案验证** (spec-42):
@@ -871,9 +871,9 @@
 - **根因**: agent 是 Python 无 Django TextChoices, 字符串字面量分散多处; backend 有 `Device.Status.choices` 但 agent 没引入
 - **影响**: typo 风险 (如 `"erorr"`); 重命名成本高
 - **修复方案** (2 Phase 分批修复):
-  - **Phase 1 (spec-40)**: 创建 `agent/src/core/constants.py` 含 `ComparisonOperator` / `LoopType` / `NodeType` (str-Enum) + `evaluate_comparison` 函数; dedup `engine.py` + `nodes/branch.py` 的 7-branch if/elif 链; dedup `engine.py` + `nodes/loop.py` 的 `"for"`/`"while"` 字符串字面量
+  - **Phase 1 (spec-40)**: 创建 `worker/src/core/constants.py` 含 `ComparisonOperator` / `LoopType` / `NodeType` (str-Enum) + `evaluate_comparison` 函数; dedup `engine.py` + `nodes/branch.py` 的 7-branch if/elif 链; dedup `engine.py` + `nodes/loop.py` 的 `"for"`/`"while"` 字符串字面量
   - **Phase 2 (spec-44)**: 追加 3 新 enum (ServerStatus / EventType / AgentStatus); 迁移 11 文件 50+ 比较点 (NodeType 直接替换; StepState/PipelineState/TaskState/DeviceStatus 用 `.value` 模式; ServerStatus/EventType/AgentStatus 新 enum); 6 个 enum 全部从 `(str, Enum)` 升级为 `StrEnum` (ruff UP042 要求, 行为等价 drop-in replacement); `test_orchestrator.py` mock 改用真实 `PipelineState` enum
-- **修复方案验证** (spec-44): `pytest agent/tests/` 1554 passed 2 skipped (0 回归, 匹配 baseline); `ruff check agent/src/` All checks passed; `grep -E '(==|!=)\s*["'"'"'](online|offline|busy|idle|error|completed|failed|cancelled|branch|goto|loop|click|swipe|long_press|template_match)["'"'"']' agent/src/` ≤ 5 残留 (notify.py level / monitor action_type 等, 不在本 spec 范围)
+- **修复方案验证** (spec-44): `pytest agent/tests/` 1554 passed 2 skipped (0 回归, 匹配 baseline); `ruff check worker/src/` All checks passed; `grep -E '(==|!=)\s*["'"'"'](online|offline|busy|idle|error|completed|failed|cancelled|branch|goto|loop|click|swipe|long_press|template_match)["'"'"']' worker/src/` ≤ 5 残留 (notify.py level / monitor action_type 等, 不在本 spec 范围)
 - **验证标准**: agent 代码 0 处字符串字面量状态比较; 全用 enum 常量
 - **evidence**: spec-40 commit (-) + spec-44 commit (-)
 - **commit**: spec-44 (-)
@@ -1014,14 +1014,14 @@
 - **登记时间**: 2026-07-19
 - **修复时间**: 2026-07-19 (spec-39 Phase 2 + Phase 4 + Phase 8 联动)
 - **来源**: spec-39 Phase 1 (data-flow.md 全文重写时发现)
-- **症状**: 多份 docs 引用 `agent/src/devices/{macos,linux}/` 或 `agent/src/platforms/{macos,linux}/`, 但实际 macOS/Linux 实现在 `backend/device_bridge/platforms/{macos,linux}/` (P-028 ✅ 真实落地); agent 侧只有 `agent/src/platforms/windows/` + `agent/src/devices/adb/`
+- **症状**: 多份 docs 引用 `worker/src/devices/{macos,linux}/` 或 `worker/src/platforms/{macos,linux}/`, 但实际 macOS/Linux 实现在 `backend/device_bridge/platforms/{macos,linux}/` (P-028 ✅ 真实落地); agent 侧只有 `worker/src/platforms/windows/` + `worker/src/devices/adb/`
 - **影响位置** (已全部修复):
-  - `.ai-memory/tech-stack.md` §4 L177-179: v9.4 (spec-39 Phase 8) 已更新为 `agent/src/platforms/windows/` + `backend/device_bridge/platforms/{windows,macos,linux}/`
+  - `.ai-memory/tech-stack.md` §4 L177-179: v9.4 (spec-39 Phase 8) 已更新为 `worker/src/platforms/windows/` + `backend/device_bridge/platforms/{windows,macos,linux}/`
   - `docs/architecture/optimal-solution.md` L105-106: 已补全为 `backend/device_bridge/platforms/macos/screenshot.py` + `backend/device_bridge/platforms/linux/screenshot.py`
   - `docs/architecture/overview.md` §9.5: v3.2 (spec-39 Phase 2) 已标注 device_bridge 为 "🔧 纯 Python 包 (非 Django app, 不在 INSTALLED_APPS, 无 apps.py/models.py)"
 - **根因**: P-028 落地时 docs 写在 agent 侧但实现写在 backend 侧; 后续 spec 未同步路径; architecture-overview.md §9.5 把 `device_bridge` 误标为 Django app
 - **修复方案**:
-  - tech-stack.md §4 L177-179: 把 `agent/src/devices/{windows,macos,linux}/` 改为 `agent/src/platforms/windows/` (agent 侧) + `backend/device_bridge/platforms/{windows,macos,linux}/` (backend 侧抽象层)
+  - tech-stack.md §4 L177-179: 把 `worker/src/devices/{windows,macos,linux}/` 改为 `worker/src/platforms/windows/` (agent 侧) + `backend/device_bridge/platforms/{windows,macos,linux}/` (backend 侧抽象层)
   - GAF-optimal-solution.md L105-106: 路径补全为 `backend/device_bridge/platforms/macos/screenshot.py` 等
   - architecture-overview.md §9.5: 把 `device_bridge` 标注为 "纯 Python 包 (非 Django app, 不在 INSTALLED_APPS)"
 - **修复方案验证** (spec-54 Phase 2 复查, 2026-07-20):
@@ -1152,10 +1152,10 @@
 - **登记时间**: 2026-07-11
 - **修复时间**: 2026-07-11（N154 修复时一并修复）
 - **来源**: N154 subprocess storm 修复
-- **症状**: `agent/src/monitor/manager.py` `DEFAULT_CHECK_INTERVAL = 1.0`，每秒调用 `_take_screenshot()`
+- **症状**: `worker/src/monitor/manager.py` `DEFAULT_CHECK_INTERVAL = 1.0`，每秒调用 `_take_screenshot()`
 - **根因**: 监控线程默认间隔过短（1s），且截图可能走 ADB subprocess 路径
-- **修复**: N154 修复时将 `DEFAULT_CHECK_INTERVAL` 从 `1.0` 改为 `30.0`（`agent/src/monitor/manager.py:21`），与心跳间隔对齐，消除 subprocess 风暴
-- **验证**: `grep "DEFAULT_CHECK_INTERVAL" agent/src/monitor/manager.py` 显示 `30.0`
+- **修复**: N154 修复时将 `DEFAULT_CHECK_INTERVAL` 从 `1.0` 改为 `30.0`（`worker/src/monitor/manager.py:21`），与心跳间隔对齐，消除 subprocess 风暴
+- **验证**: `grep "DEFAULT_CHECK_INTERVAL" worker/src/monitor/manager.py` 显示 `30.0`
 - **关联**: N154 (`lessons/2026-07-11-n154*`)
 
 ---
@@ -1197,10 +1197,10 @@
 
 ## TD-091 — 两套 RuntimeDisplayContext 类命名冲突 ✅ FIXED `-`
 
-- **症状**：`agent/src/utils/display_context.py` (正式，286 行) 和 `agent/src/utils/display.py` (遗留，44 行) 都定义了 `RuntimeDisplayContext`，字段完全不同
+- **症状**：`worker/src/utils/display_context.py` (正式，286 行) 和 `worker/src/utils/display.py` (遗留，44 行) 都定义了 `RuntimeDisplayContext`，字段完全不同
 - **根因**：`display.py` 是早期遗留实现，`display_context.py` 是后期重构，未删除旧类
 - **影响**：(1) 命名冲突：import 时可能导入错误的类 (2) 维护混乱：开发者不确定用哪个
-- **修复**：删除 `agent/src/utils/display.py`；修改 `agent/src/utils/__init__.py` 将 `from utils.display import RuntimeDisplayContext` 改为 `from utils.display_context import RuntimeDisplayContext`，同时修复 `from utils.coordinate import CoordinateTransformer` → `from utils.coord_transformer import CoordinateTransformer` (同源遗留问题，登记为 TD-094)
+- **修复**：删除 `worker/src/utils/display.py`；修改 `worker/src/utils/__init__.py` 将 `from utils.display import RuntimeDisplayContext` 改为 `from utils.display_context import RuntimeDisplayContext`，同时修复 `from utils.coordinate import CoordinateTransformer` → `from utils.coord_transformer import CoordinateTransformer` (同源遗留问题，登记为 TD-094)
 - **验证**：`import utils; from utils import RuntimeDisplayContext, CoordinateTransformer` 成功，`RuntimeDisplayContext.__module__` == `utils.display_context`，`CoordinateTransformer.__module__` == `utils.coord_transformer`；全仓库 grep `from utils.display import` 无结果
 - **登记时间**：2026-07-12
 - **修复时间**：2026-07-12 (commit `-`)
@@ -1213,7 +1213,7 @@
 - **症状**：`.trae/skills/gaf-orchestrator/SKILL.md:130-131` 引用 `scripts/debug/check_execution.py` 和 `scripts/debug/trace_logs.py`，实际 `scripts/debug/` 目录不存在
 - **根因**：N157 — 写 AI memory 文档时未 Glob/Read 验证实际代码/资源存在
 - **影响**：AI 按 SKILL.md 指引排查时会调用不存在的脚本，导致排查失败
-- **修复**：采用选项 B — 更新 3 个文件 (`gaf-orchestrator/SKILL.md`, `_shared/decision-tree.md`, `gaf-knowledge-base/SKILL.md`) 中的引用为实际存在的工具：`scripts/debug/check_execution.py` → `docs/business/tasks/troubleshooting.md`；`scripts/debug/trace_logs.py` → `agent/src/utils/screenshot_diagnostic.py`
+- **修复**：采用选项 B — 更新 3 个文件 (`gaf-orchestrator/SKILL.md`, `_shared/decision-tree.md`, `gaf-knowledge-base/SKILL.md`) 中的引用为实际存在的工具：`scripts/debug/check_execution.py` → `docs/business/tasks/troubleshooting.md`；`scripts/debug/trace_logs.py` → `worker/src/utils/screenshot_diagnostic.py`
 - **验证**：grep `scripts/debug|.ai-memory/checklists` 在 `.trae/skills/` 下无结果
 - **登记时间**：2026-07-12
 - **修复时间**：2026-07-12
@@ -1239,7 +1239,7 @@
 - **症状**：OCR node 执行时报 "No OCR engines registered in registry"
 - **根因**：`orchestrator.register_ocr_engine()` 注册到 `self._ocr_registry` (orchestrator-scoped)，但 OCR node 用 `context.get_variable('_ocr_registry')` (context-scoped，独立实例)。两个 registry 实例互不相通，orchestrator 注册的 RapidOCR 对 pipeline node 不可见
 - **影响**：所有含 OCR 节点的 pipeline 执行失败 (BD2 get_email / pass_activity / claim_all_rewards 等)
-- **修复**：`agent/src/engine/nodes/ocr.py` `_get_ocr_engine` 方法添加 RapidOCR 自动注册 fallback — 当 context registry 为空时自动注册 RapidOCR
+- **修复**：`worker/src/engine/nodes/ocr.py` `_get_ocr_engine` 方法添加 RapidOCR 自动注册 fallback — 当 context registry 为空时自动注册 RapidOCR
 - **验证**：2026-07-12 BD2 get_email.json e2e 验证，OCR node 成功注册 RapidOCR 并识别 4 行文本（`detect: 1 images -> 4 total detections`）
 - **commit**：`-`
 - **登记时间**：2026-07-12
@@ -1251,10 +1251,10 @@
 
 ## TD-089 — batch_ocr.py OCRResult vs dict 接口契约不匹配 ✅ FIXED
 
-- **症状**：`AttributeError: 'OCRResult' object has no attribute 'get'` at `agent/src/core/batch_ocr.py:164`
+- **症状**：`AttributeError: 'OCRResult' object has no attribute 'get'` at `worker/src/core/batch_ocr.py:164`
 - **根因**：`batch_ocr.py` 期望 `List[Dict]`（含 `d.get("confidence")` / `d["text"]` / `d.get("bbox")`，bbox 为 `[x,y,w,h]`），但 `RapidOCREngine.recognize()` 返回 `List[OCRResult]` (dataclass: `text`/`confidence`/`box`，box 为 `(x1,y1,x2,y2)`)。接口契约不匹配
 - **影响**：所有 OCR 节点执行失败（即使 TD-088 修复后 RapidOCR 已注册，仍因 dict 访问 OCRResult 对象而崩溃）
-- **修复**：`agent/src/engine/nodes/ocr.py` 新增 `_adapt_ocr_engine` 静态方法，将 `engine.recognize` 包装为返回 dict 列表的函数（含坐标格式转换 `x1y1x2y2 → xywh`）。3 处 `_get_ocr_engine` 返回点都应用适配层。设计决策：选择适配层方案（在 ocr.py 包装）而非改 batch_ocr.py 或 RapidOCREngine，以保持 batch_ocr.py 通用 dict 接口契约 + RapidOCREngine 类型安全
+- **修复**：`worker/src/engine/nodes/ocr.py` 新增 `_adapt_ocr_engine` 静态方法，将 `engine.recognize` 包装为返回 dict 列表的函数（含坐标格式转换 `x1y1x2y2 → xywh`）。3 处 `_get_ocr_engine` 返回点都应用适配层。设计决策：选择适配层方案（在 ocr.py 包装）而非改 batch_ocr.py 或 RapidOCREngine，以保持 batch_ocr.py 通用 dict 接口契约 + RapidOCREngine 类型安全
 - **验证**：2026-07-12 BD2 get_email.json e2e 验证，OCR 节点成功执行（`detect: 1 images -> 4 total detections`，不再报 AttributeError）
 - **commit**：`-`
 - **登记时间**：2026-07-12
@@ -1722,7 +1722,7 @@
 - **症状**：当前 Windows 设备只支持两种控制模式 — `SendInput` (前台) 和 `PostMessage` (后台)。前者会强抢用户焦点，后者常被反作弊机制拦截。游戏自动化最常见的"单开游戏 + 用户偶尔操作其他窗口"场景缺少合适的模式：需要在点击时临时把目标窗口前台化、点击后恢复鼠标位置并放回原前台窗口。
 - **根因**：
   1. Device 模型 ([backend/agents/models.py:242,249](file:///D:/code/GAF/backend/agents/models.py#L242)) 把 `screenshot_method` 和 `input_method` 拆成两个独立字段，缺少"控制模式"层级的抽象。用户必须在两个字段里手动配对，容易出错（如配 `SendInput + GDI` 会导致后台截图失败）
-  2. agent 输入处理器 ([agent/src/platforms/windows/input.py:268](file:///D:/code/GAF/agent/src/platforms/windows/input.py#L268)) 只实现 `SendInput` 和 `PostMessage` 两种 click 路径，没有 `_click_pseudo_background` 方法
+  2. agent 输入处理器 ([worker/src/platforms/windows/input.py:268](file:///D:/code/GAF/worker/src/platforms/windows/input.py#L268)) 只实现 `SendInput` 和 `PostMessage` 两种 click 路径，没有 `_click_pseudo_background` 方法
   3. 没有"前台恢复"逻辑（SetForegroundWindow + GetCursorPos/SetCursorPos 保存/恢复鼠标位置）
 - **影响**：
   - `SendInput` 模式下点击会打断用户当前操作（例如用户在 IDE 写代码时被游戏窗口抢焦点）
@@ -1774,7 +1774,7 @@
 - **症状**：agent 发送 task.result 时报 `Object of type ndarray is not JSON serializable`，connection.py 用 `default=str` 兜底发送，导致 result_data 中出现超长字符串（numpy 数组的 repr，例如 `[[[42 38 38]\n  [43 39 38]...]`）。前端 ExecutionMonitorPanel 显示 result_data 时被这些字符串撑爆。
 - **根因**：
   1. agent task execution 的 result 中包含 numpy ndarray（截图 RGB 像素数组）
-  2. [agent/src/client/connection.py](file:///D:/code/GAF/agent/src/client/connection.py) 的 `_serialize_for_json` 函数没有处理 ndarray 类型，触发 TypeError 后用 `default=str` 兜底
+  2. [worker/src/client/connection.py](file:///D:/code/GAF/worker/src/client/connection.py) 的 `_serialize_for_json` 函数没有处理 ndarray 类型，触发 TypeError 后用 `default=str` 兜底
   3. ndarray 应该被显式转换为 list（`arr.tolist()`）或被剔除（task.result 不需要返回原始像素数据，只需返回元数据如 shape/dtype/匹配分数）
 - **影响**：
   - task.result 的 payload 异常庞大（数十 KB），WS 帧体积膨胀
@@ -1790,7 +1790,7 @@
 - **何时修**：已修 (Phase 3)
 - **登记时间**：2026-07-06
 - **发现于**：R37-P3 BD2 端到端执行日志验证（execution 61/62/63 agent 日志显示 `Falling back to default=str to avoid dropping the frame`）
-- **修复 (Phase 3, 2026-07-09)**：`agent/src/client/connection.py` `_serialize_for_json` 增加 numpy 分支：`np.ndarray` → `tolist()` / `np.integer` → `int()` / `np.floating` → `float()` / `np.bool_` → `bool()`；numpy 在函数内 lazy import（避免模块加载依赖）。同时将 dataclass 分支从 `dataclasses.asdict(obj)` 改为 `{f.name: _serialize_for_json(getattr(obj, f.name)) for f in dataclasses.fields(obj)}`，因为 `asdict` 不转 ndarray（测试发现）。新增 20 个单测 `agent/tests/test_connection_serialize.py` 全过（含 1d/2d/3d ndarray、标量、嵌套 dict/list/dataclass、`json.dumps` 端到端回归）。
+- **修复 (Phase 3, 2026-07-09)**：`worker/src/client/connection.py` `_serialize_for_json` 增加 numpy 分支：`np.ndarray` → `tolist()` / `np.integer` → `int()` / `np.floating` → `float()` / `np.bool_` → `bool()`；numpy 在函数内 lazy import（避免模块加载依赖）。同时将 dataclass 分支从 `dataclasses.asdict(obj)` 改为 `{f.name: _serialize_for_json(getattr(obj, f.name)) for f in dataclasses.fields(obj)}`，因为 `asdict` 不转 ndarray（测试发现）。新增 20 个单测 `agent/tests/test_connection_serialize.py` 全过（含 1d/2d/3d ndarray、标量、嵌套 dict/list/dataclass、`json.dumps` 端到端回归）。
 
 ---
 
@@ -1837,7 +1837,7 @@
 
 ## TD-019 — ScreenshotCache 已实现但未接入采集路径（缓存层空转） ✅ FIXED
 
-- **症状**：`agent/src/devices/screenshot_cache.py` 已实现 `ScreenshotCache` 类（含 LRU 淘汰 + 帧对比去重），但截图采集路径（`screenshot.py` / `dxgi_capture.py` / `PrintWindow` 调用链）未接入缓存。每次截图都重新采集，缓存层空转。
+- **症状**：`worker/src/devices/screenshot_cache.py` 已实现 `ScreenshotCache` 类（含 LRU 淘汰 + 帧对比去重），但截图采集路径（`screenshot.py` / `dxgi_capture.py` / `PrintWindow` 调用链）未接入缓存。每次截图都重新采集，缓存层空转。
 - **根因**：`screenshot_cache.py:1-4` 文件头部标记 `🔧`（代码存在但不可用），属于 R37-P1 阶段未完成的接线工作。采集路径直接返回新帧，未先查缓存。
 - **影响**：
   - 静态画面重复采集，浪费 CPU/GPU 资源（与 TD-009 截图流重复帧去重相关但不同层面）
@@ -1857,8 +1857,8 @@
 - **修复时间**：2026-07-07（gaf-restructure-execution Stage 4）
 - **修复 commit**：（Stage 4 待 commit）
 - **修复内容**：
-  - `agent/src/devices/screenshot_cache.py`：新增模块级单例 `_default_cache` + 工厂函数 `get_default_cache()`，懒加载避免 import 期触发 Redis 连接尝试；文件头部状态从 `🔧` 改为 `✅ wired into screenshot stream`。
-  - `agent/src/client/handler.py`：在 `_capture_one_device` 截图流路径（L887 dedup 检查之后、L889 `cv2.imencode` 之前）接入 `ScreenshotCache.get(device_id, frame_hash)`。命中则复用缓存的 JPEG `bytes`，跳过 `cv2.imencode`；未命中则编码 + `cache.set(device_id, frame_hash, buf.tobytes())`。`cache.set` 异常被捕获并降级为 debug 日志（non-fatal，截图流仍正常返回 True）。导入语句从 `from devices.screenshot_cache import compute_frame_hash` 扩展为 `import compute_frame_hash, get_default_cache`。
+  - `worker/src/devices/screenshot_cache.py`：新增模块级单例 `_default_cache` + 工厂函数 `get_default_cache()`，懒加载避免 import 期触发 Redis 连接尝试；文件头部状态从 `🔧` 改为 `✅ wired into screenshot stream`。
+  - `worker/src/client/handler.py`：在 `_capture_one_device` 截图流路径（L887 dedup 检查之后、L889 `cv2.imencode` 之前）接入 `ScreenshotCache.get(device_id, frame_hash)`。命中则复用缓存的 JPEG `bytes`，跳过 `cv2.imencode`；未命中则编码 + `cache.set(device_id, frame_hash, buf.tobytes())`。`cache.set` 异常被捕获并降级为 debug 日志（non-fatal，截图流仍正常返回 True）。导入语句从 `from devices.screenshot_cache import compute_frame_hash` 扩展为 `import compute_frame_hash, get_default_cache`。
   - `agent/tests/test_screenshot_cache_wiring.py`：新增 6 个测试覆盖 cache hit 跳过编码、cache miss 编码并存储、cache.set 失败 non-fatal、10× 静态画面 ≤ 2 次编码、帧变化触发重新编码、完整 `_screenshot_stream_loop` 12 轮集成测试。
 - **验证**：
   - `conda run -n gaf python -m pytest tests/test_screenshot_cache_wiring.py -v -p no:django` → 6 passed
@@ -2119,7 +2119,7 @@
 
 ## TD-036 — agent token 弱熵密钥（Fernet + COMPUTERNAME 派生） ✅ FIXED `-`
 
-- **症状**：`agent/src/auth/token_store.py:19-39` 的 `_derive_key_from_machine` 用 `COMPUTERNAME` 环境变量作为种子派生 Fernet 密钥。机器名常可猜测（如 `DESKTOP-ABC1234`），物理访问可暴力枚举。
+- **症状**：`worker/src/auth/token_store.py:19-39` 的 `_derive_key_from_machine` 用 `COMPUTERNAME` 环境变量作为种子派生 Fernet 密钥。机器名常可猜测（如 `DESKTOP-ABC1234`），物理访问可暴力枚举。
 - **根因**：agent 自鉴权场景早期实现为简化部署，用机器名派生密钥避免用户输入密码。但机器名熵不足，且 Fernet 加密但无完整性校验（密钥泄露则可解密所有历史 token）。
 - **影响**：物理访问机器后可解密 agent token，冒充 agent 连接 backend；违反 N133 安全最佳实践。
 - **修复方案**：改用 OS keyring（Windows DPAPI `win32crypt.CryptProtectData` / macOS Keychain / Linux Secret Service）替代 Fernet + 机器名派生；或用 `keyring` 库跨平台统一。
@@ -2548,7 +2548,7 @@
 - **修复时间**: 2026-07-12
 - **修复 commit**: 待提交
 - **来源**: `docs/business/ai/input-mode-window-wait.md` Stage 1 调查
-- **症状**: `agent/src/platforms/windows/input_variants.py` (9 变体枚举 Win32InputMethod) 和 `agent/src/platforms/windows/input.py` (3 方法字符串 SendInput/PostMessage/PseudoBackground) 并存。`device.py` 实际只用 3 方法字符串系统，9 变体仅用于窗口类兼容性查询 (`recommend_legacy_input_method`)。两套系统通过 `_LEGACY_TO_ENUM`/`_ENUM_TO_LEGACY` 映射表桥接
+- **症状**: `worker/src/platforms/windows/input_variants.py` (9 变体枚举 Win32InputMethod) 和 `worker/src/platforms/windows/input.py` (3 方法字符串 SendInput/PostMessage/PseudoBackground) 并存。`device.py` 实际只用 3 方法字符串系统，9 变体仅用于窗口类兼容性查询 (`recommend_legacy_input_method`)。两套系统通过 `_LEGACY_TO_ENUM`/`_ENUM_TO_LEGACY` 映射表桥接
 - **根因**: 9 变体系统是早期设计，3 方法字符串是后期简化，未完成统一
 - **影响**: (1) 认知负担：开发者需理解两套系统 (2) 代码重复：AttachThreadInput 技巧已在 `input.py` PseudoBackground 中实现 (commit -) (3) 维护风险：修改一套系统可能遗漏另一套
 - **修复方案**: 统一为一套系统。保留 3 方法字符串系统（实际使用），将 9 变体的兼容性表合并到 `input_variants.py` 的查询函数中，删除未使用的 InputVariant 子类。AttachThreadInput 技巧已移植到 `input.py` 的 PseudoBackground (commit -)
@@ -2571,12 +2571,12 @@
 - **修复时间**: 2026-07-12
 - **修复 commit**: 待提交
 - **来源**: TD-091 修复时发现 — `utils/__init__.py` 同时引用了 `utils.coordinate.CoordinateTransformer` (遗留) 和 `utils.display.RuntimeDisplayContext` (遗留)
-- **症状**: `agent/src/utils/coordinate.py` 定义了遗留的 `CoordinateTransformer` (基于旧 `Resolution` dataclass)，规范版本在 `utils/coord_transformer.py` (基于 `RuntimeDisplayContext`)。修复 TD-091 时发现 `__init__.py` 引用了两个遗留类，已将 `__init__.py` 指向规范版本，但 `coordinate.py` 文件本身未删除
+- **症状**: `worker/src/utils/coordinate.py` 定义了遗留的 `CoordinateTransformer` (基于旧 `Resolution` dataclass)，规范版本在 `utils/coord_transformer.py` (基于 `RuntimeDisplayContext`)。修复 TD-091 时发现 `__init__.py` 引用了两个遗留类，已将 `__init__.py` 指向规范版本，但 `coordinate.py` 文件本身未删除
 - **根因**: 与 TD-091 同源 — 早期 `coordinate.py` + `display.py` 是第一代实现，后期重构为 `coord_transformer.py` + `display_context.py`，旧文件未删除
 - **影响**: 低 — 全仓库无 import `utils.coordinate` (grep 确认)，但文件存在会误导开发者
 - **修复方案**: 删除 `utils/coordinate.py`；验证 `from utils import CoordinateTransformer` 仍可用 (通过 `utils/__init__.py` re-export from `coord_transformer`)
 - **验证标准**: `utils/coordinate.py` 不存在；`from utils import CoordinateTransformer` 成功且来自 `utils.coord_transformer` ✅
-- **修复记录**: 2026-07-12 删除 `agent/src/utils/coordinate.py`，grep 确认零引用，导入验证通过
+- **修复记录**: 2026-07-12 删除 `worker/src/utils/coordinate.py`，grep 确认零引用，导入验证通过
 - **迁移记录**: 从 active.md 迁入（S5 任务 6，2026-07-14）
 
 ---
@@ -2711,9 +2711,9 @@
 - **修复 commit**: `-`
 - **来源**: S5 FeatureFlag + 杂项阶段执行中发现 — N162 范围外关注
 - **症状**: `ai/tasks_rag.py` 注册了 Celery beat `auto_index_rag` 定时任务（5 分钟周期），但开发环境默认不启动 Celery worker，未实测该任务在真实环境中的执行情况。
-- **根因**: 开发流程不包含 Celery worker 部署验证。**实测发现路径拼接 bug**：`settings.BASE_DIR` 是 `backend/`，但代码用 `f'{base_dir}/agent/src'` 拼接，导致实际路径变成 `backend/agent/src`（不存在），`os.walk` 扫描不到任何文件，返回 0 chunks。
+- **根因**: 开发流程不包含 Celery worker 部署验证。**实测发现路径拼接 bug**：`settings.BASE_DIR` 是 `backend/`，但代码用 `f'{base_dir}/worker/src'` 拼接，导致实际路径变成 `backend/worker/src`（不存在），`os.walk` 扫描不到任何文件，返回 0 chunks。
 - **影响**: `auto_index_rag` 任务"成功"执行但实际索引 0 个文件，RAG 检索库永远为空。生产部署后 beat 定时任务每次都空跑。
-- **修复方案**: 用 `settings.BASE_DIR.parent`（repo root）+ `pathlib.Path` 拼接，正确指向 `agent/src` 和 `backend/ai`。同步更新单元测试路径断言。
+- **修复方案**: 用 `settings.BASE_DIR.parent`（repo root）+ `pathlib.Path` 拼接，正确指向 `worker/src` 和 `backend/ai`。同步更新单元测试路径断言。
 - **验证标准**: ✅ 真实执行 `auto_index_rag.apply()`：agent_chunks=1642, backend_chunks=561, ChromaDB 1347→3463 docs；✅ `pytest ai/tests/test_rag_auto_index.py -v` 3 passed；✅ `pytest ai/ -q` 285 passed 0 回归
 - **迁移记录**: 从 active.md 迁入（2026-07-14）
 
@@ -2997,7 +2997,7 @@
   - 3 个测试文件无法收集，全量 `pytest tests/` 报 3 errors 中断
   - 必须用 `--ignore` 排除才能跑其余测试
 - **修复方案**：
-  1. 查找 `_INPUT_UNION` 的历史定义（`git log -p --all -S '_INPUT_UNION' -- agent/src/platforms/windows/input.py`）
+  1. 查找 `_INPUT_UNION` 的历史定义（`git log -p --all -S '_INPUT_UNION' -- worker/src/platforms/windows/input.py`）
   2. 确认是被重命名还是删除——若重命名则更新 import，若删除则更新 `input_variants.py` 使用新符号
   3. 跑 3 个测试文件验证修复
 - **实际修复**：`input.py:160` 定义 `_InputUnion` (PascalCase class)，`input_variants.py` 误用 `_INPUT_UNION` (ALL_CAPS)。`replace_all _INPUT_UNION → _InputUnion` (1 import + 5 usages in `input_variants.py`)。
@@ -3182,21 +3182,21 @@
 - **关键文件**: `frontend/src/pages/Ops/ScheduledTasks/DagEditorPage.tsx` (重构) + `frontend/src/i18n/locales/scheduledTasks.ts` (i18n)
 - **何时修**: ✅ 已修复 (2026-07-15)
 
-## TD-115: agent/src/core/orchestrator.py 预存 ruff 40 errors (✅ FIXED)
+## TD-115: worker/src/core/orchestrator.py 预存 ruff 40 errors (✅ FIXED)
 
 - **状态**: ✅ FIXED
 - **优先级**: P3
 - **登记时间**: 2026-07-15
 - **修复时间**: 2026-07-15 (commit `-`)
 - **来源**: P-010 Phase 1 ruff 检查时发现 — orchestrator.py 有 40 个预存 ruff errors (UP006/UP045/F401/F841/SIM105/I001)
-- **症状**: `ruff check agent/src/core/orchestrator.py` 报 40 errors，全部是预存（typing.Dict/Optional 旧风格 + 未使用 import + 未使用变量）
+- **症状**: `ruff check worker/src/core/orchestrator.py` 报 40 errors，全部是预存（typing.Dict/Optional 旧风格 + 未使用 import + 未使用变量）
 - **根因**: agent/ 代码早期编写时未跑 ruff，积累了大量 UP006 (typing.Dict→dict) / UP045 (Optional→X|None) / F401 (unused import) / F841 (unused variable) / SIM105 (try-except-pass→contextlib.suppress) 错误
 - **影响**: pre-commit hook 的 ruff 检查（manual stage）会报错，但不阻塞 commit（manual stage 需显式触发）。CI 跑 manual stage 会失败。
 - **修复方案**: ✅ 已采纳 — `ruff check --fix` 自动修复 33 个 (UP006/UP045/UP035/I001)；5 个手动修复：(1) 删除 `_execute_step` 未使用 `step_name` 局部变量；(2) 将 `from recognition.ocr.registry import OCREngineRegistry` 探测 import 替换为 `importlib.util.find_spec`（导入名从未使用，纯可用性检查）；(3)(4) 删除 `execute_pipeline` 中 `original_cancel`/`original_pause` 死代码（历史 save-for-restore 模式，restore 从未实现，按 §2.0.5 ③ 不做兼容直接删）；(5) `try/except AttributeError: pass` → `contextlib.suppress(AttributeError)`。
-- **验证标准**: ✅ `ruff check agent/src/core/orchestrator.py` 0 errors；`pytest agent/tests/` (排除 3 个 TD-117 stale 文件) 1373 passed, 2 skipped, 0 failures。
+- **验证标准**: ✅ `ruff check worker/src/core/orchestrator.py` 0 errors；`pytest agent/tests/` (排除 3 个 TD-117 stale 文件) 1373 passed, 2 skipped, 0 failures。
 - **何时修**: ✅ 已修复 (2026-07-15)
 
-## TD-116: backend/core/ + backend/ai/ 与 agent/src/{core,ai}/ 包名冲突 (✅ FIXED)
+## TD-116: backend/core/ + backend/ai/ 与 worker/src/{core,ai}/ 包名冲突 (✅ FIXED)
 
 - **状态**: ✅ FIXED
 - **优先级**: P2
@@ -3227,7 +3227,7 @@
   3. `test_window_pos_mouse_hook.py` — `cannot import name 'SendMessageWithWindowPosVariant' from 'platforms.windows.input_variants'`
 - **根因**: 调查后确认 3 个文件分属两类问题：
   - **File 1 + File 3** (`test_input_5button_wheel.py` + `test_window_pos_mouse_hook.py`): 测试针对 TD-090 清理删除的 9 个 `*InputVariant` 子类（`LegacyEventInputVariant` / `SeizeInputVariant` / `SendMessageInputVariant` / `PostMessageInputVariant` / `SendMessageWithWindowPosVariant` / `PostMessageWithWindowPosVariant` / `_WithWindowPosBase` 等）。当前 `input_variants.py` 仅保留 `Win32InputMethod` 枚举 + 兼容性表格 + 内省辅助函数，9-variant 子类系统已被有意替换为 `platforms.windows.input` 的 3-method 字符串系统。
-  - **File 2** (`test_llm_auto_heal.py`): 测试文件本身导入路径**正确**（`from ai.llm_client import AgentLLMClient`，与生产代码 `agent/src/core/orchestrator.py:677` 完全一致）。失败根因是 `agent/conftest.py` 命名空间清理遗漏 `ai` 命名空间 — `backend/ai/` (Django app) 与 `agent/src/ai/` (agent package) 同名冲突，与 TD-116 `core` 冲突同根，但 conftest.py 只清理了 `core.*` 未清理 `ai.*`。
+  - **File 2** (`test_llm_auto_heal.py`): 测试文件本身导入路径**正确**（`from ai.llm_client import AgentLLMClient`，与生产代码 `worker/src/core/orchestrator.py:677` 完全一致）。失败根因是 `agent/conftest.py` 命名空间清理遗漏 `ai` 命名空间 — `backend/ai/` (Django app) 与 `worker/src/ai/` (agent package) 同名冲突，与 TD-116 `core` 冲突同根，但 conftest.py 只清理了 `core.*` 未清理 `ai.*`。
 - **影响**: 这 3 个测试文件无法收集，但不影响其他 1366 个 agent tests。
 - **修复方案**: ✅ 已采纳 —
   - **File 1 + File 3**: DELETE（测试针对已删除代码，无法通过更新导入路径修复；保留会误导未来维护者以为 9-variant 系统还存在）
@@ -3301,7 +3301,7 @@
 - **修复时间**: 2026-07-16 (Spec B Phase 1, commit `-`)
 - **来源**: P-011 多 session 并行调查
 - **症状**: `backend/device_bridge/platforms/windows/input.py:603-604, 640-641` 的 `_postmessage_click` / `_sendmessage_click` 先 `_client_to_screen(hwnd, x, y)` 把 client 坐标转成 screen 坐标再 pack 进 lParam — 违反 Win32 规范 (WM_LBUTTONDOWN 的 lParam 期望 client-area 坐标)。多窗口场景下窗口位置不同, 点击落到错误位置
-- **根因**: backend 端实现与 agent 端 (`agent/src/platforms/windows/input.py:473-506` `_click_postmessage` 直接 pack client 坐标) 不一致, backend 端错误地加了 client_to_screen 转换
+- **根因**: backend 端实现与 agent 端 (`worker/src/platforms/windows/input.py:473-506` `_click_postmessage` 直接 pack client 坐标) 不一致, backend 端错误地加了 client_to_screen 转换
 - **影响**: 通过 backend device_bridge API 调 PostMessage 点击时, 窗口移动 / 多显示器 / 多窗口并行场景下点击偏移
 - **修复方案**: ✅ 已采纳方案 A — 移除 4 个非 scroll 方法 (`_postmessage_click` / `_sendmessage_click` / `_postmessage_swipe` / `_sendmessage_swipe`) 中的 `_client_to_screen(hwnd, x, y)` 转换, 直接 pack client 坐标 (与 agent 端 `_click_postmessage` 对齐)。`_postmessage_scroll` / `_sendmessage_scroll` 保留 `_client_to_screen` (WM_MOUSEWHEEL lParam 期望 screen 坐标, 是 Win32 规范例外)。`_make_lparam` 参数名 `screen_x`/`screen_y` → `x`/`y` 消除误导。顶部模块 docstring + 类 docstring + `_dpi_aware` docstring + `click()` docstring 同步限定 ClientToScreen 为 SendInput / WM_MOUSEWHEEL 路径。
 - **验证标准**: ✅ `pytest backend/device_bridge/tests/test_windows_input_postmessage.py` 7 新测试通过 (4 client-coords + 1 scroll-still-screen + 2 _make_lparam packing); `pytest backend/device_bridge/tests/` 全量 26 passed (19 existing + 7 new); `ruff check` 0 errors
@@ -5422,9 +5422,9 @@
 - **根因**: helper 实现后未在 AgentConsumer / Agent 端 ws_client 接入, 缺握手协议 (Hello frame 协商 compression envelope)
 - **影响**: 大消息帧 (如 screenshot base64) 仍走原始 JSON, 网络带宽浪费; 单 worker 模式下影响小, 多 worker / 跨机部署时显著
 - **修复方案** (spec-42, 5 Phase):
-  - **Phase 1**: `backend/protocol/message_compressor.py` 加 Hello/Hello.ack frame helpers (`build_hello_frame` / `build_hello_ack_frame` / `parse_hello_capabilities` / `parse_hello_ack_capabilities`) + 协议常量 (`COMPRESSION_ALGORITHM_MSGPACK_ZLIB` / `DEFAULT_COMPRESS_THRESHOLD`); 镜像到 `agent/src/utils/message_compressor.py` (双端共享 wire format)
+  - **Phase 1**: `backend/protocol/message_compressor.py` 加 Hello/Hello.ack frame helpers (`build_hello_frame` / `build_hello_ack_frame` / `parse_hello_capabilities` / `parse_hello_ack_capabilities`) + 协议常量 (`COMPRESSION_ALGORITHM_MSGPACK_ZLIB` / `DEFAULT_COMPRESS_THRESHOLD`); 镜像到 `worker/src/utils/message_compressor.py` (双端共享 wire format)
   - **Phase 2**: `backend/protocol/consumers.py` `AgentConsumer` 加 `_compression_negotiated` + `_compressor` state; `receive()` 支持 bytes_data (decompress + dispatch); `send()` override 走压缩路径 (negotiated + size ≥ threshold); `_handle_hello()` 接受/拒绝协商; **关键顺序不变量**: Hello.ack 必须在 flip `_compression_negotiated = True` 之前发送 (否则 ack 帧本身被压缩, agent 解不开)
-  - **Phase 3**: `agent/src/client/connection.py` `AgentConnection` 加压缩 state; `connect()` 在 `_send_register()` 后发 Hello; `send_message()` 走压缩路径 (post-negotiation + size ≥ threshold, compress 失败回退 JSON); `listen()` 拦截 `hello.ack` (transport-level control frame, 不 dispatch); `disconnect()` + `_try_reconnect()` reset 压缩 state
+  - **Phase 3**: `worker/src/client/connection.py` `AgentConnection` 加压缩 state; `connect()` 在 `_send_register()` 后发 Hello; `send_message()` 走压缩路径 (post-negotiation + size ≥ threshold, compress 失败回退 JSON); `listen()` 拦截 `hello.ack` (transport-level control frame, 不 dispatch); `disconnect()` + `_try_reconnect()` reset 压缩 state
   - **Phase 4**: 端到端测试 — `backend/protocol/tests/test_compression_e2e.py` (6 tests: 协商 + 压缩率 + round-trip + legacy 兼容 + small frame 不压缩) + `agent/tests/test_compression_e2e.py` (6 tests: agent 侧 wire-level properties); 修复 `test_ws_reconnect.py` 2 处 stale assertion (connect 现在发 register + hello 两帧, 不再是单帧)
   - **Phase 5**: 文档同步 (concurrency-design.md §5 + completed-features.md + pending-roadmap.md + active.md TD-287 迁出 + fixed.md 本条目)
 - **修复方案验证** (spec-42):
@@ -5461,9 +5461,9 @@
 - **根因**: agent 是 Python 无 Django TextChoices, 字符串字面量分散多处; backend 有 `Device.Status.choices` 但 agent 没引入
 - **影响**: typo 风险 (如 `"erorr"`); 重命名成本高
 - **修复方案** (2 Phase 分批修复):
-  - **Phase 1 (spec-40)**: 创建 `agent/src/core/constants.py` 含 `ComparisonOperator` / `LoopType` / `NodeType` (str-Enum) + `evaluate_comparison` 函数; dedup `engine.py` + `nodes/branch.py` 的 7-branch if/elif 链; dedup `engine.py` + `nodes/loop.py` 的 `"for"`/`"while"` 字符串字面量
+  - **Phase 1 (spec-40)**: 创建 `worker/src/core/constants.py` 含 `ComparisonOperator` / `LoopType` / `NodeType` (str-Enum) + `evaluate_comparison` 函数; dedup `engine.py` + `nodes/branch.py` 的 7-branch if/elif 链; dedup `engine.py` + `nodes/loop.py` 的 `"for"`/`"while"` 字符串字面量
   - **Phase 2 (spec-44)**: 追加 3 新 enum (ServerStatus / EventType / AgentStatus); 迁移 11 文件 50+ 比较点 (NodeType 直接替换; StepState/PipelineState/TaskState/DeviceStatus 用 `.value` 模式; ServerStatus/EventType/AgentStatus 新 enum); 6 个 enum 全部从 `(str, Enum)` 升级为 `StrEnum` (ruff UP042 要求, 行为等价 drop-in replacement); `test_orchestrator.py` mock 改用真实 `PipelineState` enum
-- **修复方案验证** (spec-44): `pytest agent/tests/` 1554 passed 2 skipped (0 回归, 匹配 baseline); `ruff check agent/src/` All checks passed; `grep -E '(==|!=)\s*["'"'"'](online|offline|busy|idle|error|completed|failed|cancelled|branch|goto|loop|click|swipe|long_press|template_match)["'"'"']' agent/src/` ≤ 5 残留 (notify.py level / monitor action_type 等, 不在本 spec 范围)
+- **修复方案验证** (spec-44): `pytest agent/tests/` 1554 passed 2 skipped (0 回归, 匹配 baseline); `ruff check worker/src/` All checks passed; `grep -E '(==|!=)\s*["'"'"'](online|offline|busy|idle|error|completed|failed|cancelled|branch|goto|loop|click|swipe|long_press|template_match)["'"'"']' worker/src/` ≤ 5 残留 (notify.py level / monitor action_type 等, 不在本 spec 范围)
 - **验证标准**: agent 代码 0 处字符串字面量状态比较; 全用 enum 常量
 - **evidence**: spec-40 commit (-) + spec-44 commit (-)
 - **commit**: spec-44 (-)
@@ -5604,14 +5604,14 @@
 - **登记时间**: 2026-07-19
 - **修复时间**: 2026-07-19 (spec-39 Phase 2 + Phase 4 + Phase 8 联动)
 - **来源**: spec-39 Phase 1 (data-flow.md 全文重写时发现)
-- **症状**: 多份 docs 引用 `agent/src/devices/{macos,linux}/` 或 `agent/src/platforms/{macos,linux}/`, 但实际 macOS/Linux 实现在 `backend/device_bridge/platforms/{macos,linux}/` (P-028 ✅ 真实落地); agent 侧只有 `agent/src/platforms/windows/` + `agent/src/devices/adb/`
+- **症状**: 多份 docs 引用 `worker/src/devices/{macos,linux}/` 或 `worker/src/platforms/{macos,linux}/`, 但实际 macOS/Linux 实现在 `backend/device_bridge/platforms/{macos,linux}/` (P-028 ✅ 真实落地); agent 侧只有 `worker/src/platforms/windows/` + `worker/src/devices/adb/`
 - **影响位置** (已全部修复):
-  - `.ai-memory/tech-stack.md` §4 L177-179: v9.4 (spec-39 Phase 8) 已更新为 `agent/src/platforms/windows/` + `backend/device_bridge/platforms/{windows,macos,linux}/`
+  - `.ai-memory/tech-stack.md` §4 L177-179: v9.4 (spec-39 Phase 8) 已更新为 `worker/src/platforms/windows/` + `backend/device_bridge/platforms/{windows,macos,linux}/`
   - `docs/architecture/optimal-solution.md` L105-106: 已补全为 `backend/device_bridge/platforms/macos/screenshot.py` + `backend/device_bridge/platforms/linux/screenshot.py`
   - `docs/architecture/overview.md` §9.5: v3.2 (spec-39 Phase 2) 已标注 device_bridge 为 "🔧 纯 Python 包 (非 Django app, 不在 INSTALLED_APPS, 无 apps.py/models.py)"
 - **根因**: P-028 落地时 docs 写在 agent 侧但实现写在 backend 侧; 后续 spec 未同步路径; architecture-overview.md §9.5 把 `device_bridge` 误标为 Django app
 - **修复方案**:
-  - tech-stack.md §4 L177-179: 把 `agent/src/devices/{windows,macos,linux}/` 改为 `agent/src/platforms/windows/` (agent 侧) + `backend/device_bridge/platforms/{windows,macos,linux}/` (backend 侧抽象层)
+  - tech-stack.md §4 L177-179: 把 `worker/src/devices/{windows,macos,linux}/` 改为 `worker/src/platforms/windows/` (agent 侧) + `backend/device_bridge/platforms/{windows,macos,linux}/` (backend 侧抽象层)
   - GAF-optimal-solution.md L105-106: 路径补全为 `backend/device_bridge/platforms/macos/screenshot.py` 等
   - architecture-overview.md §9.5: 把 `device_bridge` 标注为 "纯 Python 包 (非 Django app, 不在 INSTALLED_APPS)"
 - **修复方案验证** (spec-54 Phase 2 复查, 2026-07-20):
@@ -5742,10 +5742,10 @@
 - **登记时间**: 2026-07-11
 - **修复时间**: 2026-07-11（N154 修复时一并修复）
 - **来源**: N154 subprocess storm 修复
-- **症状**: `agent/src/monitor/manager.py` `DEFAULT_CHECK_INTERVAL = 1.0`，每秒调用 `_take_screenshot()`
+- **症状**: `worker/src/monitor/manager.py` `DEFAULT_CHECK_INTERVAL = 1.0`，每秒调用 `_take_screenshot()`
 - **根因**: 监控线程默认间隔过短（1s），且截图可能走 ADB subprocess 路径
-- **修复**: N154 修复时将 `DEFAULT_CHECK_INTERVAL` 从 `1.0` 改为 `30.0`（`agent/src/monitor/manager.py:21`），与心跳间隔对齐，消除 subprocess 风暴
-- **验证**: `grep "DEFAULT_CHECK_INTERVAL" agent/src/monitor/manager.py` 显示 `30.0`
+- **修复**: N154 修复时将 `DEFAULT_CHECK_INTERVAL` 从 `1.0` 改为 `30.0`（`worker/src/monitor/manager.py:21`），与心跳间隔对齐，消除 subprocess 风暴
+- **验证**: `grep "DEFAULT_CHECK_INTERVAL" worker/src/monitor/manager.py` 显示 `30.0`
 - **关联**: N154 (`lessons/2026-07-11-n154*`)
 
 ---
@@ -5787,10 +5787,10 @@
 
 ## TD-091 — 两套 RuntimeDisplayContext 类命名冲突 ✅ FIXED `-`
 
-- **症状**：`agent/src/utils/display_context.py` (正式，286 行) 和 `agent/src/utils/display.py` (遗留，44 行) 都定义了 `RuntimeDisplayContext`，字段完全不同
+- **症状**：`worker/src/utils/display_context.py` (正式，286 行) 和 `worker/src/utils/display.py` (遗留，44 行) 都定义了 `RuntimeDisplayContext`，字段完全不同
 - **根因**：`display.py` 是早期遗留实现，`display_context.py` 是后期重构，未删除旧类
 - **影响**：(1) 命名冲突：import 时可能导入错误的类 (2) 维护混乱：开发者不确定用哪个
-- **修复**：删除 `agent/src/utils/display.py`；修改 `agent/src/utils/__init__.py` 将 `from utils.display import RuntimeDisplayContext` 改为 `from utils.display_context import RuntimeDisplayContext`，同时修复 `from utils.coordinate import CoordinateTransformer` → `from utils.coord_transformer import CoordinateTransformer` (同源遗留问题，登记为 TD-094)
+- **修复**：删除 `worker/src/utils/display.py`；修改 `worker/src/utils/__init__.py` 将 `from utils.display import RuntimeDisplayContext` 改为 `from utils.display_context import RuntimeDisplayContext`，同时修复 `from utils.coordinate import CoordinateTransformer` → `from utils.coord_transformer import CoordinateTransformer` (同源遗留问题，登记为 TD-094)
 - **验证**：`import utils; from utils import RuntimeDisplayContext, CoordinateTransformer` 成功，`RuntimeDisplayContext.__module__` == `utils.display_context`，`CoordinateTransformer.__module__` == `utils.coord_transformer`；全仓库 grep `from utils.display import` 无结果
 - **登记时间**：2026-07-12
 - **修复时间**：2026-07-12 (commit `-`)
@@ -5803,7 +5803,7 @@
 - **症状**：`.trae/skills/gaf-orchestrator/SKILL.md:130-131` 引用 `scripts/debug/check_execution.py` 和 `scripts/debug/trace_logs.py`，实际 `scripts/debug/` 目录不存在
 - **根因**：N157 — 写 AI memory 文档时未 Glob/Read 验证实际代码/资源存在
 - **影响**：AI 按 SKILL.md 指引排查时会调用不存在的脚本，导致排查失败
-- **修复**：采用选项 B — 更新 3 个文件 (`gaf-orchestrator/SKILL.md`, `_shared/decision-tree.md`, `gaf-knowledge-base/SKILL.md`) 中的引用为实际存在的工具：`scripts/debug/check_execution.py` → `docs/business/tasks/troubleshooting.md`；`scripts/debug/trace_logs.py` → `agent/src/utils/screenshot_diagnostic.py`
+- **修复**：采用选项 B — 更新 3 个文件 (`gaf-orchestrator/SKILL.md`, `_shared/decision-tree.md`, `gaf-knowledge-base/SKILL.md`) 中的引用为实际存在的工具：`scripts/debug/check_execution.py` → `docs/business/tasks/troubleshooting.md`；`scripts/debug/trace_logs.py` → `worker/src/utils/screenshot_diagnostic.py`
 - **验证**：grep `scripts/debug|.ai-memory/checklists` 在 `.trae/skills/` 下无结果
 - **登记时间**：2026-07-12
 - **修复时间**：2026-07-12
@@ -5829,7 +5829,7 @@
 - **症状**：OCR node 执行时报 "No OCR engines registered in registry"
 - **根因**：`orchestrator.register_ocr_engine()` 注册到 `self._ocr_registry` (orchestrator-scoped)，但 OCR node 用 `context.get_variable('_ocr_registry')` (context-scoped，独立实例)。两个 registry 实例互不相通，orchestrator 注册的 RapidOCR 对 pipeline node 不可见
 - **影响**：所有含 OCR 节点的 pipeline 执行失败 (BD2 get_email / pass_activity / claim_all_rewards 等)
-- **修复**：`agent/src/engine/nodes/ocr.py` `_get_ocr_engine` 方法添加 RapidOCR 自动注册 fallback — 当 context registry 为空时自动注册 RapidOCR
+- **修复**：`worker/src/engine/nodes/ocr.py` `_get_ocr_engine` 方法添加 RapidOCR 自动注册 fallback — 当 context registry 为空时自动注册 RapidOCR
 - **验证**：2026-07-12 BD2 get_email.json e2e 验证，OCR node 成功注册 RapidOCR 并识别 4 行文本（`detect: 1 images -> 4 total detections`）
 - **commit**：`-`
 - **登记时间**：2026-07-12
@@ -5841,10 +5841,10 @@
 
 ## TD-089 — batch_ocr.py OCRResult vs dict 接口契约不匹配 ✅ FIXED
 
-- **症状**：`AttributeError: 'OCRResult' object has no attribute 'get'` at `agent/src/core/batch_ocr.py:164`
+- **症状**：`AttributeError: 'OCRResult' object has no attribute 'get'` at `worker/src/core/batch_ocr.py:164`
 - **根因**：`batch_ocr.py` 期望 `List[Dict]`（含 `d.get("confidence")` / `d["text"]` / `d.get("bbox")`，bbox 为 `[x,y,w,h]`），但 `RapidOCREngine.recognize()` 返回 `List[OCRResult]` (dataclass: `text`/`confidence`/`box`，box 为 `(x1,y1,x2,y2)`)。接口契约不匹配
 - **影响**：所有 OCR 节点执行失败（即使 TD-088 修复后 RapidOCR 已注册，仍因 dict 访问 OCRResult 对象而崩溃）
-- **修复**：`agent/src/engine/nodes/ocr.py` 新增 `_adapt_ocr_engine` 静态方法，将 `engine.recognize` 包装为返回 dict 列表的函数（含坐标格式转换 `x1y1x2y2 → xywh`）。3 处 `_get_ocr_engine` 返回点都应用适配层。设计决策：选择适配层方案（在 ocr.py 包装）而非改 batch_ocr.py 或 RapidOCREngine，以保持 batch_ocr.py 通用 dict 接口契约 + RapidOCREngine 类型安全
+- **修复**：`worker/src/engine/nodes/ocr.py` 新增 `_adapt_ocr_engine` 静态方法，将 `engine.recognize` 包装为返回 dict 列表的函数（含坐标格式转换 `x1y1x2y2 → xywh`）。3 处 `_get_ocr_engine` 返回点都应用适配层。设计决策：选择适配层方案（在 ocr.py 包装）而非改 batch_ocr.py 或 RapidOCREngine，以保持 batch_ocr.py 通用 dict 接口契约 + RapidOCREngine 类型安全
 - **验证**：2026-07-12 BD2 get_email.json e2e 验证，OCR 节点成功执行（`detect: 1 images -> 4 total detections`，不再报 AttributeError）
 - **commit**：`-`
 - **登记时间**：2026-07-12
@@ -6312,7 +6312,7 @@
 - **症状**：当前 Windows 设备只支持两种控制模式 — `SendInput` (前台) 和 `PostMessage` (后台)。前者会强抢用户焦点，后者常被反作弊机制拦截。游戏自动化最常见的"单开游戏 + 用户偶尔操作其他窗口"场景缺少合适的模式：需要在点击时临时把目标窗口前台化、点击后恢复鼠标位置并放回原前台窗口。
 - **根因**：
   1. Device 模型 ([backend/agents/models.py:242,249](file:///D:/code/GAF/backend/agents/models.py#L242)) 把 `screenshot_method` 和 `input_method` 拆成两个独立字段，缺少"控制模式"层级的抽象。用户必须在两个字段里手动配对，容易出错（如配 `SendInput + GDI` 会导致后台截图失败）
-  2. agent 输入处理器 ([agent/src/platforms/windows/input.py:268](file:///D:/code/GAF/agent/src/platforms/windows/input.py#L268)) 只实现 `SendInput` 和 `PostMessage` 两种 click 路径，没有 `_click_pseudo_background` 方法
+  2. agent 输入处理器 ([worker/src/platforms/windows/input.py:268](file:///D:/code/GAF/worker/src/platforms/windows/input.py#L268)) 只实现 `SendInput` 和 `PostMessage` 两种 click 路径，没有 `_click_pseudo_background` 方法
   3. 没有"前台恢复"逻辑（SetForegroundWindow + GetCursorPos/SetCursorPos 保存/恢复鼠标位置）
 - **影响**：
   - `SendInput` 模式下点击会打断用户当前操作（例如用户在 IDE 写代码时被游戏窗口抢焦点）
@@ -6364,7 +6364,7 @@
 - **症状**：agent 发送 task.result 时报 `Object of type ndarray is not JSON serializable`，connection.py 用 `default=str` 兜底发送，导致 result_data 中出现超长字符串（numpy 数组的 repr，例如 `[[[42 38 38]\n  [43 39 38]...]`）。前端 ExecutionMonitorPanel 显示 result_data 时被这些字符串撑爆。
 - **根因**：
   1. agent task execution 的 result 中包含 numpy ndarray（截图 RGB 像素数组）
-  2. [agent/src/client/connection.py](file:///D:/code/GAF/agent/src/client/connection.py) 的 `_serialize_for_json` 函数没有处理 ndarray 类型，触发 TypeError 后用 `default=str` 兜底
+  2. [worker/src/client/connection.py](file:///D:/code/GAF/worker/src/client/connection.py) 的 `_serialize_for_json` 函数没有处理 ndarray 类型，触发 TypeError 后用 `default=str` 兜底
   3. ndarray 应该被显式转换为 list（`arr.tolist()`）或被剔除（task.result 不需要返回原始像素数据，只需返回元数据如 shape/dtype/匹配分数）
 - **影响**：
   - task.result 的 payload 异常庞大（数十 KB），WS 帧体积膨胀
@@ -6380,7 +6380,7 @@
 - **何时修**：已修 (Phase 3)
 - **登记时间**：2026-07-06
 - **发现于**：R37-P3 BD2 端到端执行日志验证（execution 61/62/63 agent 日志显示 `Falling back to default=str to avoid dropping the frame`）
-- **修复 (Phase 3, 2026-07-09)**：`agent/src/client/connection.py` `_serialize_for_json` 增加 numpy 分支：`np.ndarray` → `tolist()` / `np.integer` → `int()` / `np.floating` → `float()` / `np.bool_` → `bool()`；numpy 在函数内 lazy import（避免模块加载依赖）。同时将 dataclass 分支从 `dataclasses.asdict(obj)` 改为 `{f.name: _serialize_for_json(getattr(obj, f.name)) for f in dataclasses.fields(obj)}`，因为 `asdict` 不转 ndarray（测试发现）。新增 20 个单测 `agent/tests/test_connection_serialize.py` 全过（含 1d/2d/3d ndarray、标量、嵌套 dict/list/dataclass、`json.dumps` 端到端回归）。
+- **修复 (Phase 3, 2026-07-09)**：`worker/src/client/connection.py` `_serialize_for_json` 增加 numpy 分支：`np.ndarray` → `tolist()` / `np.integer` → `int()` / `np.floating` → `float()` / `np.bool_` → `bool()`；numpy 在函数内 lazy import（避免模块加载依赖）。同时将 dataclass 分支从 `dataclasses.asdict(obj)` 改为 `{f.name: _serialize_for_json(getattr(obj, f.name)) for f in dataclasses.fields(obj)}`，因为 `asdict` 不转 ndarray（测试发现）。新增 20 个单测 `agent/tests/test_connection_serialize.py` 全过（含 1d/2d/3d ndarray、标量、嵌套 dict/list/dataclass、`json.dumps` 端到端回归）。
 
 ---
 
@@ -6427,7 +6427,7 @@
 
 ## TD-019 — ScreenshotCache 已实现但未接入采集路径（缓存层空转） ✅ FIXED
 
-- **症状**：`agent/src/devices/screenshot_cache.py` 已实现 `ScreenshotCache` 类（含 LRU 淘汰 + 帧对比去重），但截图采集路径（`screenshot.py` / `dxgi_capture.py` / `PrintWindow` 调用链）未接入缓存。每次截图都重新采集，缓存层空转。
+- **症状**：`worker/src/devices/screenshot_cache.py` 已实现 `ScreenshotCache` 类（含 LRU 淘汰 + 帧对比去重），但截图采集路径（`screenshot.py` / `dxgi_capture.py` / `PrintWindow` 调用链）未接入缓存。每次截图都重新采集，缓存层空转。
 - **根因**：`screenshot_cache.py:1-4` 文件头部标记 `🔧`（代码存在但不可用），属于 R37-P1 阶段未完成的接线工作。采集路径直接返回新帧，未先查缓存。
 - **影响**：
   - 静态画面重复采集，浪费 CPU/GPU 资源（与 TD-009 截图流重复帧去重相关但不同层面）
@@ -6447,8 +6447,8 @@
 - **修复时间**：2026-07-07（gaf-restructure-execution Stage 4）
 - **修复 commit**：（Stage 4 待 commit）
 - **修复内容**：
-  - `agent/src/devices/screenshot_cache.py`：新增模块级单例 `_default_cache` + 工厂函数 `get_default_cache()`，懒加载避免 import 期触发 Redis 连接尝试；文件头部状态从 `🔧` 改为 `✅ wired into screenshot stream`。
-  - `agent/src/client/handler.py`：在 `_capture_one_device` 截图流路径（L887 dedup 检查之后、L889 `cv2.imencode` 之前）接入 `ScreenshotCache.get(device_id, frame_hash)`。命中则复用缓存的 JPEG `bytes`，跳过 `cv2.imencode`；未命中则编码 + `cache.set(device_id, frame_hash, buf.tobytes())`。`cache.set` 异常被捕获并降级为 debug 日志（non-fatal，截图流仍正常返回 True）。导入语句从 `from devices.screenshot_cache import compute_frame_hash` 扩展为 `import compute_frame_hash, get_default_cache`。
+  - `worker/src/devices/screenshot_cache.py`：新增模块级单例 `_default_cache` + 工厂函数 `get_default_cache()`，懒加载避免 import 期触发 Redis 连接尝试；文件头部状态从 `🔧` 改为 `✅ wired into screenshot stream`。
+  - `worker/src/client/handler.py`：在 `_capture_one_device` 截图流路径（L887 dedup 检查之后、L889 `cv2.imencode` 之前）接入 `ScreenshotCache.get(device_id, frame_hash)`。命中则复用缓存的 JPEG `bytes`，跳过 `cv2.imencode`；未命中则编码 + `cache.set(device_id, frame_hash, buf.tobytes())`。`cache.set` 异常被捕获并降级为 debug 日志（non-fatal，截图流仍正常返回 True）。导入语句从 `from devices.screenshot_cache import compute_frame_hash` 扩展为 `import compute_frame_hash, get_default_cache`。
   - `agent/tests/test_screenshot_cache_wiring.py`：新增 6 个测试覆盖 cache hit 跳过编码、cache miss 编码并存储、cache.set 失败 non-fatal、10× 静态画面 ≤ 2 次编码、帧变化触发重新编码、完整 `_screenshot_stream_loop` 12 轮集成测试。
 - **验证**：
   - `conda run -n gaf python -m pytest tests/test_screenshot_cache_wiring.py -v -p no:django` → 6 passed
@@ -6709,7 +6709,7 @@
 
 ## TD-036 — agent token 弱熵密钥（Fernet + COMPUTERNAME 派生） ✅ FIXED `-`
 
-- **症状**：`agent/src/auth/token_store.py:19-39` 的 `_derive_key_from_machine` 用 `COMPUTERNAME` 环境变量作为种子派生 Fernet 密钥。机器名常可猜测（如 `DESKTOP-ABC1234`），物理访问可暴力枚举。
+- **症状**：`worker/src/auth/token_store.py:19-39` 的 `_derive_key_from_machine` 用 `COMPUTERNAME` 环境变量作为种子派生 Fernet 密钥。机器名常可猜测（如 `DESKTOP-ABC1234`），物理访问可暴力枚举。
 - **根因**：agent 自鉴权场景早期实现为简化部署，用机器名派生密钥避免用户输入密码。但机器名熵不足，且 Fernet 加密但无完整性校验（密钥泄露则可解密所有历史 token）。
 - **影响**：物理访问机器后可解密 agent token，冒充 agent 连接 backend；违反 N133 安全最佳实践。
 - **修复方案**：改用 OS keyring（Windows DPAPI `win32crypt.CryptProtectData` / macOS Keychain / Linux Secret Service）替代 Fernet + 机器名派生；或用 `keyring` 库跨平台统一。
@@ -7138,7 +7138,7 @@
 - **修复时间**: 2026-07-12
 - **修复 commit**: 待提交
 - **来源**: `docs/business/ai/input-mode-window-wait.md` Stage 1 调查
-- **症状**: `agent/src/platforms/windows/input_variants.py` (9 变体枚举 Win32InputMethod) 和 `agent/src/platforms/windows/input.py` (3 方法字符串 SendInput/PostMessage/PseudoBackground) 并存。`device.py` 实际只用 3 方法字符串系统，9 变体仅用于窗口类兼容性查询 (`recommend_legacy_input_method`)。两套系统通过 `_LEGACY_TO_ENUM`/`_ENUM_TO_LEGACY` 映射表桥接
+- **症状**: `worker/src/platforms/windows/input_variants.py` (9 变体枚举 Win32InputMethod) 和 `worker/src/platforms/windows/input.py` (3 方法字符串 SendInput/PostMessage/PseudoBackground) 并存。`device.py` 实际只用 3 方法字符串系统，9 变体仅用于窗口类兼容性查询 (`recommend_legacy_input_method`)。两套系统通过 `_LEGACY_TO_ENUM`/`_ENUM_TO_LEGACY` 映射表桥接
 - **根因**: 9 变体系统是早期设计，3 方法字符串是后期简化，未完成统一
 - **影响**: (1) 认知负担：开发者需理解两套系统 (2) 代码重复：AttachThreadInput 技巧已在 `input.py` PseudoBackground 中实现 (commit -) (3) 维护风险：修改一套系统可能遗漏另一套
 - **修复方案**: 统一为一套系统。保留 3 方法字符串系统（实际使用），将 9 变体的兼容性表合并到 `input_variants.py` 的查询函数中，删除未使用的 InputVariant 子类。AttachThreadInput 技巧已移植到 `input.py` 的 PseudoBackground (commit -)
@@ -7161,12 +7161,12 @@
 - **修复时间**: 2026-07-12
 - **修复 commit**: 待提交
 - **来源**: TD-091 修复时发现 — `utils/__init__.py` 同时引用了 `utils.coordinate.CoordinateTransformer` (遗留) 和 `utils.display.RuntimeDisplayContext` (遗留)
-- **症状**: `agent/src/utils/coordinate.py` 定义了遗留的 `CoordinateTransformer` (基于旧 `Resolution` dataclass)，规范版本在 `utils/coord_transformer.py` (基于 `RuntimeDisplayContext`)。修复 TD-091 时发现 `__init__.py` 引用了两个遗留类，已将 `__init__.py` 指向规范版本，但 `coordinate.py` 文件本身未删除
+- **症状**: `worker/src/utils/coordinate.py` 定义了遗留的 `CoordinateTransformer` (基于旧 `Resolution` dataclass)，规范版本在 `utils/coord_transformer.py` (基于 `RuntimeDisplayContext`)。修复 TD-091 时发现 `__init__.py` 引用了两个遗留类，已将 `__init__.py` 指向规范版本，但 `coordinate.py` 文件本身未删除
 - **根因**: 与 TD-091 同源 — 早期 `coordinate.py` + `display.py` 是第一代实现，后期重构为 `coord_transformer.py` + `display_context.py`，旧文件未删除
 - **影响**: 低 — 全仓库无 import `utils.coordinate` (grep 确认)，但文件存在会误导开发者
 - **修复方案**: 删除 `utils/coordinate.py`；验证 `from utils import CoordinateTransformer` 仍可用 (通过 `utils/__init__.py` re-export from `coord_transformer`)
 - **验证标准**: `utils/coordinate.py` 不存在；`from utils import CoordinateTransformer` 成功且来自 `utils.coord_transformer` ✅
-- **修复记录**: 2026-07-12 删除 `agent/src/utils/coordinate.py`，grep 确认零引用，导入验证通过
+- **修复记录**: 2026-07-12 删除 `worker/src/utils/coordinate.py`，grep 确认零引用，导入验证通过
 - **迁移记录**: 从 active.md 迁入（S5 任务 6，2026-07-14）
 
 ---
@@ -7301,9 +7301,9 @@
 - **修复 commit**: `-`
 - **来源**: S5 FeatureFlag + 杂项阶段执行中发现 — N162 范围外关注
 - **症状**: `ai/tasks_rag.py` 注册了 Celery beat `auto_index_rag` 定时任务（5 分钟周期），但开发环境默认不启动 Celery worker，未实测该任务在真实环境中的执行情况。
-- **根因**: 开发流程不包含 Celery worker 部署验证。**实测发现路径拼接 bug**：`settings.BASE_DIR` 是 `backend/`，但代码用 `f'{base_dir}/agent/src'` 拼接，导致实际路径变成 `backend/agent/src`（不存在），`os.walk` 扫描不到任何文件，返回 0 chunks。
+- **根因**: 开发流程不包含 Celery worker 部署验证。**实测发现路径拼接 bug**：`settings.BASE_DIR` 是 `backend/`，但代码用 `f'{base_dir}/worker/src'` 拼接，导致实际路径变成 `backend/worker/src`（不存在），`os.walk` 扫描不到任何文件，返回 0 chunks。
 - **影响**: `auto_index_rag` 任务"成功"执行但实际索引 0 个文件，RAG 检索库永远为空。生产部署后 beat 定时任务每次都空跑。
-- **修复方案**: 用 `settings.BASE_DIR.parent`（repo root）+ `pathlib.Path` 拼接，正确指向 `agent/src` 和 `backend/ai`。同步更新单元测试路径断言。
+- **修复方案**: 用 `settings.BASE_DIR.parent`（repo root）+ `pathlib.Path` 拼接，正确指向 `worker/src` 和 `backend/ai`。同步更新单元测试路径断言。
 - **验证标准**: ✅ 真实执行 `auto_index_rag.apply()`：agent_chunks=1642, backend_chunks=561, ChromaDB 1347→3463 docs；✅ `pytest ai/tests/test_rag_auto_index.py -v` 3 passed；✅ `pytest ai/ -q` 285 passed 0 回归
 - **迁移记录**: 从 active.md 迁入（2026-07-14）
 
@@ -7587,7 +7587,7 @@
   - 3 个测试文件无法收集，全量 `pytest tests/` 报 3 errors 中断
   - 必须用 `--ignore` 排除才能跑其余测试
 - **修复方案**：
-  1. 查找 `_INPUT_UNION` 的历史定义（`git log -p --all -S '_INPUT_UNION' -- agent/src/platforms/windows/input.py`）
+  1. 查找 `_INPUT_UNION` 的历史定义（`git log -p --all -S '_INPUT_UNION' -- worker/src/platforms/windows/input.py`）
   2. 确认是被重命名还是删除——若重命名则更新 import，若删除则更新 `input_variants.py` 使用新符号
   3. 跑 3 个测试文件验证修复
 - **实际修复**：`input.py:160` 定义 `_InputUnion` (PascalCase class)，`input_variants.py` 误用 `_INPUT_UNION` (ALL_CAPS)。`replace_all _INPUT_UNION → _InputUnion` (1 import + 5 usages in `input_variants.py`)。
@@ -7772,21 +7772,21 @@
 - **关键文件**: `frontend/src/pages/Ops/ScheduledTasks/DagEditorPage.tsx` (重构) + `frontend/src/i18n/locales/scheduledTasks.ts` (i18n)
 - **何时修**: ✅ 已修复 (2026-07-15)
 
-## TD-115: agent/src/core/orchestrator.py 预存 ruff 40 errors (✅ FIXED)
+## TD-115: worker/src/core/orchestrator.py 预存 ruff 40 errors (✅ FIXED)
 
 - **状态**: ✅ FIXED
 - **优先级**: P3
 - **登记时间**: 2026-07-15
 - **修复时间**: 2026-07-15 (commit `-`)
 - **来源**: P-010 Phase 1 ruff 检查时发现 — orchestrator.py 有 40 个预存 ruff errors (UP006/UP045/F401/F841/SIM105/I001)
-- **症状**: `ruff check agent/src/core/orchestrator.py` 报 40 errors，全部是预存（typing.Dict/Optional 旧风格 + 未使用 import + 未使用变量）
+- **症状**: `ruff check worker/src/core/orchestrator.py` 报 40 errors，全部是预存（typing.Dict/Optional 旧风格 + 未使用 import + 未使用变量）
 - **根因**: agent/ 代码早期编写时未跑 ruff，积累了大量 UP006 (typing.Dict→dict) / UP045 (Optional→X|None) / F401 (unused import) / F841 (unused variable) / SIM105 (try-except-pass→contextlib.suppress) 错误
 - **影响**: pre-commit hook 的 ruff 检查（manual stage）会报错，但不阻塞 commit（manual stage 需显式触发）。CI 跑 manual stage 会失败。
 - **修复方案**: ✅ 已采纳 — `ruff check --fix` 自动修复 33 个 (UP006/UP045/UP035/I001)；5 个手动修复：(1) 删除 `_execute_step` 未使用 `step_name` 局部变量；(2) 将 `from recognition.ocr.registry import OCREngineRegistry` 探测 import 替换为 `importlib.util.find_spec`（导入名从未使用，纯可用性检查）；(3)(4) 删除 `execute_pipeline` 中 `original_cancel`/`original_pause` 死代码（历史 save-for-restore 模式，restore 从未实现，按 §2.0.5 ③ 不做兼容直接删）；(5) `try/except AttributeError: pass` → `contextlib.suppress(AttributeError)`。
-- **验证标准**: ✅ `ruff check agent/src/core/orchestrator.py` 0 errors；`pytest agent/tests/` (排除 3 个 TD-117 stale 文件) 1373 passed, 2 skipped, 0 failures。
+- **验证标准**: ✅ `ruff check worker/src/core/orchestrator.py` 0 errors；`pytest agent/tests/` (排除 3 个 TD-117 stale 文件) 1373 passed, 2 skipped, 0 failures。
 - **何时修**: ✅ 已修复 (2026-07-15)
 
-## TD-116: backend/core/ + backend/ai/ 与 agent/src/{core,ai}/ 包名冲突 (✅ FIXED)
+## TD-116: backend/core/ + backend/ai/ 与 worker/src/{core,ai}/ 包名冲突 (✅ FIXED)
 
 - **状态**: ✅ FIXED
 - **优先级**: P2
@@ -7817,7 +7817,7 @@
   3. `test_window_pos_mouse_hook.py` — `cannot import name 'SendMessageWithWindowPosVariant' from 'platforms.windows.input_variants'`
 - **根因**: 调查后确认 3 个文件分属两类问题：
   - **File 1 + File 3** (`test_input_5button_wheel.py` + `test_window_pos_mouse_hook.py`): 测试针对 TD-090 清理删除的 9 个 `*InputVariant` 子类（`LegacyEventInputVariant` / `SeizeInputVariant` / `SendMessageInputVariant` / `PostMessageInputVariant` / `SendMessageWithWindowPosVariant` / `PostMessageWithWindowPosVariant` / `_WithWindowPosBase` 等）。当前 `input_variants.py` 仅保留 `Win32InputMethod` 枚举 + 兼容性表格 + 内省辅助函数，9-variant 子类系统已被有意替换为 `platforms.windows.input` 的 3-method 字符串系统。
-  - **File 2** (`test_llm_auto_heal.py`): 测试文件本身导入路径**正确**（`from ai.llm_client import AgentLLMClient`，与生产代码 `agent/src/core/orchestrator.py:677` 完全一致）。失败根因是 `agent/conftest.py` 命名空间清理遗漏 `ai` 命名空间 — `backend/ai/` (Django app) 与 `agent/src/ai/` (agent package) 同名冲突，与 TD-116 `core` 冲突同根，但 conftest.py 只清理了 `core.*` 未清理 `ai.*`。
+  - **File 2** (`test_llm_auto_heal.py`): 测试文件本身导入路径**正确**（`from ai.llm_client import AgentLLMClient`，与生产代码 `worker/src/core/orchestrator.py:677` 完全一致）。失败根因是 `agent/conftest.py` 命名空间清理遗漏 `ai` 命名空间 — `backend/ai/` (Django app) 与 `worker/src/ai/` (agent package) 同名冲突，与 TD-116 `core` 冲突同根，但 conftest.py 只清理了 `core.*` 未清理 `ai.*`。
 - **影响**: 这 3 个测试文件无法收集，但不影响其他 1366 个 agent tests。
 - **修复方案**: ✅ 已采纳 —
   - **File 1 + File 3**: DELETE（测试针对已删除代码，无法通过更新导入路径修复；保留会误导未来维护者以为 9-variant 系统还存在）
@@ -7891,7 +7891,7 @@
 - **修复时间**: 2026-07-16 (Spec B Phase 1, commit `-`)
 - **来源**: P-011 多 session 并行调查
 - **症状**: `backend/device_bridge/platforms/windows/input.py:603-604, 640-641` 的 `_postmessage_click` / `_sendmessage_click` 先 `_client_to_screen(hwnd, x, y)` 把 client 坐标转成 screen 坐标再 pack 进 lParam — 违反 Win32 规范 (WM_LBUTTONDOWN 的 lParam 期望 client-area 坐标)。多窗口场景下窗口位置不同, 点击落到错误位置
-- **根因**: backend 端实现与 agent 端 (`agent/src/platforms/windows/input.py:473-506` `_click_postmessage` 直接 pack client 坐标) 不一致, backend 端错误地加了 client_to_screen 转换
+- **根因**: backend 端实现与 agent 端 (`worker/src/platforms/windows/input.py:473-506` `_click_postmessage` 直接 pack client 坐标) 不一致, backend 端错误地加了 client_to_screen 转换
 - **影响**: 通过 backend device_bridge API 调 PostMessage 点击时, 窗口移动 / 多显示器 / 多窗口并行场景下点击偏移
 - **修复方案**: ✅ 已采纳方案 A — 移除 4 个非 scroll 方法 (`_postmessage_click` / `_sendmessage_click` / `_postmessage_swipe` / `_sendmessage_swipe`) 中的 `_client_to_screen(hwnd, x, y)` 转换, 直接 pack client 坐标 (与 agent 端 `_click_postmessage` 对齐)。`_postmessage_scroll` / `_sendmessage_scroll` 保留 `_client_to_screen` (WM_MOUSEWHEEL lParam 期望 screen 坐标, 是 Win32 规范例外)。`_make_lparam` 参数名 `screen_x`/`screen_y` → `x`/`y` 消除误导。顶部模块 docstring + 类 docstring + `_dpi_aware` docstring + `click()` docstring 同步限定 ClientToScreen 为 SendInput / WM_MOUSEWHEEL 路径。
 - **验证标准**: ✅ `pytest backend/device_bridge/tests/test_windows_input_postmessage.py` 7 新测试通过 (4 client-coords + 1 scroll-still-screen + 2 _make_lparam packing); `pytest backend/device_bridge/tests/` 全量 26 passed (19 existing + 7 new); `ruff check` 0 errors

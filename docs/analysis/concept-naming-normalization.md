@@ -46,15 +46,15 @@ verified_baseline: >
 | `protocol.AgentSession`(WS) | WS 会话模型(服务端, Worker 连接) | 列 gaf_ai/protocol | `WorkerSession`（Worker WS 会话） | Worker WS 会话 | 高 | C-3 | 235 命中含 API/迁移/前端类型 |
 | `gaf_ai.agent.AgentSession`(AI) | AI 会话模型 | 同上 | `AgentSession`（**保留干净名给 AI 智能体**） | AI 智能体会话 | 高 | C-3(实际不改名) | 同 235 区域 |
 | `Agent`(模型, 执行节点) | `agents/models.py:58` | "Agent（机器/进程）" | `Worker` | 执行节点/Worker | 高 | G | GAF 全仓(agents app 重命名最重) |
-| `agent/`(进程目录) | `agent/src/__main__.py` | — | `worker/` | Worker 进程目录 | 高 | G | 目录改名+import |
-| `AgentConnection`(agent 端 WS 客户端) | `agent/src/client/connection.py:153` | — | `WorkerConnection` | Worker 连接客户端 | 中 | G | 与 WorkerSession 无碰撞(E-1) |
-| `AgentStatus`(agent 端) | `agent/src/core/constants.py:141` | — | `WorkerStatus` | Worker 状态 | 低 | G | |
+| `agent/`(进程目录) | `worker/src/__main__.py` | — | `worker/` | Worker 进程目录 | 高 | G | 目录改名+import |
+| `AgentConnection`(agent 端 WS 客户端) | `worker/src/client/connection.py:153` | — | `WorkerConnection` | Worker 连接客户端 | 中 | G | 与 WorkerSession 无碰撞(E-1) |
+| `AgentStatus`(agent 端) | `worker/src/core/constants.py:141` | — | `WorkerStatus` | Worker 状态 | 低 | G | |
 | `AgentConsumer`(protocol) | `protocol/consumers.py:123` | — | `WorkerConsumer` | Worker WS 消费者 | 中 | G | |
 | `AgentToken` | `agents/models.py:134`+端点 | — | `WorkerToken` | Worker 令牌 | 中 | G | |
 | `agent_runtime` | `agents/agent_runtime.py` | — | `worker_runtime` | Worker 进程管理器 | 低 | G | |
 | `AgentViewSet` | `agents/view_sets/crud.py:38` | — | `WorkerViewSet` | Worker 管理视图 | 中 | G | |
-| `run_agent` | `agent/src/__main__.py:436` | — | `run_worker` | 启动 Worker | 低 | G | |
-| `AgentLLMClient` | `agent/src/ai/llm_client.py:92` | — | `WorkerLlmClient` | Worker 侧 LLM 客户端 | 低 | G | |
+| `run_agent` | `worker/src/__main__.py:436` | — | `run_worker` | 启动 Worker | 低 | G | |
+| `AgentLLMClient` | `worker/src/ai/llm_client.py:92` | — | `WorkerLlmClient` | Worker 侧 LLM 客户端 | 低 | G | |
 | `AgentSelector` | `tasks/agent_selector.py:132` | — | `WorkerSelector` | 选 Worker | 中 | G | |
 | `backend/agents`(app) | Django app `agents` | — | `backend/workers` | Worker app | 高 | G | app 重命名(迁移最重) |
 | `Device.emulator`(字段) | `agents/models.py:323` | 与 `device_type='emulator'` 值混淆 | `emulator_brand` | 模拟器品牌 | 高 | C | 40 命中 + `device_type` 值 26 |
@@ -69,7 +69,7 @@ verified_baseline: >
 | `task.assign`(WS 帧)/`handle_task_assign`(方法) | 协议帧 `task.assign` ↔ 方法下划线 | 记为文档矛盾 | **统一帧名 + alias 兼容**（wire-contract） | — | 高(协议) | C | `connection.py:870` `"task.assign": handle_task_assign`；`task.dispatch` 亦别名 |
 | `TaskChainNode`(backend)/`PipelineNode`(agent) | 两结构（持久化链节点 vs 运行时节点） | "Node"过载 | **保留双结构 + 文档显式区分**（可选 agent `PipelineNode`→`AgentNode`） | 明确三层节点(backend Pipeline/TaskChainNode + agent PipelineNode) | 中(可选高) | D | `pipeline/models.py:274` vs `engine/node.py`；不同层非同物 |
 | `get_unified_logical_rect`(方法)/`publish_match_pos`(trace step) | 方法名 vs 追踪 step 值 | 记为"名不一致" | **不改名**（异物） | 文档说明：转换③=`get_unified_logical_rect`，追踪 step=`publish_match_pos` | 低(文档) | D | `coord_transformer.py:454` vs `target.py:111` |
-| `DeviceInfo`(DTO×3) | `device_bridge/platforms/base.py:32` + `agent/src/devices/discovery/base.py:13` + `DeviceInfoView`(`backend/agents/view_sets/app_info.py:406`) | 三义(2 DTO + 1 端点) | 端点 `DeviceInfoView`→`DeviceDetailView`；两 DTO 文档区分 | 中 | F | 三处同名词(审计 F-1) |
+| `DeviceInfo`(DTO×3) | `device_bridge/platforms/base.py:32` + `worker/src/devices/discovery/base.py:13` + `DeviceInfoView`(`backend/agents/view_sets/app_info.py:406`) | 三义(2 DTO + 1 端点) | 端点 `DeviceInfoView`→`DeviceDetailView`；两 DTO 文档区分 | 中 | F | 三处同名词(审计 F-1) |
 | `DeviceCenter`(agent)/`PlatformDeviceDiscoverer`(bridge) | agent 运行时设备管理 vs backend 设备发现接口 | center/bridge/discovery 分词 | 文档显式区分两层发现 | 中 | F | 互补非同物(审计 F-2) |
 | `backend/agents/consumers.py` | 仅 `AdbLogStreamConsumer` | 名不副实(无 AgentConsumer) | 改名 `worker_consumers.py`(路由更新) + 注 WorkerConsumer 在 protocol | 中 | F | 审计 F-5 |
 | `GAME_PROCESS_NAMES` | `device_bridge/discovery/windows.py:17` + `platforms/windows/discovery.py:14` | 重复 | 单一来源 | 低 | F | 审计 F-3 |
@@ -120,7 +120,7 @@ verified_baseline: >
 | **TraceSpan** | — | 代码已删（残骸 43） | ❌ 死概念(仅代码) | 文档无此词，无需改 |
 | **WorkerToken**(原 AgentToken) | 似实体 | `Agent.agent_token_hash`→`Worker.worker_token_hash` 字段 + 端点 | ⚠️ 字段≠实体 | 与 AI `AgentSession.token_hash` 不同物(审计 E-2 修订) |
 | **ChainManager** | "链式执行" | `StateMachine` 封装（`chain_manager.py:20`） | ❌ 名不副实 | 见 §5/§1 |
-| **StateMachine** | optimal-solution "373 行" | 实际 `agent/src/core/state_machine.py:64` = 354 行 | ⚠️ 行数漂移 | — |
+| **StateMachine** | optimal-solution "373 行" | 实际 `worker/src/core/state_machine.py:64` = 354 行 | ⚠️ 行数漂移 | — |
 | **AuditLog** | overview "models.py:454" | 实际 `accounts/models.py:450` | ⚠️ 行数漂移 | — |
 | **ScheduledTask** | 列 tasks app | `tasks/models.py:603` | ⚠️ 归属歧义 | — |
 | **Pipeline** | Pipeline(JSON)/PipelineEngine/模式/node_type | 均存在 | ⚠️ 一词四义 | — |

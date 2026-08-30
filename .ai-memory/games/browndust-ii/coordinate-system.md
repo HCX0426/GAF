@@ -15,7 +15,7 @@ solution: 4 主流分辨率 + 3 坐标变换 (绝对/相对/缩放) + 5 易错�
 related_files:
 - .ai-memory/games/browndust-ii/overview.md
 - .ai-memory/games/browndust-ii/common-tasks.md
-- agent/src/engine/resource_resolver.py
+- worker/src/engine/resource_resolver.py
 - frontend/src/components/Common/DpiScaler.tsx
 - resources/BrownDust II/config/rois.json
 - resources/BrownDust II/config/settings.json
@@ -68,7 +68,7 @@ last_manual_edit: 2026-07-11
 
 **症状**: Windows 10/11 高 DPI 缩放 (125%/150%/200%) 导致坐标偏移
 **后果**: 模拟器内坐标与系统坐标不一致
-**解决**: 🔧 待验证 — 原 `agent/src/devices/windows/benchmark.py` 未在代码库中找到, 实际 DPI 检测路径待确认
+**解决**: 🔧 待验证 — 原 `worker/src/devices/windows/benchmark.py` 未在代码库中找到, 实际 DPI 检测路径待确认
 
 ### 3.2 GAF 的 DPI 处理
 

@@ -88,7 +88,7 @@ spec-26 已在 §2.1 文档分层规则中确立归属原则:
 - `scripts/tests/test_select_reflection_checks.py`
 - `scripts/lessons/promote_lessons.py`
 - `backend/agents/models.py` (代码注释?)
-- `agent/src/core/orchestrator.py`
+- `worker/src/core/orchestrator.py`
 - `agent/tests/test_llm_auto_heal.py`
 - `backend/tasks/tests/test_device_status_lifecycle.py`
 - `.trae/specs/2026-07-18-spec25-...md` (spec-25 内部引用)

@@ -180,7 +180,7 @@ class BackgroundManagedKeyInput:
         Returns:
             True if all SendInput calls succeeded
         """
-        from agent.platforms.windows.input import INPUT, _make_key_input
+        from platforms.windows.input import INPUT, _make_key_input
 
         modifiers, vk = self._parse_combo(combo)
         if vk == 0:

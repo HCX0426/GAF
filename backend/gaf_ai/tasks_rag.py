@@ -38,7 +38,7 @@ def auto_index_rag(self):
         # and POSIX alike (os.walk handles the rest).
         repo_root = settings.BASE_DIR.parent
         # Index agent source (the primary codebase for RAG)
-        agent_dir = repo_root / 'agent' / 'src'
+        worker_dir = repo_root / 'worker' / 'src'
         # TD-116 (2026-07-15): app renamed backend/ai → backend/gaf_ai.
         # The old path silently indexed nothing — verify existence and
         # warn loudly instead of reporting 0 chunks.
@@ -48,7 +48,7 @@ def auto_index_rag(self):
                 'auto_index_rag: backend AI dir missing (expected %s) — '
                 'indexing only agent source', backend_ai_dir,
             )
-        count_agent = retriever.index_code_files(str(agent_dir))
+        count_agent = retriever.index_code_files(str(worker_dir))
         count_backend = 0
         if backend_ai_dir.is_dir():
             count_backend = retriever.index_code_files(str(backend_ai_dir))

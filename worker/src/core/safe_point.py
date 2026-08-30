@@ -9,7 +9,7 @@ executors:
   * ``wait_for_safe_point(timeout)`` — blocking wait
   * ``raise_if_cancelled()`` — raise ``TaskCancelledError`` if set
 
-The existing ``PipelineEngine`` (``agent/src/engine/engine.py``) inlines
+The existing ``PipelineEngine`` (``worker/src/engine/engine.py``) inlines
 ``if self._cancel_event.is_set():`` checks at multiple safe points
 (lines 261, 275, 317, 366). ``SafePointChecker`` is offered as a
 reusable wrapper for new executors that want a uniform abstraction

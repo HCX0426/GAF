@@ -11,7 +11,7 @@ import json
 import sys
 from pathlib import Path
 
-# Ensure agent/src is on sys.path (parent conftest normally handles this,
+# Ensure worker/src is on sys.path (parent conftest normally handles this,
 # but we add it explicitly for self-contained runs).
 _AGENT_SRC = Path(__file__).resolve().parent.parent / "src"
 if str(_AGENT_SRC) not in sys.path:

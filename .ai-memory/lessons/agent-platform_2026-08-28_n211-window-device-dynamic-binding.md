@@ -3,9 +3,9 @@ date: 2026-08-28
 symptom: [window-device-stale-hwnd, title-changes, browser-restart-hwnd, no-window-handle]
 solution: 浏览器/游戏窗口设备不能靠固定 title 或固定 hwnd 锚定——执行时实时匹配（子串/进程名）+ 缓存 hwnd 失效即强制重连重绑
 related_files:
-  - agent/src/client/handler.py
-  - agent/src/platforms/windows/window.py
-  - agent/tests/test_handler_window_reconn.py
+  - worker/src/client/handler.py
+  - worker/src/platforms/windows/window.py
+  - worker/tests/test_handler_window_reconn.py
 created_by: AI
 priority: medium
 n_id: N211

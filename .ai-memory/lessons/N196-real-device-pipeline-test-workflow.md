@@ -11,10 +11,10 @@ solution: 实机测试 pipeline 必须遵循"测前确认 → 节点链路分析
 diff_keywords: [real-device, pipeline-test, emulator, preflight, debug-log]
 related_files:
   - resources/BrownDust II/tasks/get_email.json
-  - agent/src/devices/center.py
-  - agent/src/platforms/windows/input_variants.py
-  - agent/src/platforms/windows/input.py
-  - agent/src/engine/nodes/template_match.py
+  - worker/src/devices/center.py
+  - worker/src/platforms/windows/input_variants.py
+  - worker/src/platforms/windows/input.py
+  - worker/src/engine/nodes/template_match.py
   - .ai-memory/lessons/N195-transparent-png-alpha-mask-bug.md
   - .ai-memory/lessons/N191-schema-unification-data-flow-checklist.md
   - .trae/rules/env-hardrules.md

@@ -56,7 +56,7 @@ spec-2026-07-27-execution-path-unification 之前，GAF 有两条执行路径（
 
 ### 2.1 支持的节点类型
 
-`agent/src/engine/nodes/` 下注册的节点（通过 `@register_node`）：
+`worker/src/engine/nodes/` 下注册的节点（通过 `@register_node`）：
 
 | 类别 | 节点 |
 |------|------|
@@ -152,7 +152,7 @@ pipeline JSON 无 `edges` 字段时，`PipelineGraph.from_dict` 按 `nodes` 列�
 - ✅ Backend `Task.execution_mode` choices 含 `state_machine`
 - ✅ Backend `Task.task_definition` 可存状态机 JSON（含 `module` 字段）
 - ✅ Frontend `Tasks/Editor.tsx` 有 state_machine tab
-- ✅ `agent/src/core/state_machine.py` 的 `StateMachine` 类实现完整
+- ✅ `worker/src/core/state_machine.py` 的 `StateMachine` 类实现完整
 - ✅ **spec-2026-07-27 阶段 6 起**：`execute_pipeline` 检测 `task_definition.module` 字段
   自动分发到 `_execute_state_machine_dispatch`（设备切换沿用原 chain 语义）
 
@@ -288,13 +288,13 @@ BD2 用 Python 函数实现 `back_to_main`，GAF 需展开为节点序列：
 - [0049_chain_to_pipeline_unification.py](file:///d:/code/GAF/backend/tasks/migrations/0049_chain_to_pipeline_unification.py) — chain→pipeline 数据迁移
 
 ### Agent
-- [orchestrator.py](file:///d:/code/GAF/agent/src/core/orchestrator.py) — `execute_pipeline`（统一入口，含 state_machine 分发）
-- [pipeline_engine.py](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py) — PipelineEngine 图执行器
-- [node.py](file:///d:/code/GAF/agent/src/engine/node.py) — PipelineNode（含 pre_verify/retry/fallback 等字段）
-- [parser.py](file:///d:/code/GAF/agent/src/engine/parser.py) — Pipeline JSON 解析器（含线性模式）
-- [nodes/](file:///d:/code/GAF/agent/src/engine/nodes/) — 48 个 agent 注册节点（后端 catalog 52，含 4 类 legacy）实现
-- [handler.py](file:///d:/code/GAF/agent/src/client/handler.py) — WebSocket 消息处理（`handle_pipeline_execute` 已删除，统一走 `handle_task_assign`）
-- [connection.py](file:///d:/code/GAF/agent/src/client/connection.py) — WebSocket 连接（`handler_map` 中 `pipeline.execute` 已移除）
+- [orchestrator.py](file:///d:/code/GAF/worker/src/core/orchestrator.py) — `execute_pipeline`（统一入口，含 state_machine 分发）
+- [pipeline_engine.py](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py) — PipelineEngine 图执行器
+- [node.py](file:///d:/code/GAF/worker/src/engine/node.py) — PipelineNode（含 pre_verify/retry/fallback 等字段）
+- [parser.py](file:///d:/code/GAF/worker/src/engine/parser.py) — Pipeline JSON 解析器（含线性模式）
+- [nodes/](file:///d:/code/GAF/worker/src/engine/nodes/) — 48 个 agent 注册节点（后端 catalog 52，含 4 类 legacy）实现
+- [handler.py](file:///d:/code/GAF/worker/src/client/handler.py) — WebSocket 消息处理（`handle_pipeline_execute` 已删除，统一走 `handle_task_assign`）
+- [connection.py](file:///d:/code/GAF/worker/src/client/connection.py) — WebSocket 连接（`handler_map` 中 `pipeline.execute` 已移除）
 
 ### Frontend
 - [PipelineEditorPage.tsx](file:///d:/code/GAF/frontend/src/pages/Tasks/PipelineEditor/PipelineEditorPage.tsx) — Pipeline 图编辑器

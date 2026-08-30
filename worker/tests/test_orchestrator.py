@@ -298,7 +298,7 @@ class TestCancelPauseResume:
 # spec-2026-07-27-execution-path-unification 阶段 6:
 # TestRunAction / TestExecuteStep 已删除 — _run_action / _execute_step /
 # _handle_retry / _handle_fallback 等 chain 死代码方法已从 orchestrator.py
-# 移除。等价测试覆盖在 agent/tests/test_engine_node_control_flow.py
+# 移除。等价测试覆盖在 worker/tests/test_engine_node_control_flow.py
 # (PipelineEngine 节点控制流: pre_verify/retry/fallback/continue_on_error)。
 
 

@@ -18,7 +18,7 @@ GAF 的 BD2 任务执行链路:
 后端 WS pipeline.execute → agent handler → TaskOrchestrator → PipelineEngine → 节点顺序执行
 ```
 
-节点失败时的现有处理 ([pipeline_engine.py:472-484](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py)):
+节点失败时的现有处理 ([pipeline_engine.py:472-484](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py)):
 
 - 默认 `continue_on_error=False` → 立即终止 pipeline,返回 FAILED
 - `continue_on_error=True` → 跳过该节点继续
@@ -28,17 +28,17 @@ GAF 的 BD2 任务执行链路:
 
 ### 1.2 任务加载机制与 Python 代码任务支持现状
 
-GAF 任务编排器 ([orchestrator.py](file:///d:/code/GAF/agent/src/core/orchestrator.py)) 支持三种执行模式,Python 代码任务的支持情况如下:
+GAF 任务编排器 ([orchestrator.py](file:///d:/code/GAF/worker/src/core/orchestrator.py)) 支持三种执行模式,Python 代码任务的支持情况如下:
 
 | 模式 | 入口 | Python 代码支持 | 与本方案关系 |
 |------|------|----------------|-------------|
 | **chain 模式** | `_execute_chain` (orchestrator.py:160) | ❌ action_map 硬编码 6 种 (click/swipe/key_press/text_input/screenshot/wait) | 不适用 |
-| **pipeline 模式** | `execute_pipeline` (orchestrator.py:634) | ❌ 40 个节点类型中无 `python`/`script` 类型 (实际注册数见 [nodes/__init__.py](file:///d:/code/GAF/agent/src/engine/nodes/__init__.py) + [@register_node](file:///d:/code/GAF/agent/src/engine/node.py#L18) 装饰器) | **本方案适用范围** |
+| **pipeline 模式** | `execute_pipeline` (orchestrator.py:634) | ❌ 40 个节点类型中无 `python`/`script` 类型 (实际注册数见 [nodes/__init__.py](file:///d:/code/GAF/worker/src/engine/nodes/__init__.py) + [@register_node](file:///d:/code/GAF/worker/src/engine/node.py#L18) 装饰器) | **本方案适用范围** |
 | **state_machine 模式** | `_execute_state_machine` (orchestrator.py:206) | ✅ 通过 `importlib.import_module(task_definition["module"])` 加载 Python 模块的 `build_state_machine()` 工厂函数 | 不在本方案范围 |
 
 **关键结论**:
-- pipeline 模式下,`PipelineParser.parse_dict` ([parser.py:257-262](file:///d:/code/GAF/agent/src/engine/parser.py)) 严格校验节点类型,未注册类型直接抛 `ValueError`,**无法在 pipeline JSON 中插入任意 Python 代码节点**
-- state_machine 模式通过 Python 模块工厂函数实现任务级 Python 代码,且**自带卡顿检测机制**(`stuck_threshold` + `on_stuck` 回调,见 [state_machine.py:52-53](file:///d:/code/GAF/agent/src/core/state_machine.py#L52-L53) 字段定义 + [state_machine.py:176-194](file:///d:/code/GAF/agent/src/core/state_machine.py#L176-L194) 触发逻辑,含阈值检查 / on_stuck 调用 / except 块 / 计数器重置;`DEFAULT_STUCK_THRESHOLD = 3` 见 [state_machine.py:22](file:///d:/code/GAF/agent/src/core/state_machine.py#L22)),无需本方案介入
+- pipeline 模式下,`PipelineParser.parse_dict` ([parser.py:257-262](file:///d:/code/GAF/worker/src/engine/parser.py)) 严格校验节点类型,未注册类型直接抛 `ValueError`,**无法在 pipeline JSON 中插入任意 Python 代码节点**
+- state_machine 模式通过 Python 模块工厂函数实现任务级 Python 代码,且**自带卡顿检测机制**(`stuck_threshold` + `on_stuck` 回调,见 [state_machine.py:52-53](file:///d:/code/GAF/worker/src/core/state_machine.py#L52-L53) 字段定义 + [state_machine.py:176-194](file:///d:/code/GAF/worker/src/core/state_machine.py#L176-L194) 触发逻辑,含阈值检查 / on_stuck 调用 / except 块 / 计数器重置;`DEFAULT_STUCK_THRESHOLD = 3` 见 [state_machine.py:22](file:///d:/code/GAF/worker/src/core/state_machine.py#L22)),无需本方案介入
 - 本方案聚焦 pipeline 模式,因为:(1) BD2 现有 12 个任务全是 pipeline 模式;(2) pipeline 模式无内置卡顿检测;(3) state_machine 模式已有自己的恢复路径
 
 **Pipeline 节点类型清单**(共 40 类,本方案识别/动作相关的关键类型):
@@ -115,7 +115,7 @@ GAF 任务编排器 ([orchestrator.py](file:///d:/code/GAF/agent/src/core/orches
 新增独立模块,与现有恢复模块平级:
 
 ```
-agent/src/core/
+worker/src/core/
 ├── orchestrator.py        ← 任务编排 (调用方)
 ├── engine/
 │   └── pipeline_engine.py  ← PipelineEngine (失败时调用 Manager)
@@ -439,7 +439,7 @@ class InterfaceRecoveryResult:
 
 ### 5.1 InterfaceRecoveryManager
 
-路径: `agent/src/core/interface_recovery.py`
+路径: `worker/src/core/interface_recovery.py`
 
 ```python
 class InterfaceRecoveryManager:
@@ -565,9 +565,9 @@ class InterfaceRecoveryManager:
 
 ### 5.2 与 PipelineEngine 集成
 
-[engine.py:328-530](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py) 的主循环已是 `while self._current_node_id and iteration < self._max_iterations` + `_resolve_next_node()` 图遍历结构 (非 `for i, node in enumerate(nodes)` 顺序遍历),本方案在其失败路径插入恢复逻辑,**不改变循环结构**。
+[engine.py:328-530](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py) 的主循环已是 `while self._current_node_id and iteration < self._max_iterations` + `_resolve_next_node()` 图遍历结构 (非 `for i, node in enumerate(nodes)` 顺序遍历),本方案在其失败路径插入恢复逻辑,**不改变循环结构**。
 
-**失败路径改造** (原 [engine.py:472-484](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L472-L484) 的 `if not continue_on_error: return FAILED` 块):
+**失败路径改造** (原 [engine.py:472-484](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L472-L484) 的 `if not continue_on_error: return FAILED` 块):
 
 ```python
 # engine.py execute() 主循环 (现有结构,仅在失败路径插入恢复逻辑)
@@ -666,7 +666,7 @@ class InterfaceRecoveryManager:
 
 **关键点 (与 v4 伪代码的差异)**:
 - **循环结构不变** — 现有 `while self._current_node_id` 图遍历已是正确结构,无需"for 改 while"
-- **节点执行机制不变** — 现有 `ThreadPoolExecutor.submit(self._execute_node_step, node)` + `future.result(timeout)` 结构([engine.py:389-392](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L389-L392))不变,`_execute_node_step` 是单参数方法([engine.py:564](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L564))
+- **节点执行机制不变** — 现有 `ThreadPoolExecutor.submit(self._execute_node_step, node)` + `future.result(timeout)` 结构([engine.py:389-392](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L389-L392))不变,`_execute_node_step` 是单参数方法([engine.py:564](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L564))
 - **重试机制** — 不更新 `_current_node_id` 即可重试当前节点 (图遍历天然支持,无需索引控制)
 - **成功路径插入点** — 在 `if result.success:` 分支内、`_resolve_next_node` 调用前,append 成功节点 (id + config) 到链
 - **失败路径插入点** — 在 `if not continue_on_error:` 块内、原 `return FAILED` 前,插入恢复逻辑
@@ -678,11 +678,11 @@ engine.py 主循环的现有结构在循环体内有以下"每次循环都会执
 
 | 副作用 | 行号 | continue 重试影响 | 处理方案 |
 |--------|------|------------------|---------|
-| `iteration += 1` | [engine.py:329](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L329) | 每次恢复重试消耗 1 次 iteration 配额 | **接受** — `_max_iterations` 默认 10000 ([engine.py:94](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L94)),单节点最多 2 次恢复 = 最多消耗 3 次 iteration,约 0.03% |
-| `self._step_results.append(result)` | [engine.py:419](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L419) | 失败结果 + 重试结果都会记录,产生 2 条 step_results | **接受** — 便于事后审计,失败记录 + 成功记录都能看到;backend 已支持多条 step_results 展示 |
-| `record_step()` 调用 | [engine.py:458](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L458) | step_states 也会多一条 FAILED 记录 | **接受** — 同上,审计价值 > 一致性损失 |
-| `structured_logger.log_node_event()` | [engine.py:439](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L439) | JSONL 日志多一条失败事件 | **接受** — LLM 诊断需要失败上下文,多记录反而有用 |
-| `current_step_index += 1` | [engine.py:470](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L470) | **会导致 step_index 偏移** — 失败节点 +1,重试又 +1,后续节点 step_index 全部 +1 偏移 | **回滚** — continue 前执行 `self._context.current_step_index -= 1` 抵消本次循环的增量,保证重试节点 step_index 不变 |
+| `iteration += 1` | [engine.py:329](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L329) | 每次恢复重试消耗 1 次 iteration 配额 | **接受** — `_max_iterations` 默认 10000 ([engine.py:94](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L94)),单节点最多 2 次恢复 = 最多消耗 3 次 iteration,约 0.03% |
+| `self._step_results.append(result)` | [engine.py:419](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L419) | 失败结果 + 重试结果都会记录,产生 2 条 step_results | **接受** — 便于事后审计,失败记录 + 成功记录都能看到;backend 已支持多条 step_results 展示 |
+| `record_step()` 调用 | [engine.py:458](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L458) | step_states 也会多一条 FAILED 记录 | **接受** — 同上,审计价值 > 一致性损失 |
+| `structured_logger.log_node_event()` | [engine.py:439](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L439) | JSONL 日志多一条失败事件 | **接受** — LLM 诊断需要失败上下文,多记录反而有用 |
+| `current_step_index += 1` | [engine.py:470](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L470) | **会导致 step_index 偏移** — 失败节点 +1,重试又 +1,后续节点 step_index 全部 +1 偏移 | **回滚** — continue 前执行 `self._context.current_step_index -= 1` 抵消本次循环的增量,保证重试节点 step_index 不变 |
 
 **current_step_index 回滚的必要性**:
 - `current_step_index` 被用于 step_results 索引、UI 步骤展示、sub_pipeline 嵌套层级追踪
@@ -690,7 +690,7 @@ engine.py 主循环的现有结构在循环体内有以下"每次循环都会执
 - 回滚方案:在 recovery 成功后的 `continue` 前,显式 `self._context.current_step_index -= 1`
 
 **iteration 配额边界**:
-- `_max_iterations` 默认 10000 ([engine.py:94](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L94))
+- `_max_iterations` 默认 10000 ([engine.py:94](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L94))
 - 最坏情况:50 个节点,每个节点失败 2 次恢复 = 150 次 iteration (含正常执行 50 + 恢复重试 100),远低于 10000 配额
 - 若 pipeline 节点数 > 3000 且频繁触发恢复,需调高 `_max_iterations` 配置 (在 AgentConfig 中暴露,不在 MVP 范围)
 
@@ -725,7 +725,7 @@ self._safe_states: list[str] = self._recovery_manager.safe_states if self._recov
 
 Manager 的依赖通过 `PipelineContext` 注入 (便于测试和替换)。注入路径需扩展 `engine.load()` 参数 + `PipelineContext` 字段 + `AgentConfig` 字段。
 
-**Step 1 — PipelineContext 新增字段** ([context.py:82-132](file:///d:/code/GAF/agent/src/engine/context.py#L82-L132)):
+**Step 1 — PipelineContext 新增字段** ([context.py:82-132](file:///d:/code/GAF/worker/src/engine/context.py#L82-L132)):
 
 ```python
 # context.py 新增字段 (与 monitor_manager / llm_client 同级,Runtime-only 不序列化)
@@ -748,7 +748,7 @@ class PipelineContext:
 
 **注 2** (re-injection 模式差异): 现有 `monitor_manager` / `llm_client` 在 `engine.execute()` 中有 re-injection 逻辑(从 `self._monitor_manager` 缓存恢复到 context)。`recovery_manager` **不采用此模式** — restore 后保持 None,需调用方(orchestrator)显式重新注入。原因:`recovery_manager` 初始化依赖 `interface_states.yaml` 路径 + device + image_processor,自动恢复可能用到过期的 device 引用,不安全。`max_recovery_retries` 作为简单 int,restore 后用默认值 2 即可(engine 会在 `self._recovery_manager is None` 时将 `_max_recovery_retries` 设为 0,禁用恢复)。
 
-**Step 2 — engine.load() 扩展参数** ([engine.py:172-229](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L172-L229)):
+**Step 2 — engine.load() 扩展参数** ([engine.py:172-229](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L172-L229)):
 
 ```python
 # engine.py load() 签名新增 recovery_manager + max_recovery_retries 参数
@@ -780,7 +780,7 @@ def load(self, pipeline_json: dict, device=None,
     self._recovery_manager = recovery_manager
 ```
 
-> 注: 现有 `PipelineContext` 已有 `pipeline_name` 字段([context.py:127](file:///d:/code/GAF/agent/src/engine/context.py#L127)),但 `engine.load()` 从未设置它(只有 `restore()` 反序列化时填,见 [context.py:230](file:///d:/code/GAF/agent/src/engine/context.py#L230);注意是 `PipelineContext.restore()` 类方法,非 `StepSnapshot.from_dict()`)。本方案需在 `load()` 中显式设置,否则 `recover()` 的 `pipeline_name` 参数会得到空字符串,影响存档目录命名。
+> 注: 现有 `PipelineContext` 已有 `pipeline_name` 字段([context.py:127](file:///d:/code/GAF/worker/src/engine/context.py#L127)),但 `engine.load()` 从未设置它(只有 `restore()` 反序列化时填,见 [context.py:230](file:///d:/code/GAF/worker/src/engine/context.py#L230);注意是 `PipelineContext.restore()` 类方法,非 `StepSnapshot.from_dict()`)。本方案需在 `load()` 中显式设置,否则 `recover()` 的 `pipeline_name` 参数会得到空字符串,影响存档目录命名。
 
 **Step 3 — AgentConfig 新增字段**:
 
@@ -794,7 +794,7 @@ archive_dedupe_window: int = 10
 custom_tasks_base_dir: str = "."  # python_call 用,Phase 2
 ```
 
-**Step 4 — orchestrator.execute_pipeline() 初始化 Manager** ([orchestrator.py:634](file:///d:/code/GAF/agent/src/core/orchestrator.py#L634) `execute_pipeline` 入口 + [orchestrator.py:710-954](file:///d:/code/GAF/agent/src/core/orchestrator.py#L710-L954) `_execute_pipeline_inner` 方法;`engine.load()` 调用位于 [orchestrator.py:804-813](file:///d:/code/GAF/agent/src/core/orchestrator.py#L804-L813)):
+**Step 4 — orchestrator.execute_pipeline() 初始化 Manager** ([orchestrator.py:634](file:///d:/code/GAF/worker/src/core/orchestrator.py#L634) `execute_pipeline` 入口 + [orchestrator.py:710-954](file:///d:/code/GAF/worker/src/core/orchestrator.py#L710-L954) `_execute_pipeline_inner` 方法;`engine.load()` 调用位于 [orchestrator.py:804-813](file:///d:/code/GAF/worker/src/core/orchestrator.py#L804-L813)):
 
 ```python
 # orchestrator.py _execute_pipeline_inner() 新增 (在 engine.load() 调用前)
@@ -914,7 +914,7 @@ def _execute_recovery_action(self, device, action: dict) -> bool:
 
 **配置项** (AgentConfig 字段,全部可选,缺省时不启用恢复机制):
 
-> 注: 除上述 5 步外,还需扩展 `PipelineResult` ([engine.py:46-71](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L46-L71)) 新增 `recovery_archive: str = ""` 字段,供 engine 在恢复失败时传递存档路径给 backend (NEEDS_HUMAN 时非空,供前端展示"查看存档"入口)。现有字段含 `success / state / data / error_msg / elapsed_time / step_results / structured_log_path`,需追加在 `structured_log_path` 之后。
+> 注: 除上述 5 步外,还需扩展 `PipelineResult` ([engine.py:46-71](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L46-L71)) 新增 `recovery_archive: str = ""` 字段,供 engine 在恢复失败时传递存档路径给 backend (NEEDS_HUMAN 时非空,供前端展示"查看存档"入口)。现有字段含 `success / state / data / error_msg / elapsed_time / step_results / structured_log_path`,需追加在 `structured_log_path` 之后。
 
 | 配置键 | 类型 | 默认值 | 说明 | 适用 Phase |
 |--------|------|--------|------|-----------|
@@ -976,10 +976,10 @@ def _execute_recovery_action(self, device, action: dict) -> bool:
 | 模块 | 职责 | 与本方案关系 |
 |------|------|-------------|
 | `popup_handler.yaml`（资源包 `resources/<Game>/monitors/`，运行时数据） | 临时弹窗 (广告/奖励) | Manager 在识别界面前先让 popup_handler 跑一遍,关掉临时弹窗 |
-| [recovery.py](file:///d:/code/GAF/agent/src/core/recovery.py) | 5 层恢复 (步骤→任务→应用→设备→人工) | 互补: recovery.py 管设备级故障,Manager 管界面级漂移 |
-| [retry.py](file:///d:/code/GAF/agent/src/core/retry.py) | 重试装饰器 (截图/输入/网络) | 互补: retry.py 管瞬时失败,Manager 管界面状态错误 |
-| [state_machine.py](file:///d:/code/GAF/agent/src/core/state_machine.py) | state_machine 模式任务执行 | 不交互: 本方案仅针对 pipeline 模式 |
-| [pipeline_engine.py](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py) | Pipeline 执行 | 集成点: engine 失败路径调用 Manager |
+| [recovery.py](file:///d:/code/GAF/worker/src/core/recovery.py) | 5 层恢复 (步骤→任务→应用→设备→人工) | 互补: recovery.py 管设备级故障,Manager 管界面级漂移 |
+| [retry.py](file:///d:/code/GAF/worker/src/core/retry.py) | 重试装饰器 (截图/输入/网络) | 互补: retry.py 管瞬时失败,Manager 管界面状态错误 |
+| [state_machine.py](file:///d:/code/GAF/worker/src/core/state_machine.py) | state_machine 模式任务执行 | 不交互: 本方案仅针对 pipeline 模式 |
+| [pipeline_engine.py](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py) | Pipeline 执行 | 集成点: engine 失败路径调用 Manager |
 
 ---
 
@@ -1027,7 +1027,7 @@ def _execute_recovery_action(self, device, action: dict) -> bool:
 - [x] `interface_states.yaml` 初始版本 (仅 main_menu 状态) — S2-2.7 (2026-08-17) 落地: `resources/BrownDust II/interface_states.yaml` (main_menu + map_view + ESC 回退转移)
 - [x] engine.py 失败路径集成 (插入恢复逻辑 + load() 加 recovery_manager 参数 + pipeline_name 设置,无循环结构改造) — S2-2.7 (2026-08-17) 补齐 orchestrator 注入 (`_execute_pipeline_inner` + `_execute_recovery_action` + template 路径解析包装)
 - [x] 未知界面存档机制
-- [x] 单元测试 + 集成测试 (S2-2.7 新增 `agent/tests/test_s27_recovery_wiring.py`)
+- [x] 单元测试 + 集成测试 (S2-2.7 新增 `worker/tests/test_s27_recovery_wiring.py`)
 
 **不含 (后续迭代)**:
 - LLM 自动分析未知界面 (需 LLM 接入)
@@ -1112,22 +1112,22 @@ Phase 2 (python_call) ───┘
 
 **问题**: engine.py 主循环插入恢复逻辑后,是否影响现有控制流节点 (`goto`/`loop`/`sub_pipeline`/`jump_back`/`stop`) 的语义?
 
-**事实核查**: engine.py 主循环 ([engine.py:328-530](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L328-L530)) 已是 `while self._current_node_id and iteration < self._max_iterations` + `_resolve_next_node()` 图遍历结构,**不是 `for` 顺序遍历**,因此:
+**事实核查**: engine.py 主循环 ([engine.py:328-530](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L328-L530)) 已是 `while self._current_node_id and iteration < self._max_iterations` + `_resolve_next_node()` 图遍历结构,**不是 `for` 顺序遍历**,因此:
 
 **方案** (无循环结构改造,仅插入分支):
-- 现有控制流节点通过 `_resolve_next_node` ([engine.py:667-768](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L667-L768)) 返回 next_node_id,engine 根据返回值更新 `_current_node_id` — 这部分逻辑与恢复插入点无关,完全不受影响
-- `stop` 节点语义: 通过 `_stop_requested` context 变量 ([engine.py:501-515](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L501-L515)) 触发 `return PipelineResult(COMPLETED)`,不依赖循环结构
+- 现有控制流节点通过 `_resolve_next_node` ([engine.py:667-768](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L667-L768)) 返回 next_node_id,engine 根据返回值更新 `_current_node_id` — 这部分逻辑与恢复插入点无关,完全不受影响
+- `stop` 节点语义: 通过 `_stop_requested` context 变量 ([engine.py:501-515](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L501-L515)) 触发 `return PipelineResult(COMPLETED)`,不依赖循环结构
 - `goto`/`loop`/`sub_pipeline`/`jump_back`: 通过 `_resolve_next_node` 返回跳转目标,恢复逻辑仅在 `if not continue_on_error:` 失败分支内,不影响成功路径的节点流转
 - 恢复重试机制 (不更新 `_current_node_id` 重新执行同一节点) 是图遍历天然支持的 — `_current_node_id` 保持不变,while 循环重新 `get_node(self._current_node_id)` 获取同一节点
 - 回归测试 `test_engine_control_flow_compatible` 覆盖所有控制流节点 + 恢复重试场景
 
 ### 10.6 recovery 期间收到取消信号怎么办?
 
-**问题**: engine 主循环在每轮迭代开始时检查 `_cancel_event` ([engine.py:332-342](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L332-L342)),节点执行完成后也会再次检查 ([engine.py:487-497](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L487-L497))。但 `InterfaceRecoveryManager.recover()` 是同步阻塞调用,期间不检查 `_cancel_event` — 若用户在 recovery 执行中按下取消,recovery 会继续执行完所有回退动作 + 存档后才返回。
+**问题**: engine 主循环在每轮迭代开始时检查 `_cancel_event` ([engine.py:332-342](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L332-L342)),节点执行完成后也会再次检查 ([engine.py:487-497](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L487-L497))。但 `InterfaceRecoveryManager.recover()` 是同步阻塞调用,期间不检查 `_cancel_event` — 若用户在 recovery 执行中按下取消,recovery 会继续执行完所有回退动作 + 存档后才返回。
 
 **方案** (MVP 接受现状,不额外处理):
 - recovery 单次执行时间有界: 识别 (~0.5s) + popup 处理 (~1s) + BFS (<10ms) + 回退动作 (max 5 步 × ~1s = 5s) + 存档 (<0.5s) ≈ 最坏 7s
-- recovery 返回后,engine 在下一轮循环开始时 ([engine.py:332](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L332)) 会立即检查到 `_cancel_event` 并返回 CANCELLED — 用户取消请求最多延迟 7s 生效,可接受
+- recovery 返回后,engine 在下一轮循环开始时 ([engine.py:332](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L332)) 会立即检查到 `_cancel_event` 并返回 CANCELLED — 用户取消请求最多延迟 7s 生效,可接受
 - **不在 recover() 内部检查 _cancel_event 的原因**:
   1. recover() 设计为 engine 无关的纯逻辑模块 (便于单元测试),不持有 engine 引用
   2. recovery 中途打断会导致界面处于"回退一半"的中间状态,比让 recovery 跑完更糟
@@ -1136,7 +1136,7 @@ Phase 2 (python_call) ───┘
 
 ### 10.7 continue 重试的副作用与 step_index 一致性?
 
-**问题**: engine 主循环每次迭代都会执行 `iteration += 1` ([engine.py:329](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L329))、`_step_results.append(result)` ([engine.py:419](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L419))、`record_step()` ([engine.py:458](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L458))、`structured_logger.log_node_event()` ([engine.py:439](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L439))、`current_step_index += 1` ([engine.py:470](file:///d:/code/GAF/agent/src/engine/pipeline_engine.py#L470)) — 这些副作用位于 `if not result.success:` 之前,失败节点和恢复重试都会触发。
+**问题**: engine 主循环每次迭代都会执行 `iteration += 1` ([engine.py:329](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L329))、`_step_results.append(result)` ([engine.py:419](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L419))、`record_step()` ([engine.py:458](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L458))、`structured_logger.log_node_event()` ([engine.py:439](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L439))、`current_step_index += 1` ([engine.py:470](file:///d:/code/GAF/worker/src/engine/pipeline_engine.py#L470)) — 这些副作用位于 `if not result.success:` 之前,失败节点和恢复重试都会触发。
 
 **方案** (详见 §5.2 "continue 重试的副作用与处理" 表):
 - **iteration / step_results / record_step / structured_logger**: 接受副作用 — 多记录失败信息对审计和 LLM 诊断有价值,且 iteration 配额消耗约 0.03% (3/10000) 可忽略
@@ -1151,14 +1151,14 @@ Phase 2 (python_call) ───┘
 
 | 文件 | 操作 | 说明 |
 |------|------|------|
-| `agent/src/core/interface_recovery.py` | 新增 | 核心模块 |
+| `worker/src/core/interface_recovery.py` | 新增 | 核心模块 |
 | `resources/BrownDust-II/interface_states.yaml` | 新增 | 状态图配置 |
-| `agent/src/engine/pipeline_engine.py` | 修改 | 失败路径插入恢复逻辑 + load() 加 recovery_manager + max_recovery_retries 参数 + PipelineResult 加 recovery_archive 字段 (约 80 行,无循环结构改造) |
-| `agent/src/engine/context.py` | 修改 | 加 recovery_manager + max_recovery_retries 字段 (Runtime-only,不序列化) |
-| `agent/src/core/orchestrator.py` | 修改 | `_execute_pipeline_inner` 初始化 Manager + template_match_fn 包装 resolve_resource_path + 注入 engine.load + 新增 `_execute_recovery_action` 方法 (含 template 路径解析) |
-| `agent/src/core/config.py` | 修改 | AgentConfig 新增 6 个字段 (interface_states_path / unknown_state_archive_dir / max_recovery_steps / max_recovery_retries / archive_dedupe_window / custom_tasks_base_dir) |
-| `agent/tests/test_interface_recovery.py` | 新增 | 单元测试 |
-| `agent/tests/test_s27_recovery_wiring.py` | 新增 | 集成测试 |
+| `worker/src/engine/pipeline_engine.py` | 修改 | 失败路径插入恢复逻辑 + load() 加 recovery_manager + max_recovery_retries 参数 + PipelineResult 加 recovery_archive 字段 (约 80 行,无循环结构改造) |
+| `worker/src/engine/context.py` | 修改 | 加 recovery_manager + max_recovery_retries 字段 (Runtime-only,不序列化) |
+| `worker/src/core/orchestrator.py` | 修改 | `_execute_pipeline_inner` 初始化 Manager + template_match_fn 包装 resolve_resource_path + 注入 engine.load + 新增 `_execute_recovery_action` 方法 (含 template 路径解析) |
+| `worker/src/core/config.py` | 修改 | AgentConfig 新增 6 个字段 (interface_states_path / unknown_state_archive_dir / max_recovery_steps / max_recovery_retries / archive_dedupe_window / custom_tasks_base_dir) |
+| `worker/tests/test_interface_recovery.py` | 新增 | 单元测试 |
+| `worker/tests/test_s27_recovery_wiring.py` | 新增 | 集成测试 |
 | `debug/unknown_states/.gitkeep` | 新增 | 存档目录占位 |
 | `.gitignore` | 修改 | 现有 `/debug/` 规则已覆盖存档目录(根目录锚定),只需加 `!debug/unknown_states/.gitkeep` 例外保留占位文件 |
 
@@ -1166,10 +1166,10 @@ Phase 2 (python_call) ───┘
 
 | 文件 | 操作 | 说明 |
 |------|------|------|
-| `agent/src/engine/nodes/python_call.py` | 新增 | `python_call` 节点实现 (约 120 行) |
-| `agent/src/engine/nodes/__init__.py` | 修改 | 加 `python_call` 到 import 列表 (1 行) |
+| `worker/src/engine/nodes/python_call.py` | 新增 | `python_call` 节点实现 (约 120 行) |
+| `worker/src/engine/nodes/__init__.py` | 修改 | 加 `python_call` 到 import 列表 (1 行) |
 | `resources/BrownDust-II/custom_tasks/README.md` | 新增 | 函数签名契约 + 示例说明 (目录已存在,无需 .gitkeep) |
-| `agent/tests/engine/nodes/test_python_call.py` | 新增 | 单元测试 (约 100 行) |
+| `worker/tests/engine/nodes/test_python_call.py` | 新增 | 单元测试 (约 100 行) |
 | `docs/business/tasks/pipeline-authoring-guide.md` | 修改 | §2 节点目录加 `python_call` + §2.8 契约表 + §8 安全说明 |
 
 ---
@@ -1375,7 +1375,7 @@ pipeline 执行 → python_call 节点失败 (函数抛异常/超时)
 **与 `exec()` 方案对比**:
 - ✅ **代码来源可控**: .py 文件必须先部署到 agent 机器 (由 agent 管理员控制),JSON 不能注入新代码
 - ✅ **审计清晰**: module_path 在 JSON 中显式可见,可扫描所有 pipeline 引用了哪些 .py 文件
-- ✅ **与 state_machine / custom_verify 模式一致**: [orchestrator.py:220-252](file:///d:/code/GAF/agent/src/core/orchestrator.py#L220-L252) 已有 `importlib.import_module` 加载先例 (state_machine 模式的 build_state_machine 工厂函数)
+- ✅ **与 state_machine / custom_verify 模式一致**: [orchestrator.py:220-252](file:///d:/code/GAF/worker/src/core/orchestrator.py#L220-L252) 已有 `importlib.import_module` 加载先例 (state_machine 模式的 build_state_machine 工厂函数)
 - ⚠️ **仍可执行任意已部署代码**: 但代码来源由文件系统权限控制,比 `exec(JSON 字符串)` 安全得多
 
 **安全约束**:

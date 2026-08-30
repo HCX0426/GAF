@@ -18,11 +18,11 @@ import sys
 import time
 from pathlib import Path
 
-# Ensure agent/src is importable
+# Ensure worker/src is importable
 GAF_ROOT = Path(__file__).resolve().parent.parent
-AGENT_SRC = GAF_ROOT / "agent" / "src"
-if str(AGENT_SRC) not in sys.path:
-    sys.path.insert(0, str(AGENT_SRC))
+WORKER_SRC = GAF_ROOT / "worker" / "src"
+if str(WORKER_SRC) not in sys.path:
+    sys.path.insert(0, str(WORKER_SRC))
 
 # Import engine.nodes to populate PIPELINE_NODE_REGISTRY before engine.load.
 import engine.nodes  # noqa: F401

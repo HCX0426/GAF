@@ -1,6 +1,6 @@
 ---
 maintainer: manual
-source: backend/requirements/base.txt, frontend/package.json, agent/requirements.txt, environment.yml, pyproject.toml, .pre-commit-config.yaml
+source: backend/requirements/base.txt, frontend/package.json, worker/requirements.txt, environment.yml, pyproject.toml, .pre-commit-config.yaml
 load_when: [L2 硬加载 (每次对话), 新功能, refactor]
 priority: high
 symptom:
@@ -18,7 +18,7 @@ related_files:
 - backend/requirements/dev.txt
 - backend/requirements/prod.txt
 - frontend/package.json
-- agent/requirements.txt
+- worker/requirements.txt
 - environment.yml
 - pyproject.toml
 - .pre-commit-config.yaml
@@ -43,8 +43,8 @@ last_manual_edit: 2026-08-24
 |----|-----------|--------|----------|----------|
 | **Backend** | Python 3.11 | Django 5.2 + DRF 3.15 + Channels 4.1 | 见下 | `backend/requirements/base.txt` |
 | **Frontend** | TypeScript 6.0 | React 19.2 + Vite 8.0 + Ant Design 6.4 | 见下 | `frontend/package.json` |
-| **Agent** | Python 3.11 | 自研 (Pipeline Engine + Device Abstraction) | 见下 | `agent/requirements.txt` |
-| **Platform** | ADB / Win32 API / Cocoa / X11 | adbutils / pywin32 / comtypes / Xlib | 见下 | `agent/src/platforms/windows/` (agent 侧 Win) + `backend/device_bridge/platforms/{windows,macos,linux}/` (backend 侧抽象, P-028 ✅) + `agent/src/devices/adb/` (Android) |
+| **Agent** | Python 3.11 | 自研 (Pipeline Engine + Device Abstraction) | 见下 | `worker/requirements.txt` |
+| **Platform** | ADB / Win32 API / Cocoa / X11 | adbutils / pywin32 / comtypes / Xlib | 见下 | `worker/src/platforms/windows/` (agent 侧 Win) + `backend/device_bridge/platforms/{windows,macos,linux}/` (backend 侧抽象, P-028 ✅) + `worker/src/devices/adb/` (Android) |
 
 **公共约束**:
 - Python 版本必须 3.11+ (跨 backend + agent)
@@ -149,7 +149,7 @@ last_manual_edit: 2026-08-24
 
 ## 3. Agent 栈 (Python 3.11 自研)
 
-### 3.1 关键依赖 (`agent/requirements.txt`)
+### 3.1 关键依赖 (`worker/requirements.txt`)
 
 | 包 | 版本范围 | 用途 |
 |----|---------|------|
@@ -171,23 +171,23 @@ last_manual_edit: 2026-08-24
 
 | 模块 | 路径 | 职责 |
 |------|------|------|
-| Pipeline Engine | `agent/src/engine/` | 节点注册 + DAG 执行 |
-| Device Abstraction | `agent/src/devices/` | 跨平台统一接口 |
-| Recognition | `agent/src/recognition/` | OCR + template + feature |
-| Monitor | `agent/src/monitor/` | CPU/内存/截图 |
-| Client | `agent/src/client/` | WebSocket 客户端 |
+| Pipeline Engine | `worker/src/engine/` | 节点注册 + DAG 执行 |
+| Device Abstraction | `worker/src/devices/` | 跨平台统一接口 |
+| Recognition | `worker/src/recognition/` | OCR + template + feature |
+| Monitor | `worker/src/monitor/` | CPU/内存/截图 |
+| Client | `worker/src/client/` | WebSocket 客户端 |
 
 ## 4. Platform 栈 (跨平台抽象)
 
-> **v9.4 (2026-07-19, spec-39 Phase 8)** — 同步 TD-281 路径漂移修复: macOS/Linux 实际在 `backend/device_bridge/platforms/` (非 `agent/src/devices/`)
+> **v9.4 (2026-07-19, spec-39 Phase 8)** — 同步 TD-281 路径漂移修复: macOS/Linux 实际在 `backend/device_bridge/platforms/` (非 `worker/src/devices/`)
 
 | 平台 | 截图 | 输入 | 实现位置 (实际代码) |
 |------|------|------|------|
-| **Windows** | WGC (Windows Graphics Capture) / BitBlt / PrintWindow / DXGI / LDOpenGL | Win32 SendInput / PostMessage / RegisterHotKey / minitouch | `agent/src/platforms/windows/` (agent 侧, 完整) + `backend/device_bridge/platforms/windows/` (backend 抽象) |
+| **Windows** | WGC (Windows Graphics Capture) / BitBlt / PrintWindow / DXGI / LDOpenGL | Win32 SendInput / PostMessage / RegisterHotKey / minitouch | `worker/src/platforms/windows/` (agent 侧, 完整) + `backend/device_bridge/platforms/windows/` (backend 抽象) |
 | **macOS** | CGWindowListCreateImage (Quartz) + screencapture CLI | CGEventPost (Quartz Event) | `backend/device_bridge/platforms/macos/` (P-028 ✅, backend 侧; agent 侧暂无 macOS 实现) |
 | **Linux** | XGetImage + xdg_portal (grim/gnome-screenshot); XShmGetImage 回退到 XGetImage | XTest (python-xlib) | `backend/device_bridge/platforms/linux/` (P-028 ✅, backend 侧; agent 侧暂无 Linux 实现) |
-| **Android 模拟器** | ADB screencap | ADB input | `agent/src/devices/adb/` (agent 侧) |
-| **Android 真机** | scrcpy | ADB input | `agent/src/devices/adb/` (agent 侧) |
+| **Android 模拟器** | ADB screencap | ADB input | `worker/src/devices/adb/` (agent 侧) |
+| **Android 真机** | scrcpy | ADB input | `worker/src/devices/adb/` (agent 侧) |
 | **iOS 模拟器** | idb | idb | (待 M2) |
 | **Web 浏览器** | Playwright | Playwright | (待 M2) |
 

@@ -149,7 +149,7 @@ source: handwritten
 
 
 
-- **Problem**: `backend input module (已重构到 agent/src/input/)` and `agent input controller (已重构)` exist simultaneously — same functionality, two implementations
+- **Problem**: `backend input module (已重构到 worker/src/input/)` and `agent input controller (已重构)` exist simultaneously — same functionality, two implementations
 
 - **Impact**: Violates DRY principle, maintenance burden
 

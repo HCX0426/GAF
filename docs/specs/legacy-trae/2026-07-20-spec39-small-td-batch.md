@@ -64,7 +64,7 @@ spec-38 完成后, active.md 剩余 TD:
 
 ### TD-290 审计 (coord_transformer per-monitor TODO)
 
-**审计命令**: `grep "TODO" agent/src/utils/coord_transformer.py` = 2 处 (L33 + L114)
+**审计命令**: `grep "TODO" worker/src/utils/coord_transformer.py` = 2 处 (L33 + L114)
 
 **审计结论**:
 - 当前实现用 `display_builder` 比较 client rect 设置 `display_id`, 单显示器 + 多显示器窗口化场景下工作正常

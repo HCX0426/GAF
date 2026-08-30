@@ -162,7 +162,7 @@ def test_build_report_detects_missing_and_extra_keys(tmp_path, monkeypatch):
     frontend_fixture.write_text(_FRONTEND_FIXTURE, encoding="utf-8")
 
     monkeypatch.setattr(mod, "BACKEND_ERROR_CODES", backend_fixture)
-    monkeypatch.setattr(mod, "AGENT_ERROR_CODES", agent_fixture)
+    monkeypatch.setattr(mod, "WORKER_ERROR_CODES", agent_fixture)
     monkeypatch.setattr(mod, "FRONTEND_COMMON_TS", frontend_fixture)
 
     report = mod.build_report()
@@ -186,7 +186,7 @@ def test_update_appends_missing_keys_preserves_existing(tmp_path, monkeypatch):
     frontend_fixture.write_text(_FRONTEND_FIXTURE, encoding="utf-8")
 
     monkeypatch.setattr(mod, "BACKEND_ERROR_CODES", backend_fixture)
-    monkeypatch.setattr(mod, "AGENT_ERROR_CODES", agent_fixture)
+    monkeypatch.setattr(mod, "WORKER_ERROR_CODES", agent_fixture)
     monkeypatch.setattr(mod, "FRONTEND_COMMON_TS", frontend_fixture)
 
     report = mod.build_report()

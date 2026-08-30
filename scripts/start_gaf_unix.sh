@@ -71,7 +71,7 @@ fi
 
 # 启动 Agent
 echo "[启动] GAF Agent..."
-if [ -f "$GAF_ROOT/agent/src/__main__.py" ]; then
+if [ -f "$GAF_ROOT/worker/src/__main__.py" ]; then
     cd "$GAF_ROOT/agent"
     # N199: 环境归一化 — 统一 conda env gaf, 废弃 venv gaf-agent
     conda run -n gaf python -m src &

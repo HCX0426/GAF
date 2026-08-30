@@ -129,7 +129,7 @@ def test_r002_sleep_is_warn_only(tmp_path):
 
 def test_r003_api_v2_is_warn_only(tmp_path):
     repo = _repo(tmp_path)
-    f = _write(repo, "agent/src/api.py", API_V2)
+    f = _write(repo, "worker/src/api.py", API_V2)
     assert _run(repo, f) == 0
 
 
@@ -147,7 +147,7 @@ def test_r004_param_sql_passes(tmp_path):
 
 def test_r005_schema_residue_is_warn_only(tmp_path):
     repo = _repo(tmp_path)
-    f = _write(repo, "agent/src/schema.py", MAX_WAIT_RESIDUE)
+    f = _write(repo, "worker/src/schema.py", MAX_WAIT_RESIDUE)
     assert _run(repo, f) == 0
 
 

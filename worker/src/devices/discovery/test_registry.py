@@ -7,7 +7,7 @@
 import os
 import sys
 
-# Ensure agent/src is on sys.path for direct import in tests.
+# Ensure worker/src is on sys.path for direct import in tests.
 _AGENT_SRC = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if _AGENT_SRC not in sys.path:
     sys.path.insert(0, _AGENT_SRC)

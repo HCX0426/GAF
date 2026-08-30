@@ -508,7 +508,7 @@ class AutoIndexRagTaskTest(SimpleTestCase):
 
     @patch('gaf_ai.tasks_rag.get_rag_retriever')
     def test_auto_index_rag_calls_index_code_files(self, mock_get_retriever):
-        """Task calls index_code_files for agent/src and backend/gaf_ai."""
+        """Task calls index_code_files for worker/src and backend/gaf_ai."""
         mock_retriever = MagicMock()
         mock_retriever.index_code_files.side_effect = [5, 3]
         mock_get_retriever.return_value = mock_retriever
@@ -521,8 +521,8 @@ class AutoIndexRagTaskTest(SimpleTestCase):
         calls = mock_retriever.index_code_files.call_args_list
         paths = [call.args[0] for call in calls]
         self.assertTrue(
-            any(p.endswith(('agent/src', 'agent\\src')) for p in paths),
-            f'Expected one path ending with agent/src, got {paths}',
+            any(p.endswith(('worker/src', 'worker\\src')) for p in paths),
+            f'Expected one path ending with worker/src, got {paths}',
         )
         # TD-116 (2026-07-15): app renamed backend/ai → backend/gaf_ai.
         self.assertTrue(

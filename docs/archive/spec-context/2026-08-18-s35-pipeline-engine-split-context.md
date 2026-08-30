@@ -18,7 +18,7 @@
 
 ## 2. N151 5 步法评估过程
 
-1. **架构盘点**: `agent/src/engine/pipeline_engine.py` 2121 行, 顶层 4 定义 (2 helper + PipelineResult + PipelineEngine 巨类 1890 行/40 方法); 引用方: engine/__init__.py (3 符号) + executor.py:82 / orchestrator.py:720 / sub_pipeline.py:152 (懒加载) + 9 测试文件; 关键副作用: L22 `import engine.nodes` 注册 PIPELINE_NODE_REGISTRY。
+1. **架构盘点**: `worker/src/engine/pipeline_engine.py` 2121 行, 顶层 4 定义 (2 helper + PipelineResult + PipelineEngine 巨类 1890 行/40 方法); 引用方: engine/__init__.py (3 符号) + executor.py:82 / orchestrator.py:720 / sub_pipeline.py:152 (懒加载) + 9 测试文件; 关键副作用: L22 `import engine.nodes` 注册 PIPELINE_NODE_REGISTRY。
 2. **识别反模式**: 单巨类无限膨胀 (功能迭代持续追加, 无拆分治理); 无双套并存。
 3. **A/B/C 备选**:
    - **A (选定)**: mixin 模式 — 4 个功能域 mixin (lifecycle/execution/node_execution/recovery) + models/utils 外迁, 主类继承保持 API 不变 → 引用方零改动

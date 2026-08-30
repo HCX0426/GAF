@@ -8,7 +8,7 @@ User = get_user_model()
 # Default device control method identifiers.
 # 'auto' lets the platform handler pick the best method at runtime
 # (e.g. WindowsScreenshotHandler falls back to BitBlt, WindowsInputHandler to SendInput).
-# Aligns with agent/src/core/config.py default 'screenshot_method: "auto"'.
+# Aligns with worker/src/core/config.py default 'screenshot_method: "auto"'.
 DEFAULT_SCREENSHOT_METHOD = 'auto'
 DEFAULT_INPUT_METHOD = 'auto'
 

@@ -39,7 +39,7 @@ created_by: AI
 
 ## 关键风险（失败 + 高优先级需关注项）
 
-1. **[L1] Win32 API 直接调用在业务逻辑中** — `backend/agent_client.py:59-60` 和 `agent/src/utils/screenshot_diagnostic.py:257` 直接调用 `ctypes.windll`，违反 project_rules.md §0 核心约束
+1. **[L1] Win32 API 直接调用在业务逻辑中** — `backend/agent_client.py:59-60` 和 `worker/src/utils/screenshot_diagnostic.py:257` 直接调用 `ctypes.windll`，违反 project_rules.md §0 核心约束
    - 根因：平台抽象层建设时遗漏了这两个文件
    - 修复建议：迁移到 `platforms/windows/` 封装
    - 建议优先级：P1
@@ -159,7 +159,7 @@ created_by: AI
 
 ### L. 跨平台一致性
 
-- [L1] Win32 API 封装: ❌ 2 处违规 — `backend/agent_client.py:59-60` 和 `agent/src/utils/screenshot_diagnostic.py:257` 直接调用 `ctypes.windll`，未封装在 `platforms/windows/`
+- [L1] Win32 API 封装: ❌ 2 处违规 — `backend/agent_client.py:59-60` 和 `worker/src/utils/screenshot_diagnostic.py:257` 直接调用 `ctypes.windll`，未封装在 `platforms/windows/`
 - [L2] 平台抽象接口: ⚠️ 仅 Windows 平台实现完整，macOS/Linux 目录缺失（项目当前仅支持 Windows，可接受但需登记）
 - [L3] 硬编码路径: ❌ `backend/device_bridge/discovery/emulator.py:93,96` 硬编码 BlueStacks/MEmu ADB 路径（应使用 env var + fallback 模式，如同文件 lines 478-479）
 
@@ -175,7 +175,7 @@ created_by: AI
 
 ## 建议行动项
 
-1. **[P1]** 修复 L1 — 迁移 `backend/agent_client.py:59-60` 和 `agent/src/utils/screenshot_diagnostic.py:257` 的 Win32 调用到 `platforms/windows/`
+1. **[P1]** 修复 L1 — 迁移 `backend/agent_client.py:59-60` 和 `worker/src/utils/screenshot_diagnostic.py:257` 的 Win32 调用到 `platforms/windows/`
 2. **[P1]** 修复 J1 — 添加 `*credentials*` 到 `.gitignore`
 3. **[P1]** 修复 D3 — `npm audit fix` 处理 3 个 high 漏洞
 4. **[P2]** 修复 I3 — `ruff check . --fix` 自动修复 520 个 ruff errors
@@ -214,7 +214,7 @@ created_by: AI
 - **发现的新问题类型**：
   - **F821/F811 真实 bug**：ruff 检查发现的 undefined-name 和 redefined-class 是真实运行时 bug（registry.py 导入缺失、beat.py NameError、serializers.py 重复类定义），非风格问题 — 已被 I3 (Ruff 检查) 覆盖，无需新增检查项
   - **空 scaffold 文件**：`backend/docs/serializers.py` 是 Django startapp 生成的空文件从未使用 — 被 N2 (空文件扫描) 覆盖
-  - **空孤儿目录**：`agent/src/ocr` 是重构后的残留目录 — 被 N1 (空目录扫描) 覆盖
+  - **空孤儿目录**：`worker/src/ocr` 是重构后的残留目录 — 被 N1 (空目录扫描) 覆盖
   - **ESLint 实际错误数远低于报告**：原报告称 217 个 `no-explicit-any` 错误，实际只有 8 个 — 说明月度检查的 ESLint 统计方法需要改进，未来应使用 JSON 格式精确统计
 - **ESLint 统计修正**：原报告 I2 称 217 errors，实际用 `--format json` 精确统计仅 8 errors（3 files）。差异原因：原统计可能包含了 warnings 或用了不同的 eslint 配置。已修复为 0 errors。
 

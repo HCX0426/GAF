@@ -8,8 +8,8 @@ Verification: 65/65 methods must move (assertion), references untouched.
 import ast
 from pathlib import Path
 
-SRC = Path("agent/src/devices/adb/device.py")
-OUT = Path("agent/src/devices/adb")
+SRC = Path("worker/src/devices/adb/device.py")
+OUT = Path("worker/src/devices/adb")
 
 # constants to extract (module-level Assigns L24-58): name -> keep in main too
 CONSTANT_BLOCK = [

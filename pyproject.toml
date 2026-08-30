@@ -106,12 +106,12 @@ known-first-party = ["accounts", "agents", "ai", "config", "debug", "device_brid
 "backend/settings/serializers.py" = ["N815", "N802"]
 # cv2 import is wrapped in try/except to detect availability at runtime;
 # the symbol is used via HAS_CV2 flag, not directly referenced.
-"agent/src/recognition/cache.py" = ["F401"]
+"worker/src/recognition/cache.py" = ["F401"]
 # Windows platform files mirror Win32 API identifiers (D3D11_*, DXGI_*,
 # PROCESS_*, SRCCOPY, COM vtable methods). CapWords/lowercase PEP8 rules
 # do not apply to native API shims — suppressing N801/N802/N806/N816 here.
-"agent/src/platforms/windows/*.py" = ["N801", "N802", "N806", "N816"]
-"agent/src/__main__.py" = ["N806"]
+"worker/src/platforms/windows/*.py" = ["N801", "N802", "N806", "N816"]
+"worker/src/__main__.py" = ["N806"]
 
 [tool.ruff.format]
 quote-style = "double"

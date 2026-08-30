@@ -42,10 +42,10 @@ logger = logging.getLogger(__name__)
 
 
 def _load_agent_module(module_path: str, attr_name: str | None = None):
-    """Load a module from agent/src by file path, avoiding package name clashes.
+    """Load a module from worker/src by file path, avoiding package name clashes.
 
     Historical note (TD-116 resolved 2026-07-15): the agent code lives under
-    ``agent/src/core/...``. Before TD-116, Django had a ``backend/core`` app
+    ``worker/src/core/...``. Before TD-116, Django had a ``backend/core`` app
     registered as the ``core`` package, so ``from core.xxx`` resolved to
     ``backend/core`` and raised ``ModuleNotFoundError``. The backend app was
     renamed to ``backend/gaf_core/`` to eliminate the collision; this helper
@@ -53,7 +53,7 @@ def _load_agent_module(module_path: str, attr_name: str | None = None):
     """
     from config.settings.base import BASE_DIR
 
-    file_path = BASE_DIR.parent / 'agent' / 'src' / module_path
+    file_path = BASE_DIR.parent / 'worker' / 'src' / module_path
     module_name = f'_agent_loaded_{Path(module_path).stem}'
     spec = importlib.util.spec_from_file_location(module_name, file_path)
     module = importlib.util.module_from_spec(spec)
@@ -452,7 +452,7 @@ def config_migration_view(request):
     POST / action=detect   — Detect config version (explicit __config_version__ + heuristic)
     POST / action=migrate  — Migrate config from detected/explicit version to target version
 
-    Reuses agent/src/core/config_migrator.py (Alas-style chained migration with backup/rollback).
+    Reuses worker/src/core/config_migrator.py (Alas-style chained migration with backup/rollback).
     Stateless: each call creates a fresh ConfigMigrator instance; migration_log is returned
     in the response so the frontend can display the audit trail.
     """

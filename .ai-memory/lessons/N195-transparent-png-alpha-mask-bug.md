@@ -10,8 +10,8 @@ symptom: [template-match-low-confidence, transparent-png-alpha-loss, pil-convert
 solution: 加载模板时保留 alpha 通道作为 mask, 匹配时用 cv2.matchTemplate(..., mask=alpha) 让透明区域不贡献差异. cv2.matchTemplate 只有 TM_SQDIFF/TM_CCORR_NORMED 支持 mask, TM_CCOEFF_NORMED 不支持, 当 alpha_mask 存在且 cv_method 不支持 mask 时自动切到 TM_CCORR_NORMED.
 diff_keywords: [transparent-png, alpha-mask, matchtemplate, confidence, rgba]
 related_files:
-  - agent/src/engine/nodes/template_match.py
-  - agent/src/utils/coord_transformer.py
+  - worker/src/engine/nodes/template_match.py
+  - worker/src/utils/coord_transformer.py
   - resources/BrownDust II/templates/get_email/邮箱.png
   - resources/BrownDust II/tasks/get_email.json
   - .ai-memory/lessons/N191-schema-unification-data-flow-checklist.md
@@ -35,7 +35,7 @@ loc=(24,10), scale_ratio=0.8019, template=47x36→38x29
 
 ### 维度 1: 代码层 (具体 bug)
 
-`TemplateMatchNode._load_template()` (agent/src/engine/nodes/template_match.py:551) 用 `PIL.Image.open(path).convert('RGB')` 加载模板, 然后 `cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)` 转 OpenCV BGR.
+`TemplateMatchNode._load_template()` (worker/src/engine/nodes/template_match.py:551) 用 `PIL.Image.open(path).convert('RGB')` 加载模板, 然后 `cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)` 转 OpenCV BGR.
 
 **问题**: BD2 模板 `邮箱.png` 是 **RGBA** 模式 (47x36, 41.3% 像素完全透明 alpha=0). `PIL.convert('RGB')` 会把透明区域填成纯黑 (0,0,0). 转成 BGR 后, 透明像素的 BGR 值 = (0,0,0).
 

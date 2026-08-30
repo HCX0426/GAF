@@ -30,9 +30,9 @@ BD2 `get_email` pipeline 测试中发现 `open_mailbox` 节点模板匹配成功
 
 ### 1.1 Fix PseudoBackground AttachThreadInput
 
-**Problem**: `agent/src/platforms/windows/input.py:469-516` 的 `_click_pseudo_background` 使用 `SetForegroundWindow` 但未用 AttachThreadInput 技巧，跨进程前台化会被 OS 前台锁定拒绝。
+**Problem**: `worker/src/platforms/windows/input.py:469-516` 的 `_click_pseudo_background` 使用 `SetForegroundWindow` 但未用 AttachThreadInput 技巧，跨进程前台化会被 OS 前台锁定拒绝。
 
-**Fix**: 从 `agent/src/platforms/windows/input_variants.py:441-473` 的 `SeizeInputVariant._ensure_foreground` 移植 AttachThreadInput 技巧：
+**Fix**: 从 `worker/src/platforms/windows/input_variants.py:441-473` 的 `SeizeInputVariant._ensure_foreground` 移植 AttachThreadInput 技巧：
 
 ```
 1. 获取前台窗口 hwnd_foreground 和其线程 id
@@ -228,7 +228,7 @@ def execute_pipeline(self, pipeline_json, debug_mode=False, debug_dir="",
 
 **Fix Direction**: 
 - 选项 A: 创建这两个脚本（实现排查功能）
-- 选项 B: 更新 SKILL.md 引用为实际存在的工具（如 `agent/src/utils/screenshot_diagnostic.py`）
+- 选项 B: 更新 SKILL.md 引用为实际存在的工具（如 `worker/src/utils/screenshot_diagnostic.py`）
 
 **When**: Stage 2.2 写排查步骤文档时决定（文档需要引用可用的排查工具）。
 

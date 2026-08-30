@@ -149,7 +149,7 @@ _MODULE_CODE_PATHS: dict[str, list[str]] = {
     ],
     "business.devices": [
         "backend/devices/**",
-        "agent/src/devices/**",
+        "worker/src/devices/**",
     ],
     "business.resources": [
         "backend/resources/**",
@@ -176,7 +176,7 @@ _MODULE_CODE_PATHS: dict[str, list[str]] = {
         "backend/gaf_core/**",
     ],
     "architecture.agent": [
-        "agent/src/**",
+        "worker/src/**",
     ],
     "architecture.desktop": [
         "desktop/**",

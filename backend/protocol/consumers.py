@@ -921,7 +921,7 @@ class AgentConsumer(AsyncWebsocketConsumer):
     async def _handle_device_action(self, frame):
         """Handle device.action frames (protocol reserved, no agent sender yet).
 
-        TD-134 (2026-07-18): The agent (agent/src/) has no send_message call
+        TD-134 (2026-07-18): The agent (worker/src/) has no send_message call
         for 'device.action' — the protocol reserves this msg_type for future
         device remote-control commands, but no agent-side sender is wired.
         Handler kept to avoid KeyError in handler_map dispatch and to log
@@ -1190,7 +1190,7 @@ class AgentConsumer(AsyncWebsocketConsumer):
                 # N194 fix (2026-07-28): 透传归一化 debug 目录 + 游戏账号 +
                 # 资源包 + retry-from-step 参数. 原实现只挑选了部分字段,
                 # 导致 agent 收到 debug_dir='' 兜底用 ./debug, structured.jsonl
-                # 和 screenshots 写到 agent/debug/ 而非归一化目录; 同时
+                # 和 screenshots 写到 worker/debug/ 而非归一化目录; 同时
                 # game_account_id / resource_pack 丢失, agent 无法绑定资源.
                 "debug_dir": data.get("debug_dir", ""),
                 "debug_mode": data.get("debug_mode", False),

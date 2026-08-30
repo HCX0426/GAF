@@ -16,7 +16,7 @@ Coordinate conventions (Win32 spec, TD-122):
   - SendInput click/swipe: SetCursorPos expects SCREEN coordinates
     — _client_to_screen is required.
 
-Advanced features migrated from agent/src/devices/windows/input_ctrl.py:
+Advanced features migrated from worker/src/devices/windows/input_ctrl.py:
   - Dynamic child window discovery via EnumChildWindows
   - DPI-aware coordinate conversion via ClientToScreen (SendInput / WM_MOUSEWHEEL only)
   - Unicode text input via KEYEVENTF_UNICODE with surrogate pair support

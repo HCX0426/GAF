@@ -493,21 +493,21 @@ if transformer is not None:
 
 | 文件 | 职责 |
 |------|------|
-| `agent/src/utils/coord_transformer.py` | Windows 5 层坐标变换核心 (含 SUB_IMAGE / sub_image_to_full) |
-| `agent/src/utils/adb_coord_transformer.py` | ADB 路径坐标变换 (N191 §10.7 P0-2, 2026-07-27 新增) |
-| `agent/src/utils/display_context.py` | RuntimeDisplayContext 数据类 (从 platforms/windows/ 迁出) |
-| `agent/src/platforms/windows/display_builder.py` | RuntimeDisplayContext 构建 (从 hwnd / DPI / 客户区 rect) |
-| `agent/src/platforms/windows/dpi.py` | DPI 缩放检测 |
-| `agent/src/platforms/windows/input.py` | 输入处理 + DPI 坐标转换 |
-| `agent/src/core/orchestrator.py` | DPI 装配入口 + Windows/ADB 双路径分发 + CoordTransformerError fail-fast |
-| `agent/src/core/exceptions.py` | CoordTransformerError 异常类 |
-| `agent/src/engine/context.py` | PipelineContext.coord_system + emit_coord_trace 接口 |
-| `agent/src/engine/nodes/template_match.py` | 模板匹配坐标流 + CoordTraceEvent |
-| `agent/src/engine/nodes/ocr.py` | OCR 坐标流 + box_coord_system 字段 |
-| `agent/src/engine/nodes/feature_match.py` | 特征匹配 + CoordTraceEvent + validate_capture_resolution |
-| `agent/src/engine/nodes/color_detect.py` | 颜色检测 + CoordTraceEvent + validate_capture_resolution |
-| `agent/src/engine/nodes/swipe.py` / `long_press.py` | 动作节点 + device_swipe/device_long_press trace |
-| `agent/tests/test_windows_input_dpi_conversion.py` | DPI 转换单元测试 (13 个) |
+| `worker/src/utils/coord_transformer.py` | Windows 5 层坐标变换核心 (含 SUB_IMAGE / sub_image_to_full) |
+| `worker/src/utils/adb_coord_transformer.py` | ADB 路径坐标变换 (N191 §10.7 P0-2, 2026-07-27 新增) |
+| `worker/src/utils/display_context.py` | RuntimeDisplayContext 数据类 (从 platforms/windows/ 迁出) |
+| `worker/src/platforms/windows/display_builder.py` | RuntimeDisplayContext 构建 (从 hwnd / DPI / 客户区 rect) |
+| `worker/src/platforms/windows/dpi.py` | DPI 缩放检测 |
+| `worker/src/platforms/windows/input.py` | 输入处理 + DPI 坐标转换 |
+| `worker/src/core/orchestrator.py` | DPI 装配入口 + Windows/ADB 双路径分发 + CoordTransformerError fail-fast |
+| `worker/src/core/exceptions.py` | CoordTransformerError 异常类 |
+| `worker/src/engine/context.py` | PipelineContext.coord_system + emit_coord_trace 接口 |
+| `worker/src/engine/nodes/template_match.py` | 模板匹配坐标流 + CoordTraceEvent |
+| `worker/src/engine/nodes/ocr.py` | OCR 坐标流 + box_coord_system 字段 |
+| `worker/src/engine/nodes/feature_match.py` | 特征匹配 + CoordTraceEvent + validate_capture_resolution |
+| `worker/src/engine/nodes/color_detect.py` | 颜色检测 + CoordTraceEvent + validate_capture_resolution |
+| `worker/src/engine/nodes/swipe.py` / `long_press.py` | 动作节点 + device_swipe/device_long_press trace |
+| `worker/tests/test_windows_input_dpi_conversion.py` | DPI 转换单元测试 (13 个) |
 
 ## 11. AI 可调试性设计 (N191 §10.10 决策点 3, 2026-07-27)
 

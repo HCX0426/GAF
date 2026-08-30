@@ -150,7 +150,7 @@ npx vite build
 ### A4. Agent 模块导入检查
 ```powershell
 cd D:\code\GAF
-conda run -n gaf python -c "import agent.src.core.orchestrator; print('OK')"
+conda run -n gaf python -c "import worker.src.core.orchestrator; print('OK')"
 ```
 - ✅ 导入成功
 - ❌ 导入失败（记录 ImportError / ModuleNotFoundError）
@@ -179,7 +179,7 @@ npx vitest run
 ### B3. Agent 测试
 ```powershell
 cd D:\code\GAF
-conda run -n gaf python -m pytest agent/tests/ -q
+conda run -n gaf python -m pytest worker/tests/ -q
 ```
 - ✅ 全部通过
 - ❌ 记录失败数
@@ -283,7 +283,7 @@ npm audit
 
 ### D4. 库版本冲突检查
 - 对照 `.ai-memory/summaries/library-conflicts.md` 检查是否有新的冲突
-- 确认 `backend/requirements/base.txt` 与 `agent/requirements.txt` 的共享依赖（如 cryptography / opencv-python）版本范围是否一致
+- 确认 `backend/requirements/base.txt` 与 `worker/requirements.txt` 的共享依赖（如 cryptography / opencv-python）版本范围是否一致
 
 ---
 
@@ -512,13 +512,13 @@ git log origin/main..main --oneline
 
 > **✅ 已迁自动 (spec-45)**: check_i1_large_files (monthly_health_check.py)
 > 跑法: `python scripts/governance/monthly_health_check.py`
-> 阈值: backend=2000 / frontend/src=1500 / agent/src=1500 / scripts=1000 行 (thresholds.yaml `monthly_checks.i1_large_files`)
+> 阈值: backend=2000 / frontend/src=1500 / worker/src=1500 / scripts=1000 行 (thresholds.yaml `monthly_checks.i1_large_files`)
 > 跳过: .generated. 文件 / __pycache__ / node_modules / .venv / debug 目录
 
 ```powershell
 # 查找 > 500 行的源码文件（排除生成文件 / migrations / 测试）
 ```
-- 抽查 backend/ frontend/src/ agent/src/ 下 .py / .ts / .tsx 文件
+- 抽查 backend/ frontend/src/ worker/src/ 下 .py / .ts / .tsx 文件
 - ⚠️ > 500 行的文件需评估拆分
 - 重点检查：`backend/resources/views.py`（历史 1129 行）、`backend/agents/views.py`
 
@@ -549,7 +549,7 @@ conda run -n gaf ruff check . --exclude migrations
 ```powershell
 # 搜索代码中 '/' in ... 或 os.path.sep in ... 等路径检测逻辑
 cd D:\code\GAF
-# 检查 agent/src/ 中是否有用 '/' 字符判断路径的代码
+# 检查 worker/src/ 中是否有用 '/' 字符判断路径的代码
 ```
 - 搜索使用 `'/' in` 或 `os.path.sep in` 做路径类型判断的代码
 - ❌ 对可能包含 base64 字符串的输入用 `/` 判断路径 = 误判 bug
@@ -560,7 +560,7 @@ cd D:\code\GAF
 
 ```powershell
 # 搜索 _release_ / .release() / .close() / .cleanup() 等资源释放方法
-cd D:\code\GAF\agent\src
+cd D:\code\GAF\worker\src
 # 检查 set_xxx / switch_xxx / update_xxx 方法是否释放所有关联资源
 ```
 - 检查所有 `set_xxx()` / `switch_xxx()` / `update_xxx()` 方法
@@ -573,7 +573,7 @@ cd D:\code\GAF\agent\src
 
 ```powershell
 # 搜索 @retry 装饰器修饰的方法
-cd D:\code\GAF\agent\src
+cd D:\code\GAF\worker\src
 # 检查被修饰方法内是否有状态标志修改（if not self._connected: return）
 ```
 - 检查所有 `@retry_network` / `@retry` 装饰的方法
@@ -684,13 +684,13 @@ conda run -n gaf python manage.py collectstatic --dry-run
 ```powershell
 # Grep 检查业务逻辑中是否直接调用 Win32 API
 cd D:\code\GAF
-# 搜索 backend/ 和 agent/src/ 中的 win32api / win32con / ctypes.windll 直接调用
+# 搜索 backend/ 和 worker/src/ 中的 win32api / win32con / ctypes.windll 直接调用
 ```
-- ✅ 所有 Win32 调用封装在 `agent/src/platforms/windows/` 或 `backend/device_bridge/platforms/windows/`
+- ✅ 所有 Win32 调用封装在 `worker/src/platforms/windows/` 或 `backend/device_bridge/platforms/windows/`
 - ❌ 业务逻辑中有直接 Win32 调用 = 违反 project_rules.md §0 核心约束
 
 ### L2. 平台抽象接口完整性
-- 检查 `agent/src/platforms/` 下是否有 Windows / macOS / Linux 三个目录
+- 检查 `worker/src/platforms/` 下是否有 Windows / macOS / Linux 三个目录
 - 确认每个平台都实现了抽象接口（ScreenshotHandler / InputHandler 等）
 - ⚠️ 缺失平台实现需登记
 
@@ -709,21 +709,21 @@ cd D:\code\GAF
 ```powershell
 # 检查 platforms/ 目录结构
 cd D:\code\GAF
-# agent/src/platforms/ 应有 base.py (抽象接口) + windows/ (实现)
+# worker/src/platforms/ 应有 base.py (抽象接口) + windows/ (实现)
 ```
-- 检查 `agent/src/platforms/base.py` 是否定义了所有抽象接口（ScreenshotHandler / InputHandler / DeviceDiscoverer）
-- 检查 `agent/src/platforms/windows/` 是否实现了所有抽象方法
+- 检查 `worker/src/platforms/base.py` 是否定义了所有抽象接口（ScreenshotHandler / InputHandler / DeviceDiscoverer）
+- 检查 `worker/src/platforms/windows/` 是否实现了所有抽象方法
 - ❌ 抽象接口与实现不匹配 = 架构违反
 - ⚠️ macOS/Linux 目录缺失需登记（项目当前仅支持 Windows 可接受）
 
 ### M2. 业务逻辑与平台代码隔离
 ```powershell
-# Grep 检查 backend/ 和 agent/src/ (非 platforms/) 中是否直接调用平台 API
+# Grep 检查 backend/ 和 worker/src/ (非 platforms/) 中是否直接调用平台 API
 cd D:\code\GAF
 # 搜索 ctypes.windll / win32api / win32con 在 platforms/ 之外的引用
 ```
 - ❌ `platforms/` 之外的代码直接调用 Win32 API = 违反 project_rules.md §0 核心约束
-- 检查范围：`backend/`、`agent/src/`（排除 `platforms/`）
+- 检查范围：`backend/`、`worker/src/`（排除 `platforms/`）
 - 白名单：`backend/agent_client.py` 中通过平台抽象层间接调用是允许的
 
 ### M3. 模块间依赖方向

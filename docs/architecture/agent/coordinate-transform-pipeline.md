@@ -106,7 +106,7 @@ GAF 是「前端编辑器 → backend → agent 执行」三方协作系统，�
 
 ### 转换① process_roi (base → physical)
 
-- **位置**：`agent/src/utils/coord_transformer.py:274` `process_roi()`
+- **位置**：`worker/src/utils/coord_transformer.py:274` `process_roi()`
 - **调用者**：`TemplateMatchNode._match_with_scaling()` 在匹配前裁剪子图
 - **入参**：base ROI `[1564, 28, 95, 61]` + `roi_coord_type=BASE`
 - **出参**：physical ROI `(1564, 28, 95, 61)` + `roi_offset_phys=(1564, 28)`
@@ -117,7 +117,7 @@ GAF 是「前端编辑器 → backend → agent 执行」三方协作系统，�
 
 ### 转换② sub_image_to_full (sub_image → physical)
 
-- **位置**：`agent/src/utils/coord_transformer.py:401` `apply_roi_offset_to_subcoord()`
+- **位置**：`worker/src/utils/coord_transformer.py:401` `apply_roi_offset_to_subcoord()`
 - **调用者**：`TemplateMatchNode._match_with_scaling()` 匹配后还原坐标
 - **入参**：子图内匹配位置 `(15, 9, 38, 29)` + `roi_offset_phys=(1564, 28)`
 - **出参**：全图物理位置 `(1579, 37, 38, 29)`
@@ -143,7 +143,7 @@ GAF 是「前端编辑器 → backend → agent 执行」三方协作系统，�
 
 ### 转换③ get_unified_logical_rect (physical → logical)
 
-- **位置**：`agent/src/utils/coord_transformer.py:381` `get_unified_logical_rect()`
+- **位置**：`worker/src/utils/coord_transformer.py:381` `get_unified_logical_rect()`
 - **调用者**：`TemplateMatchNode._match_with_scaling()` 计算点击中心
 - **入参**：physical rect `(1579, 37, 38, 29)`
 - **出参**：logical rect `(1053, 25, 25, 19)`，center `(1065, 34)`
@@ -166,7 +166,7 @@ GAF 是「前端编辑器 → backend → agent 执行」三方协作系统，�
 
 ### 转换④ _logical_to_physical (logical → physical)
 
-- **位置**：`agent/src/platforms/windows/input.py:390` `_logical_to_physical()`
+- **位置**：`worker/src/platforms/windows/input.py:390` `_logical_to_physical()`
 - **调用者**：`_click_sendinput` / `_click_postmessage` / `_swipe_sendinput` / `_swipe_postmessage`
 - **入参**：logical 坐标 `(1065, 34)`（来自 `device.click()` 入参）
 - **出参**：physical 坐标 `(1598, 51)`
@@ -194,7 +194,7 @@ GAF 是「前端编辑器 → backend → agent 执行」三方协作系统，�
 
 ### 转换⑤ ClientToScreen (physical → screen)
 
-- **位置**：`agent/src/platforms/windows/input.py:51` `_client_to_screen()`
+- **位置**：`worker/src/platforms/windows/input.py:51` `_client_to_screen()`
 - **调用者**：`_click_sendinput` 在 `_logical_to_physical` 之后
 - **入参**：physical client `(1598, 51)` + hwnd
 - **出参**：screen absolute `(X, Y)`（取决于窗口位置）
@@ -223,7 +223,7 @@ PostMessage 的 lParam 在 DPI-aware 进程中期望 **physical** client 坐标�
 
 ### 6.1 logical_to_physical_ratio 怎么来
 
-**位置**：`agent/src/utils/display_context.py` `RuntimeDisplayContext.logical_to_physical_ratio`
+**位置**：`worker/src/utils/display_context.py` `RuntimeDisplayContext.logical_to_physical_ratio`
 
 ```python
 @property
@@ -242,7 +242,7 @@ def logical_to_physical_ratio(self) -> float:
 
 ### 6.2 orchestrator 如何注入
 
-**位置**：`agent/src/core/orchestrator.py:712-720`
+**位置**：`worker/src/core/orchestrator.py:712-720`
 
 ```python
 coord_transformer = build_transformer(device, base_res_tuple)
@@ -255,7 +255,7 @@ if coord_transformer is not None:
 
 ### 6.3 PipelineExecution 如何注入 trace callback
 
-**位置**：`agent/src/engine/pipeline_execution.py:177-184`（N202 拆分: 原 engine.py → pipeline_execution/pipeline_lifecycle/pipeline_node_execution 等模块）
+**位置**：`worker/src/engine/pipeline_execution.py:177-184`（N202 拆分: 原 engine.py → pipeline_execution/pipeline_lifecycle/pipeline_node_execution 等模块）
 
 ```python
 device_for_trace = getattr(self._context, "device", None)
@@ -269,7 +269,7 @@ if device_for_trace is not None and hasattr(device_for_trace, "set_coord_trace_c
 
 ### 6.4 trace_id 如何注入到坐标转换 trace（A3 新增）
 
-**位置**：`agent/src/engine/context.py:195-249` `PipelineContext.emit_coord_trace()`
+**位置**：`worker/src/engine/context.py:195-249` `PipelineContext.emit_coord_trace()`
 
 ```python
 def emit_coord_trace(self, *, node_id, step, raw, converted, formula, ...):
@@ -303,7 +303,7 @@ def emit_coord_trace(self, *, node_id, step, raw, converted, formula, ...):
 
 ### 7.1 monitor/handlers.py 路径未接入 coord_transformer
 
-**位置**：`agent/src/monitor/handlers.py:175,180,295,301,324,329`
+**位置**：`worker/src/monitor/handlers.py:175,180,295,301,324,329`
 
 弹窗检测、剧情跳过等 monitor 路径直接调用 `device.click(x, y)`，传入的是 base 坐标，没有经过 coord_transformer 转换。DPI>100% 时这些路径的点击位置会偏移。
 
@@ -313,7 +313,7 @@ def emit_coord_trace(self, *, node_id, step, raw, converted, formula, ...):
 
 ### 7.2 fallback 动作分发路径无 coord 转换
 
-**位置**：`agent/src/engine/pipeline_node_execution.py:363-372`（fallback 动作分发, 原 engine.py:1496）
+**位置**：`worker/src/engine/pipeline_node_execution.py:363-372`（fallback 动作分发, 原 engine.py:1496）
 
 ```python
 device.click(params.get("x", 0), params.get("y", 0))

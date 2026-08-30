@@ -18,7 +18,7 @@ _Generated: 2026-08-08 13:27_
 |-------|-----------|--------|
 | conda gaf env: `D:\code\environment\conda\envs\gaf\python.ex | 2 | active |
 | Start all services: `scripts/gaf_services.ps1 start` (Redis  | 2 | active |
-| Agent tests: `...\python.exe -m pytest agent/tests/ -p no:dj | 2 | active |
+| Agent tests: `...\python.exe -m pytest worker/tests/ -p no:dj | 2 | active |
 | Backend tests: `...\python.exe -m pytest backend/` (needs Dj | 2 | active |
 | Use direct python.exe path (not `conda run`) to avoid PowerS | 2 | active |
 | ... (24 more) | | |

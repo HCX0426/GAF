@@ -20,8 +20,8 @@ related_files:
 - backend/protocol/quota.py
 - backend/protocol/middleware.py
 - backend/protocol/routing.py
-- agent/src/client/connection.py
-- agent/src/client/handler.py
+- worker/src/client/connection.py
+- worker/src/client/handler.py
 created_by: AI
 generated: 2026-06-16
 auto_updated: 2026-07-18
@@ -48,7 +48,7 @@ auto_updated: 2026-07-18
 - `backend/protocol/quota.py`
 - `backend/protocol/middleware.py`
 - `backend/protocol/routing.py`
-- `agent/src/client/connection.py`
-- `agent/src/client/handler.py`
+- `worker/src/client/connection.py`
+- `worker/src/client/handler.py`
 
         <!-- end of auto-generated section -->

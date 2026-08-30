@@ -32,13 +32,13 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import BinaryIO, Optional
 
-# N205 (2026-08-21): 日志轮转 handler 唯一来源 = agent/src/utils/log_rotation.py.
+# N205 (2026-08-21): 日志轮转 handler 唯一来源 = worker/src/utils/log_rotation.py.
 # scripts 端不再维护 _log_rotation.py 副本 (已删除), 统一从 agent 包导入,
 # 消除两份重复实现漂移.
 _GAF_ROOT_FOR_IMPORT = Path(__file__).resolve().parent.parent
-_AGENT_UTILS_DIR = _GAF_ROOT_FOR_IMPORT / "agent" / "src" / "utils"
-if str(_AGENT_UTILS_DIR) not in sys.path:
-    sys.path.insert(0, str(_AGENT_UTILS_DIR))
+_WORKER_UTILS_DIR = _GAF_ROOT_FOR_IMPORT / "worker" / "src" / "utils"
+if str(_WORKER_UTILS_DIR) not in sys.path:
+    sys.path.insert(0, str(_WORKER_UTILS_DIR))
 from log_rotation import DateRotatingFileHandler  # noqa: E402
 
 # spec 2026-08-29 P1/P2: 服务健康探针层 + 健康快照文件 (供 monitors/status 读取)
@@ -57,7 +57,7 @@ from services.health import (
 # =============================================================================
 GAF_ROOT = Path(__file__).resolve().parent.parent
 BACKEND_DIR = GAF_ROOT / "backend"
-AGENT_DIR = GAF_ROOT / "agent"
+WORKER_DIR = GAF_ROOT / "worker"
 FRONTEND_DIR = GAF_ROOT / "frontend"
 DEBUG_DIR = GAF_ROOT / "debug"
 ENV_FILE = GAF_ROOT / ".env"
@@ -312,7 +312,7 @@ def build_services(cfg: dict) -> dict:
         },
         "agent": {
             "cmd": [str(PYTHON_EXE), "-m", "src", "--log-level", "INFO"],
-            "cwd": str(AGENT_DIR),
+            "cwd": str(WORKER_DIR),
             "port": None,
             "verify": "process",
             "depends_on": ["backend"],

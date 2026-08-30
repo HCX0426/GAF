@@ -83,7 +83,7 @@ def _try_acquire_manager_lock():
 def _is_process_alive(pid):
     """Check if a Windows process with the given PID is still running.
 
-    B002 fix: delegates to agent.platforms.windows.process.is_process_alive
+    B002 fix: delegates to device_bridge.platforms.windows.process.is_process_alive
     so the Win32 calls live behind the platform abstraction layer and
     failures are logged instead of swallowed by `except: pass`.
     """
@@ -116,7 +116,7 @@ def _remove_agent_lock():
 def _is_admin() -> bool:
     """Check if the current process is running with admin privileges.
 
-    B002 fix: delegates to agent.platforms.windows.process.is_admin so
+    B002 fix: delegates to device_bridge.platforms.windows.process.is_admin so
     the Win32 shell32 call lives behind the platform abstraction layer
     and failures are logged instead of swallowed.
     """
@@ -127,7 +127,7 @@ def _is_admin() -> bool:
 def _run_as_admin(cmd_args: list, cwd: str = None, log_file: str = None) -> bool:
     """Run a command with admin privileges using ShellExecute (runas).
 
-    B002 fix: delegates to agent.platforms.windows.process.run_as_admin
+    B002 fix: delegates to device_bridge.platforms.windows.process.run_as_admin
     so the Win32 ShellExecuteW call lives behind the platform abstraction
     layer. See that module for the full docstring.
     """
@@ -201,7 +201,7 @@ def _start_agent_process():
     """
     agent_script = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-        'agent', 'src', '__main__.py',
+        'worker', 'src', '__main__.py',
     )
     if not os.path.exists(agent_script):
         logger.warning('Agent 脚本未找到: %s', agent_script)
@@ -318,14 +318,14 @@ def _kill_stale_agent_processes():
     autoreload cycle stacks another agent → N agents × MonitorManager
     screenshots = adb storm → GPU TDR → black screen.
 
-    Uses wmic to find python.exe processes with 'agent\\src\\__main__.py'
+    Uses wmic to find python.exe processes with 'worker\\src\\__main__.py'
     in the command line, then taskkill /F to terminate them.
     """
     if os.name != 'nt':
         return
     try:
         from device_bridge.platforms.windows.process import kill_processes_by_commandline
-        killed = kill_processes_by_commandline('agent\\src\\__main__.py')
+        killed = kill_processes_by_commandline('worker\\src\\__main__.py')
         if killed:
             logger.info('Killed %d stale agent process(es) before auto-start', killed)
             time.sleep(2)  # Give OS time to release resources

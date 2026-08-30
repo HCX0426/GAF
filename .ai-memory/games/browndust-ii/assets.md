@@ -19,7 +19,7 @@ related_files:
 - resources/BrownDust II/manifest.json
 - resources/BrownDust II/config/settings.json
 - resources/BrownDust II/config/rois.json
-- agent/src/engine/resource_resolver.py
+- worker/src/engine/resource_resolver.py
 - backend/resources/models.py
 - frontend/src/pages/Setup/StepRecommendedTemplates.tsx
 created_by: AI
@@ -126,7 +126,7 @@ resources/BrownDust II/
 
 ## 4. 模板路径解析 (resource_resolver.py)
 
-**文件**: `agent/src/engine/resource_resolver.py`
+**文件**: `worker/src/engine/resource_resolver.py`
 **函数**: `resolve_resource_path(path_str) -> Optional[Path]`
 
 ### 4.1 解析顺序
@@ -135,7 +135,7 @@ resources/BrownDust II/
 2. **GAF_RESOURCE_ROOT 环境变量** → `$GAF_RESOURCE_ROOT/<path>`
 3. **CWD/resources/** → `<CWD>/resources/<path>`
 4. **CWD/../resources/** → `<CWD>/../resources/<path>` (agent 从 GAF/agent/ 运行, resources 在 GAF/resources/)
-5. **从 engine/ 向上查找** → walk up from `agent/src/engine/` 找 `resources` 兄弟目录
+5. **从 engine/ 向上查找** → walk up from `worker/src/engine/` 找 `resources` 兄弟目录
 6. **直接匹配** → `<root>/<path>` (如 `BrownDust II/templates/public/主界面.png`)
 7. **短路径补全** → `<root>/<game>/templates/<path>` (如 `public/主界面` → `BrownDust II/templates/public/主界面`)
 8. **扩展名补全** → 无扩展名时尝试 `.png`/`.jpg`/`.jpeg`/`.bmp`/`.webp`
@@ -145,7 +145,7 @@ resources/BrownDust II/
 BD2-AUTO pipeline 作者使用短路径 (如 `public/主界面`), resolver 自动补全 `BrownDust II/templates/` 前缀, 搜索所有 `<root>/<game>/templates/` 子目录。
 
 ```python
-# agent/src/engine/resource_resolver.py
+# worker/src/engine/resource_resolver.py
 # Example: resolve_resource_path("BrownDust II/templates/public/主界面.png")
 # → <GAF>/resources/BrownDust II/templates/public/主界面.png
 
@@ -222,7 +222,7 @@ BD2-AUTO pipeline 作者使用短路径 (如 `public/主界面`), resolver 自�
 - `resources/BrownDust II/config/settings.json` - 运行时配置
 - `resources/BrownDust II/config/rois.json` - ROI 定义
 - `resources/BrownDust II/templates/` - 67 PNG 模板 (13 子目录)
-- `agent/src/engine/resource_resolver.py` - 路径解析器
+- `worker/src/engine/resource_resolver.py` - 路径解析器
 - `backend/resources/models.py` - ResourcePack/Template 等模型
 - `backend/agents/views.py` - resource_pack_id 参数 (line 1989)
 - `frontend/src/pages/Setup/StepRecommendedTemplates.tsx` - BD2 导入 UI

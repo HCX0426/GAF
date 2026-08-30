@@ -5,7 +5,7 @@
 ## 环境与命令
 - conda gaf env: `D:\code\environment\conda\envs\gaf\python.exe` (Python 3.11.15, 3.11+ required for StrEnum etc) <!-- meta: {last_used: "2026-08-06", trigger_count: 0, expire_days: 90} -->
 - Start all services: `scripts/gaf_services.ps1 start` (Redis → Backend → Worker → Beat → Agent → Frontend) <!-- meta: {last_used: "2026-08-06", trigger_count: 0, expire_days: 90} -->
-- Agent tests: `...\python.exe -m pytest agent/tests/ -p no:django -o addopts=""` (2.5min vs 2h, disables pytest-django) <!-- meta: {last_used: "2026-08-06", trigger_count: 0, expire_days: 90} -->
+- Agent tests: `...\python.exe -m pytest worker/tests/ -p no:django -o addopts=""` (2.5min vs 2h, disables pytest-django) <!-- meta: {last_used: "2026-08-06", trigger_count: 0, expire_days: 90} -->
 - Backend tests: `...\python.exe -m pytest backend/` (needs Django, no -p no:django needed) <!-- meta: {last_used: "2026-08-06", trigger_count: 0, expire_days: 90} -->
 - Use direct python.exe path (not `conda run`) to avoid PowerShell CLIXML serialization <!-- meta: {last_used: "2026-08-06", trigger_count: 0, expire_days: 90} -->
 

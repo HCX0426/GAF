@@ -123,11 +123,11 @@ class TestLLMWebsocketRPC:
         """验证 AgentLLMClient 实现了 stream_chat 方法。"""
         import os
         import sys
-        agent_src = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "..", "agent", "src")
+        worker_src = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "..", "worker", "src")
         )
-        if agent_src not in sys.path:
-            sys.path.insert(0, agent_src)
+        if worker_src not in sys.path:
+            sys.path.insert(0, worker_src)
 
         from ai.llm_client import WorkerLlmClient
 

@@ -20,8 +20,8 @@ last_updated: 2026-08-02
 | `AgentSelector` 类 | 任务分配时按能力+负载选 Agent | `backend/tasks/agent_selector.py` — 类已实现并接入 `dispatch_task`（Phase 5.2，commit `-`） | ✅ 已实现并接入 |
 | `ConcurrencyController` 类 | 控制每 Agent 最大任务数 | `backend/tasks/concurrency_controller.py` — 类已实现（Phase 5.3，commit `-`），**已接入 `dispatch_task`**（`tasks.py:109-110` 调用 `can_assign` 过滤，`tasks.py:156` 调用 `assign`）+ `AgentConsumer`（task.completed/task.failed 时 release）+ force-terminate 路径（`services/monitor_service.py` cancel/execution/heartbeat timeouts） | ✅ 已实现并接入 |
 | `ResourceLock` 类 | 设备资源锁 | `backend/tasks/resource_lock.py` — 类已实现（Phase 5.4，commit `-`），**未接入 dispatch 路径** | 🔧 helper 就绪，集成待办 |
-| `ScreenshotCache` / `RedisScreenshotCache` | 截图缓存 | `agent/src/devices/screenshot_cache.py` — 类已实现（Phase 3.3，commit `-`），**未接入 `ScreenshotManager.capture()` 热路径** | 🔧 helper 就绪，集成待办 |
-| `MessageCompressor` | WebSocket 消息压缩 | `backend/protocol/message_compressor.py` + `agent/src/utils/message_compressor.py` — 双端镜像已实现并接入 `AgentConsumer.send()` + `AgentConnection.send_message()` (spec-42, 2026-07-20, Hello/Hello.ack 协商 + msgpack+zlib 压缩 + 端到端测试 12/12 passed) | ✅ 已实现并接入 (spec-42) |
+| `ScreenshotCache` / `RedisScreenshotCache` | 截图缓存 | `worker/src/devices/screenshot_cache.py` — 类已实现（Phase 3.3，commit `-`），**未接入 `ScreenshotManager.capture()` 热路径** | 🔧 helper 就绪，集成待办 |
+| `MessageCompressor` | WebSocket 消息压缩 | `backend/protocol/message_compressor.py` + `worker/src/utils/message_compressor.py` — 双端镜像已实现并接入 `AgentConsumer.send()` + `AgentConnection.send_message()` (spec-42, 2026-07-20, Hello/Hello.ack 协商 + msgpack+zlib 压缩 + 端到端测试 12/12 passed) | ✅ 已实现并接入 (spec-42) |
 | 数据库索引 | TaskExecution/TaskStep/MonitorEvent 索引 | 索引在 migration 中定义，与文档基本一致 | ✅ 一致 |
 | 查询优化 | select_related/prefetch_related | `TaskExecutionViewSet.get_queryset` 实现了优化 | ✅ 一致 |
 
@@ -262,7 +262,7 @@ class RedisScreenshotCache:
 
 ## 4. WebSocket 消息压缩
 
-> ✅ **spec-42 已实施 (2026-07-20)**: MessageCompressor 已接入 `AgentConsumer.send()` + `AgentConnection.send_message()` 双端热路径。Hello/Hello.ack 协商帧 (JSON text) → 协商成功后大帧 (size ≥ threshold) 走 msgpack+zlib 压缩 bytes_data, 小帧保持 JSON text; legacy agent 不发 Hello 则端到端 JSON text。端到端测试 12/12 passed (backend 6 + agent 6), 压缩率 ~10KB payload ≤ 50%。详见 `backend/protocol/message_compressor.py` + `agent/src/utils/message_compressor.py` (双端镜像, drift mitigation docstring 标注)。
+> ✅ **spec-42 已实施 (2026-07-20)**: MessageCompressor 已接入 `AgentConsumer.send()` + `AgentConnection.send_message()` 双端热路径。Hello/Hello.ack 协商帧 (JSON text) → 协商成功后大帧 (size ≥ threshold) 走 msgpack+zlib 压缩 bytes_data, 小帧保持 JSON text; legacy agent 不发 Hello 则端到端 JSON text。端到端测试 12/12 passed (backend 6 + agent 6), 压缩率 ~10KB payload ≤ 50%。详见 `backend/protocol/message_compressor.py` + `worker/src/utils/message_compressor.py` (双端镜像, drift mitigation docstring 标注)。
 
 ### 4.1 压缩策略
 

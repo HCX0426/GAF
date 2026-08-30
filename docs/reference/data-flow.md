@@ -18,9 +18,9 @@ related_files:
 - backend/protocol/routing.py
 - backend/agents/routing.py
 - backend/notifications/routing.py
-- agent/src/client/connection.py
-- agent/src/platforms/windows/
-- agent/src/devices/adb/
+- worker/src/client/connection.py
+- worker/src/platforms/windows/
+- worker/src/devices/adb/
 created_by: AI
 generated: 2026-06-16
 auto_updated: 2026-08-01
@@ -56,7 +56,7 @@ last_manual_edit: 2026-08-01
                                  ↕ /ws/protocol/agents/ (WebSocket)
 ┌──────────────────────────────────────────────────────────────────┐
 │  Agent (Python)                  standalone process               │
-│  agent/src/                      **单 Agent 多窗口**              │
+│  worker/src/                      **单 Agent 多窗口**              │
 │                                - 一台机器 = 一个 Agent 进程       │
 │                                - 每个可控窗口 = 一个 Device       │
 │                                - 模拟器窗口 (ADB) 可并行          │
@@ -115,8 +115,8 @@ Frontend /ws/dashboard/ 收 execution_step_update + screenshot_frame
 - `backend/scheduler/engine.py`
 - `backend/protocol/consumers.py: AgentConsumer.send`
 - `backend/gaf_core/mixins/audit.py: AuditMixin` (C-045, 114 接入点)
-- `agent/src/engine/pipeline_engine.py: PipelineEngine.execute`
-- `agent/src/client/handler.py: handle_task_dispatch`
+- `worker/src/engine/pipeline_engine.py: PipelineEngine.execute`
+- `worker/src/client/handler.py: handle_task_dispatch`
 
 ### 1.2 路径 B: 设备操作 (远程 click/input)
 
@@ -140,10 +140,10 @@ Backend 转发到 Frontend (/ws/dashboard/)
 **关键文件**:
 - `backend/agents/views.py: DeviceClickView` / `DeviceInputView`
 - `backend/agents/urls.py: devices/<id>/click/`
-- `agent/src/devices/base.py: Device.click` / `Device.input`
+- `worker/src/devices/base.py: Device.click` / `Device.input`
 - 平台分发 (实际代码, 2026-07-19):
-  - `agent/src/platforms/windows/` — Windows PC 控制 (discovery/screenshot/input, agent 侧)
-  - `agent/src/devices/adb/` — Android 模拟器控制 (ADB, agent 侧)
+  - `worker/src/platforms/windows/` — Windows PC 控制 (discovery/screenshot/input, agent 侧)
+  - `worker/src/devices/adb/` — Android 模拟器控制 (ADB, agent 侧)
   - `backend/device_bridge/platforms/{windows,macos,linux}/` — backend 侧跨平台抽象层 (P-028 ✅, 纯 Python 包非 Django app, 不在 INSTALLED_APPS)
 
 ### 1.3 路径 C: 监控与告警
@@ -295,11 +295,11 @@ Frontend 渲染链路追踪图
      └─ 配合 retry_count 字段 (失败 N 次后才触发)
 ```
 
-**重试机制** (`agent/src/core/retry_decorator.py`):
+**重试机制** (`worker/src/core/retry_decorator.py`):
 - 节点级: `retry_count` 字段
 - 任务级: `tasks/tasks.py:dispatch_task` Celery 重试 (max_retries=3, countdown=30s) + `tasks/services/monitor_service.py:check_pending_timeout` PENDING 超时重试
 - 全局: `celery` 任务 auto-retry (3 次, 指数退避)
-- Debug 模式 LLM auto-heal (C-030): `agent/src/ai/llm_client.py: diagnose_failure()` 解析 DIAGNOSIS:/FIX: 格式, 不抛异常
+- Debug 模式 LLM auto-heal (C-030): `worker/src/ai/llm_client.py: diagnose_failure()` 解析 DIAGNOSIS:/FIX: 格式, 不抛异常
 
 ## 7. 部署 / 网络拓扑
 
@@ -350,7 +350,7 @@ agent (独立 Python 进程, 可多个)
 
 架构修改? (必读本文件 + 通知)
 ⚠️ 改 backend/*/models.py → 加 migration + 通知 frontend/types
-⚠️ 改 agent/src/* 协议 → 通知 backend + 升 version-compat
+⚠️ 改 worker/src/* 协议 → 通知 backend + 升 version-compat
 ⚠️ 改 protocol/constants.py → 加 14 消息类型需同步 5 处
 ⚠️ 改 backend app 内 ViewSet → 加 AuditMixin 自动接入 AuditLog (C-045)
 ⚠️ 改 API 路径 / URL 版本号 → 改 .env GAF_API_PREFIX + GAF_ROUTE_* (N197)
@@ -359,7 +359,7 @@ agent (独立 Python 进程, 可多个)
 
 - **N91** pre-commit hook 失败处理 (active, 见 `meta/failure-modes.md` N## 索引)
 - **macOS/Linux 路径漂移** (新登记 TD-281, 2026-07-19):
-  - 多份 docs 引用 `agent/src/devices/{macos,linux}/` 或 `agent/src/platforms/{macos,linux}/`, 但实际路径是 `backend/device_bridge/platforms/{macos,linux}/` (P-028 ✅ 已实现)
+  - 多份 docs 引用 `worker/src/devices/{macos,linux}/` 或 `worker/src/platforms/{macos,linux}/`, 但实际路径是 `backend/device_bridge/platforms/{macos,linux}/` (P-028 ✅ 已实现)
   - 影响: AI 按文档去找代码会找不到; tech-stack.md §4 L175-177 + GAF-optimal-solution.md L105-106 路径需校正
   - 修复: spec-39 Phase 4 + Phase 8 联动校正路径 (P-028 ✅ 状态保留)
 - **C-063 ExecutionConsumer/ScreenshotStreamConsumer 已删除** (2026-07-19 spec-35 Phase 4.1/4.2):

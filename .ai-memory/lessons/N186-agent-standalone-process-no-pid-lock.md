@@ -7,7 +7,7 @@ symptom: [kb:agent-singleton, pid-lock, duplicate-agent, ws-routing-failure, N18
 solution: agent 独立进程 __main__.py 加 acquire_singleton_lock PID 文件锁; 区分 agent 自身 vs backend agent_runtime.py
 diff_keywords: ["main", "__main__", "agent", "runtime", "agent_runtime", "overview", "deployment", "design", "deployment-design", "agent-startup", "pid-lock", "singleton"]
 related_files:
-  - agent/src/__main__.py
+  - worker/src/__main__.py
   - backend/workers/agent_runtime.py
   - docs/architecture/overview.md
   - docs/architecture/desktop/deployment-design.md
@@ -34,7 +34,7 @@ BD2 get_email pipeline 测试中出现 4 个 agent 进程同时运行, 导致:
 
 ## Solution（解决步骤）
 
-1. `agent/src/__main__.py` 加 `acquire_singleton_lock()` / `release_singleton_lock()` 函数, 写 PID 文件 `%TEMP%\gaf_agent_lock\standalone.pid`
+1. `worker/src/__main__.py` 加 `acquire_singleton_lock()` / `release_singleton_lock()` 函数, 写 PID 文件 `%TEMP%\gaf_agent_lock\standalone.pid`
 2. `main()` 入口在 `asyncio.run(run_agent(...))` 前调 `acquire_singleton_lock()`, 检测到存活 PID 则 `sys.exit(1)`
 3. `finally` 块调 `release_singleton_lock()` 确保异常退出也释放锁
 4. 加 `--skip-singleton-check` CLI 参数 (仅限调试场景)

@@ -7,8 +7,8 @@ solution: N145 L1 已修复 — backend _handle_task_result 之前只发 ACK 不
 diff_keywords: ["consumers", "handler", "connection", "views", "models", "pipeline.execute", "timeout", "agent", "heartbeat", "but", "execution", "pending"]
 related_files:
   - backend/protocol/consumers.py
-  - agent/src/client/handler.py
-  - agent/src/client/connection.py
+  - worker/src/client/handler.py
+  - worker/src/client/connection.py
   - backend/tasks/views.py
   - backend/tasks/models.py
 created_by: AI

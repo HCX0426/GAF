@@ -26,7 +26,7 @@ last_updated: 2026-07-04
 | §5 `ContextCollector` 类 | 上下文收集器 | `backend/gaf_ai/context_collector.py`（Phase 4.5）实现 `ContextCollector` 类 + `build_skill_context()` + `build_qa_context_wrapper()`；与 `backend/gaf_ai/context_collector.py:build_qa_context()` 互补（task-context vs project-context） | ✅ 已实现 |
 | §6 `TokenUsageTracker` 类 | Token 用量追踪 | `backend/gaf_ai/token_tracker.py`（Phase 4.6）实现 `TokenUsageTracker` 类（`record()` / `check_budget()` / `generate_usage_report()`）+ `get_token_tracker()` 单例；DB-backed（`LLMUsageLog`），无内存缓存 | ✅ 已实现 |
 | §8 降级链 | 首选 → 备用 → 本地 → 离线 | `backend/gaf_ai/llm_service.py:_get_llm_router()`（Phase 4.4）构建 4 级 router；`OfflineClient` 始终兜底；`call_llm()` 返回 `route` 字段标识命中级别；`LLMUsageLog.route` 字段记录 | ✅ 已实现 |
-| §0.3 Agent 端 LLM 客户端 | `agent/src/` 无 LLM 模块 | `agent/src/ai/llm_client.py`（Phase 4.7）实现 `AgentLLMClient` HTTP 包装；调用后端 `/api/v2/ai/chat/`；stdlib `urllib`（无 `requests` 依赖）；`is_available()` 连通性检查 | ✅ 已实现 |
+| §0.3 Agent 端 LLM 客户端 | `worker/src/` 无 LLM 模块 | `worker/src/ai/llm_client.py`（Phase 4.7）实现 `AgentLLMClient` HTTP 包装；调用后端 `/api/v2/ai/chat/`；stdlib `urllib`（无 `requests` 依赖）；`is_available()` 连通性检查 | ✅ 已实现 |
 
 ### 0.2 实际 LLM 调用机制（Phase 4.4+ 后）
 
@@ -36,7 +36,7 @@ last_updated: 2026-07-04
 - **用量**：`backend/gaf_ai/token_tracker.py:CostControlService` + `LLMUsageLog` 模型（Phase 4.4 新增 `route` 字段）；`backend/gaf_ai/token_tracker.py:TokenUsageTracker` 提供设计 §6 API
 - **Skill 系统**：`backend/skills/builtin/*.yaml` 6 个内置 Skill（Phase 4.3）；`loader.py` dual-schema 验证；`SkillDefinition` DB 模型存储用户自定义 Skill
 - **AI 视图**：`backend/gaf_ai/views*.py` 调用 `call_llm()`（自动走 router 降级链）
-- **Agent 端**：`agent/src/ai/llm_client.py:AgentLLMClient` 通过 HTTP 调用 `/api/v2/ai/chat/`，不直接访问 LLM 提供商
+- **Agent 端**：`worker/src/ai/llm_client.py:AgentLLMClient` 通过 HTTP 调用 `/api/v2/ai/chat/`，不直接访问 LLM 提供商
 
 ### 0.3 修复方向（Phase 4.3-4.7 后）
 
@@ -45,7 +45,7 @@ last_updated: 2026-07-04
 | 文档与代码对齐 | P0 | 文档下文 §2-§8 与新实现对齐 | ✅ Phase 4.8 完成 |
 | 创建 6 个内置 Skill YAML | P1 | 在 `backend/skills/builtin/` 下创建 YAML 文件，更新 `load_builtin_skills()` 路径 | ✅ Phase 4.3 完成 |
 | 实现 LLMRouter 降级链 | P2 | 在 `call_llm()` 上层包装路由层，支持多模型 fallback | ✅ Phase 4.4 完成 |
-| Agent 端 LLM 客户端 | P2 | `agent/src/` 新增 LLM 模块 | ✅ Phase 4.7 完成 |
+| Agent 端 LLM 客户端 | P2 | `worker/src/` 新增 LLM 模块 | ✅ Phase 4.7 完成 |
 | ContextCollector | P2 | 实现 §5.1 任务上下文收集器 | ✅ Phase 4.5 完成 |
 | TokenUsageTracker | P2 | 实现 §6.1 用量追踪器 + per-Skill 预算 | ✅ Phase 4.6 完成 |
 | 流式降级 | P3 | `stream=True` 当前仍走 legacy 直接 requests 路径，未经 router（多级降级下流式语义复杂）——✅ 已实现：llm_service._call_llm_stream_via_router 走 LLMRouter.stream_chat() 4 级降级 | 🟡 推后（非阻塞） |

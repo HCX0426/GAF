@@ -1,4 +1,4 @@
-"""Shared test fixtures for agent/tests/.
+"""Shared test fixtures for worker/tests/.
 
 One specific responsibility of this conftest: keep the repo clean of
 test-generated JSONL files.
@@ -32,7 +32,7 @@ unaffected by this patch.
 import sys
 from pathlib import Path
 
-# Make ``src/`` importable for all tests under agent/tests/. Individual
+# Make ``src/`` importable for all tests under worker/tests/. Individual
 # test modules also do this themselves; duplicating here is harmless and
 # ensures conftest-level imports (engine.pipeline_engine) resolve even if a future
 # test module drops its own sys.path manipulation.

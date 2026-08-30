@@ -91,7 +91,7 @@ jobs:
         shell: pwsh
         run: |
           conda activate gaf
-          pytest agent/tests/ -n auto --maxfail=20 -q
+          pytest worker/tests/ -n auto --maxfail=20 -q
 
   test-scripts:
     needs: lint-backend

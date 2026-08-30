@@ -19,7 +19,7 @@ commit: -
 | Phase | 标题 | 状态 | 完成时间 | Commit | 验收 evidence |
 |-------|------|------|---------|--------|---------------|
 | Phase 1 | TD-288 AgentSelector 清理 (移除 lazy import + 删 dead code + 加单元测试) | ✅ | 2026-07-20 | - | 34 单元测试 PASS; `grep _select_best_agent backend/` = 0; `grep "from tasks.tasks import" backend/tasks/agent_selector.py` = 0 |
-| Phase 2 | TD-273 Phase 1 — 创建 `agent/src/core/constants.py` + dedup ComparisonOperator/LoopType/NodeType | ✅ | 2026-07-20 | - | `agent/tests/` 1554 passed 0 回归; `grep 'operator == "eq"' agent/src/` = 0; `grep 'loop_type == "for"' agent/src/engine/` = 0 |
+| Phase 2 | TD-273 Phase 1 — 创建 `worker/src/core/constants.py` + dedup ComparisonOperator/LoopType/NodeType | ✅ | 2026-07-20 | - | `agent/tests/` 1554 passed 0 回归; `grep 'operator == "eq"' worker/src/` = 0; `grep 'loop_type == "for"' worker/src/engine/` = 0 |
 | Phase 3 | N167 评分 + commit + hash 回填 + 反思 | ✅ | 2026-07-20 | - | 9/9 AI 自决; 1588 passed 2 skipped 全套回归 PASS |
 
 ## §2 N167 3 维度评分 (中修改)
@@ -91,12 +91,12 @@ commit: -
 
 ### 4.2 修改方案 (Phase 1 仅做 dedup + 模块创建, 不动其他文件)
 
-**`agent/src/core/constants.py`** (Phase 2 新建):
+**`worker/src/core/constants.py`** (Phase 2 新建):
 ```python
 """Consolidated enums shared across agent modules.
 
 This module is the single source of truth for status/type/operator
-enums used by string-literal comparisons throughout agent/src/. Phase 1
+enums used by string-literal comparisons throughout worker/src/. Phase 1
 (spec-40) introduces the module and dedups ComparisonOperator/LoopType/
 NodeType. Phase 2 (spec-44) migrates the remaining 80+ string literals
 to these enums.
@@ -186,11 +186,11 @@ def evaluate_comparison(actual, operator, expected) -> bool:
     return False
 ```
 
-**`agent/src/engine/nodes/branch.py`** (Phase 2 修改):
+**`worker/src/engine/nodes/branch.py`** (Phase 2 修改):
 - import `from core.constants import ComparisonOperator, evaluate_comparison`
 - `_evaluate` 改为调 `evaluate_comparison(actual, operator, expected)` (删本地 7 分支)
 
-**`agent/src/engine/engine.py`** (Phase 2 修改):
+**`worker/src/engine/engine.py`** (Phase 2 修改):
 - import `from core.constants import LoopType, evaluate_comparison`
 - `_evaluate_loop_condition` 改为调 `evaluate_comparison(actual, operator, expected)` (删本地 7 分支)
 - `_loop_should_continue` 中 `loop_type == "for"` / `"while"` 改为 `LoopType.FOR` / `LoopType.WHILE` (str mixin 让 `== "for"` 仍工作, 但显式用 enum 提升可读性)
@@ -198,8 +198,8 @@ def evaluate_comparison(actual, operator, expected) -> bool:
 ### 4.3 验证
 
 - `cd agent && python -m pytest tests/test_engine.py tests/test_branch.py tests/test_loop.py -v` 全 PASS (假设测试存在; 若不存在跳过)
-- `grep "operator == \"eq\"\|operator == \"neq\"\|operator == \"gt\"" agent/src/` = 0 处 (dedup 后)
-- `import core.constants` 在 agent/src/ 任何文件可 import
+- `grep "operator == \"eq\"\|operator == \"neq\"\|operator == \"gt\"" worker/src/` = 0 处 (dedup 后)
+- `import core.constants` 在 worker/src/ 任何文件可 import
 
 ## §5 Phase 3: commit + hash 回填 + 反思
 
@@ -215,7 +215,7 @@ def evaluate_comparison(actual, operator, expected) -> bool:
 
 ```bash
 git add backend/tasks/agent_selector.py backend/tasks/tasks.py backend/tasks/tests/test_agent_selector.py \
-        agent/src/core/constants.py agent/src/engine/nodes/branch.py agent/src/engine/engine.py \
+        worker/src/core/constants.py worker/src/engine/nodes/branch.py worker/src/engine/engine.py \
         docs/general/tech-debt/active.md docs/general/tech-debt/fixed.md \
         docs/general/completed-features.md docs/general/pending-roadmap.md \
         .trae/specs/2026-07-20-spec40-agent-selector-cleanup-and-constants.md \
@@ -234,7 +234,7 @@ git commit -m "refactor(spec-40): TD-288 AgentSelector cleanup + TD-273 Phase 1 
 ## §6 与 spec-44 (TD-273 Phase 2) 的边界
 
 spec-40 Phase 2 只做 3 件事:
-1. 创建 `agent/src/core/constants.py` (ComparisonOperator + LoopType + NodeType + evaluate_comparison)
+1. 创建 `worker/src/core/constants.py` (ComparisonOperator + LoopType + NodeType + evaluate_comparison)
 2. dedup `engine.py` + `nodes/branch.py` 的 ComparisonOperator 重复 (改用 `evaluate_comparison`)
 3. dedup `engine.py` + `nodes/loop.py` 的 LoopType 字符串 (改用 `LoopType.FOR`/`WHILE`)
 
