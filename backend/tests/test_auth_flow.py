@@ -83,8 +83,8 @@ class AuthFlowTest(TestCase):
         self.assertEqual(admin.role, 'admin')
 
 
-class AgentAPITest(TestCase):
-    """Agent API 集成测试"""
+class WorkerAPITest(TestCase):
+    """Worker API 集成测试"""
 
     def setUp(self):
         """初始化 API 客户端并使用 operator 角色登录"""

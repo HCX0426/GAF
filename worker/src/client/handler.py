@@ -1255,7 +1255,7 @@ class MessageHandler:
 
         image_base64 = base64.b64encode(buf).decode("utf-8")
         # Use the canonical protocol type "screenshot.frame" so
-        # AgentConsumer._handle_screenshot_frame recognizes and forwards the
+        # WorkerConsumer._handle_screenshot_frame recognizes and forwards the
         # frame to the frontend. Also send device metadata (name/type/hwnd)
         # so the backend can map the agent-side opaque device_id to backend
         # Device.id.

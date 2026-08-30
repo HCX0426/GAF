@@ -1,7 +1,7 @@
-"""Agent 配置定义
+"""Worker 配置定义
 
-N196+: 统一配置归一化 — Agent 从根目录 .env 文件读取配置。
-使用 python-dotenv 加载 .env（repo 根目录），使 AgentConfig 默认值
+N196+: 统一配置归一化 — Worker 从根目录 .env 文件读取配置。
+使用 python-dotenv 加载 .env（repo 根目录），使 WorkerConfig 默认值
 可被 .env 中的环境变量覆盖，无需修改代码。
 
 Env var 读取优先级：CLI 参数 > 环境变量 > 代码默认值
@@ -21,7 +21,7 @@ if _env_path.exists():
 
 
 def _get_config_dir() -> Path:
-    """获取 Agent 配置文件目录，优先使用 APPDATA 下的 gaf 目录。
+    """获取 Worker 配置文件目录，优先使用 APPDATA 下的 gaf 目录。
 
     Returns:
         Path: 配置目录路径
@@ -73,8 +73,8 @@ class RetryConfig:
 
 
 @dataclass
-class AgentConfig:
-    """Agent 客户端配置"""
+class WorkerConfig:
+    """Worker 客户端配置"""
     server_url: str = os.environ.get("GAF_SERVER_URL", _DEFAULT_SERVER_URL)
     agent_token: str = ""
     is_local: bool = False
@@ -129,8 +129,8 @@ class AgentConfig:
 
     @classmethod
     def from_args(cls, server_url: str = "",
-                  agent_token: str = "", is_local: bool = False, **kwargs) -> 'AgentConfig':
-        """从命令行参数构建 AgentConfig，自动从多来源加载 Token。
+                  agent_token: str = "", is_local: bool = False, **kwargs) -> 'WorkerConfig':
+        """从命令行参数构建 WorkerConfig，自动从多来源加载 Token。
 
         Token 加载优先级：命令行参数 > 环境变量 > 本地加密文件
 
@@ -141,7 +141,7 @@ class AgentConfig:
             **kwargs: 其他配置参数
 
         Returns:
-            AgentConfig: 构建好的配置实例
+            WorkerConfig: 构建好的配置实例
         """
         token = agent_token
         if not token:

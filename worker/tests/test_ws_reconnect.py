@@ -27,7 +27,7 @@ from client.connection import (
     WorkerConnection,
     _build_ws_url,
 )
-from core.config import AgentConfig
+from core.config import WorkerConfig
 
 pytestmark = pytest.mark.unit
 
@@ -35,8 +35,8 @@ pytestmark = pytest.mark.unit
 # Helpers / Fixtures
 # ============================================================
 
-def _make_config(**overrides) -> AgentConfig:
-    """Build an AgentConfig with ws:// (no TLS) and sane test defaults."""
+def _make_config(**overrides) -> WorkerConfig:
+    """Build an WorkerConfig with ws:// (no TLS) and sane test defaults."""
     defaults = {
         "server_url": "ws://127.0.0.1:8000/ws/protocol/agents/",
         "agent_token": "test-token",
@@ -44,7 +44,7 @@ def _make_config(**overrides) -> AgentConfig:
         "heartbeat_interval": 30,
     }
     defaults.update(overrides)
-    return AgentConfig(**defaults)
+    return WorkerConfig(**defaults)
 
 
 def _make_mock_ws():

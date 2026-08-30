@@ -91,13 +91,13 @@ const StatValue = memo(function StatValue({ value }: StatValueProps) {
   );
 });
 
-interface AgentCardProps {
+interface WorkerCardProps {
   agent: Worker;
   devices: Device[];
 }
 
 /** Compare only the fields that affect rendering to keep the card stable. */
-function agentCardPropsEqual(prev: AgentCardProps, next: AgentCardProps): boolean {
+function workerCardPropsEqual(prev: WorkerCardProps, next: WorkerCardProps): boolean {
   if (prev.agent.id !== next.agent.id) return false;
   const agentFields: (keyof Worker)[] = [
     'agent_id',
@@ -136,7 +136,7 @@ function deviceSummary(devices: Device[]): string {
 }
 
 /** Memoized agent card to avoid re-rendering the whole card on every refresh. */
-const AgentCard = memo(function AgentCard({ agent, devices }: AgentCardProps) {
+const WorkerCard = memo(function WorkerCard({ agent, devices }: WorkerCardProps) {
   const t = useTranslation();
   const { token } = antTheme.useToken();
   const STATUS_COLOR = getStatusColor(token);
@@ -247,7 +247,7 @@ const AgentCard = memo(function AgentCard({ agent, devices }: AgentCardProps) {
       )}
     </div>
   );
-}, agentCardPropsEqual);
+}, workerCardPropsEqual);
 
 /** Collect ALL devices (windows / emulator instances) owned by this agent.
  *
@@ -255,13 +255,13 @@ const AgentCard = memo(function AgentCard({ agent, devices }: AgentCardProps) {
  * and discovers every window on it — PC windows AND emulator instances are all
  * registered as Device rows under that Worker.
  */
-function findAgentDevices(agent: Worker, devices: Device[]): Device[] {
+function findWorkerDevices(agent: Worker, devices: Device[]): Device[] {
   return devices.filter(
     (d) => d.agent === agent.id || d.agent_info?.id === agent.id || d.agent_info?.agent_id === agent.agent_id,
   );
 }
 
-export function AgentHealthPanel() {
+export function WorkerHealthPanel() {
   const t = useTranslation();
   const { agents, devices, loading, fetchAgents, fetchDevices } = useDeviceStore();
   const initialLoadRef = useRef(false);
@@ -293,7 +293,7 @@ export function AgentHealthPanel() {
 
   const onlineCount = useMemo(() => agents.filter((a) => a.status !== 'offline').length, [agents]);
   const abnormalCount = useMemo(
-    () => agents.filter((a) => isAbnormal(a, findAgentDevices(a, devices)[0])).length,
+    () => agents.filter((a) => isAbnormal(a, findWorkerDevices(a, devices)[0])).length,
     [agents, devices],
   );
 
@@ -311,7 +311,7 @@ export function AgentHealthPanel() {
       return <Empty description={t('dashboard.empty_agents')} image={Empty.PRESENTED_IMAGE_SIMPLE} />;
     }
     return agentList.map((agent) => (
-      <AgentCard key={agent.id} agent={agent} devices={findAgentDevices(agent, devices)} />
+      <WorkerCard key={agent.id} agent={agent} devices={findWorkerDevices(agent, devices)} />
     ));
   }, [agentList, devices, t]);
 
@@ -334,4 +334,4 @@ export function AgentHealthPanel() {
   );
 }
 
-export default AgentHealthPanel;
+export default WorkerHealthPanel;

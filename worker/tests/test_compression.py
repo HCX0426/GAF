@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from client.connection import WorkerConnection
-from core.config import AgentConfig
+from core.config import WorkerConfig
 from utils.message_compressor import (
     COMPRESSION_ALGORITHM_MSGPACK_ZLIB,
     DEFAULT_COMPRESS_THRESHOLD,
@@ -41,8 +41,8 @@ _HEADER_SIZE = 5
 # ===========================================================================
 
 
-def _make_config(**overrides) -> AgentConfig:
-    """Build an AgentConfig with ws:// (no TLS) and sane test defaults."""
+def _make_config(**overrides) -> WorkerConfig:
+    """Build an WorkerConfig with ws:// (no TLS) and sane test defaults."""
     defaults = {
         "server_url": "ws://127.0.0.1:8000/ws/protocol/agents/",
         "agent_token": "test-token",
@@ -50,7 +50,7 @@ def _make_config(**overrides) -> AgentConfig:
         "heartbeat_interval": 30,
     }
     defaults.update(overrides)
-    return AgentConfig(**defaults)
+    return WorkerConfig(**defaults)
 
 
 def _make_mock_ws():

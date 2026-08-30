@@ -24,7 +24,7 @@ import { useTranslation, getLocale } from '@/i18n';
 import type { DashboardStats, TaskExecution } from '@/types/models';
 import type { ColumnsType } from 'antd/es/table';
 import QuickActions from './QuickActions';
-import AgentHealthPanel from './AgentHealthPanel';
+import WorkerHealthPanel from './WorkerHealthPanel';
 import TodaySchedule from '@/components/Dashboard/TodaySchedule';
 import ProgressRing from '@/components/Dashboard/ProgressRing';
 import ExecutionQueuePreview from '@/components/Dashboard/ExecutionQueuePreview';
@@ -309,7 +309,7 @@ export function DashboardPage() {
     }
 
     if (widget.id === 'device_status') {
-      return <AgentHealthPanel />;
+      return <WorkerHealthPanel />;
     }
     return null;
   };

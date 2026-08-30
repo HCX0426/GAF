@@ -1,6 +1,6 @@
 """core 包初始化"""
 
-from core.config import AgentConfig
+from core.config import WorkerConfig
 from core.exceptions import (
     AutoBaseError,
     CoordinateError,

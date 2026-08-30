@@ -157,7 +157,7 @@ export function GameProfileDetailPage() {
       children: (
         <TaskChainsTab
           profileId={profile.id}
-          currentDefaultRoutineId={profile.default_routine ?? null}
+          currentDefaultRoutineId={profile.default_task_chain ?? null}
           onRoutineChanged={loadProfile}
         />
       ),
@@ -165,7 +165,7 @@ export function GameProfileDetailPage() {
     {
       key: 'devices',
       label: t('gameProfiles.tab_devices'),
-      children: <DevicesTab profileId={profile.id} defaultRoutineId={profile.default_routine ?? null} />,
+      children: <DevicesTab profileId={profile.id} defaultRoutineId={profile.default_task_chain ?? null} />,
     },
     {
       key: 'accounts',
@@ -204,8 +204,8 @@ export function GameProfileDetailPage() {
             icon={<ThunderboltOutlined />}
             loading={dispatching}
             onClick={handleDispatchRoutine}
-            disabled={!profile.default_routine}
-            title={profile.default_routine ? undefined : t('gameProfiles.tip_no_default_routine')}
+            disabled={!profile.default_task_chain}
+            title={profile.default_task_chain ? undefined : t('gameProfiles.tip_no_default_task_chain')}
           >
             {t('gameProfiles.btn_dispatch_routine')}
           </Button>
@@ -229,10 +229,10 @@ export function GameProfileDetailPage() {
     >
       <Card className="gaf-mb-lg">
         <Descriptions column={3} size="small">
-          <Descriptions.Item label={t('gameProfiles.col_default_routine')}>
-            {(profile as GameProfile & { default_routine_name?: string }).default_routine_name ? (
+          <Descriptions.Item label={t('gameProfiles.col_default_task_chain')}>
+            {(profile as GameProfile & { default_task_chain_name?: string }).default_task_chain_name ? (
               <Tag color="green">
-                {(profile as GameProfile & { default_routine_name?: string }).default_routine_name}
+                {(profile as GameProfile & { default_task_chain_name?: string }).default_task_chain_name}
               </Tag>
             ) : (
               <Text type="secondary">—</Text>

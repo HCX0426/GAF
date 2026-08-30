@@ -1,7 +1,7 @@
 ---
 spec: 2026-08-29-naming-c-agentsession
 title: 命名归一化 C-3 批：两个 AgentSession 模型拆分（Worker WS 会话 → WorkerSession；AI 会话保留 AgentSession）
-status: active
+status: done
 created: 2026-08-29
 estimated_effort: 0.5 day
 risk: high
@@ -36,7 +36,7 @@ source: docs/analysis/concept-naming-normalization.md §1(WorkerSession/AgentSes
 | 阶段 | 内容 | 状态 |
 |------|------|------|
 | P1 | backend `protocol.AgentSession`→`WorkerSession`（模型+迁移+serializer） | ✅ |
-| P2 | 前端 `api.generated.ts` / `models/*.ts` 重生成 + import 改写 | ⏳ |
+| P2 | 前端 `api.generated.ts` / `models/*.ts` 重生成 + import 改写 | ✅ 归并 G P6.1（2026-08-30 完成：`WorkerSession` 各类型已入 `api.generated.ts`，前端 `AgentSession` 残留仅 gaf_ai AI 域——正确保留） |
 | P3 | gaf_ai `AgentSession` 保留确认 + 文档注明 AI 归属（OQ-10） | ✅ |
 
 #### Task P1.1: backend 改名

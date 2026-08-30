@@ -16,7 +16,7 @@ from rest_framework.response import Response
 from accounts.permissions import RoleBasedPermission
 from protocol.models import MessageFrameLog, WorkerSession
 from protocol.serializers import (
-    AgentRegisterPayloadSerializer,
+    WorkerRegisterPayloadSerializer,
 )
 
 
@@ -108,7 +108,7 @@ class WorkerSessionViewSet(AuditMixin, viewsets.ModelViewSet):
     def heartbeat(self, request, pk=None):
         """Agent 心跳上报 REST 接口（备选，主通道为 WebSocket）。"""
         session = self.get_object()
-        serializer = AgentRegisterPayloadSerializer(data=request.data)
+        serializer = WorkerRegisterPayloadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         session.last_heartbeat = timezone.now()

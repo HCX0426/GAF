@@ -46,7 +46,7 @@ last_updated: 2026-07-29
 |---|---|---|
 | `task_overview` | daily-report + executions | 顶部 4 统计卡片 |
 | `progress_ring` | `getDashboardDailyReport` | 执行进度环 |
-| `device_status` | `AgentHealthPanel` | Agent 健康面板 |
+| `device_status` | `WorkerHealthPanel` | Worker 健康面板 |
 | `execution_queue` | `@/api/scheduler` `fetchTodaySchedule` | 执行队列预览 |
 | `recent_executions` | `fetchExecutions(page_size=5)` | 最近 5 条执行记录 |
 | `trend_chart` | `@/api/ops` `fetchAnalyticsTrend` | 趋势图表 |
@@ -56,9 +56,9 @@ last_updated: 2026-07-29
 
 页面顶部还有 `<TodaySchedule />`（今日时间线）。
 
-## 3. AgentHealthPanel
+## 3. WorkerHealthPanel
 
-文件：[AgentHealthPanel.tsx](file:///d:/code/GAF/frontend/src/pages/Dashboard/AgentHealthPanel.tsx)
+文件：[WorkerHealthPanel.tsx](file:///d:/code/GAF/frontend/src/pages/Dashboard/WorkerHealthPanel.tsx)
 
 ### 数据源
 - `useDeviceStore` 的 `agents` + `devices`
@@ -121,4 +121,4 @@ last_updated: 2026-07-29
 
 - `trend_view` 在 `executions/urls.py` 和 `analytics_urls.py` 重复注册，前者实际不被前端调用
 - `task_stats_view` 的 `mode` 字段实际取 `task.task_type` 回退到 `'manual'`
-- AgentHealthPanel **不调用** `analytics/agent-performance/`（前者实时状态，后者历史统计，互补不重叠）
+- WorkerHealthPanel **不调用** `analytics/agent-performance/`（前者实时状态，后者历史统计，互补不重叠）

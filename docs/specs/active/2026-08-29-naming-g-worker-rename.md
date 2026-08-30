@@ -1,7 +1,7 @@
 ---
 spec: 2026-08-29-naming-g-worker-rename
 title: 命名归一化 G 批：Agent → Worker 术语重构（执行节点/进程及全部派生符号）
-status: active
+status: done
 created: 2026-08-29
 started: 2026-08-30
 estimated_effort: 3 days
@@ -55,8 +55,8 @@ source: docs/analysis/concept-naming-normalization.md §1(Agent→Worker 多行)
 | P4 | protocol/WS 符号 G-6 `AgentConsumer`→`WorkerConsumer`、G-14 `AgentSession`→`WorkerSession`(C-3) + consumers.py 路由(随 F-5) | ✅ |
 | P5 | 其余后端符号 G-8/G-9/G-12 + `tasks` 选 Worker + `agent_runtime`→`worker_runtime` | ✅ |
 | P6 | 前端类型重生成 + 全仓 import/文案改写（P6.1 类型重生成 ✅;P6.2 前端执行节点文案→Worker ✅,backend/docs prose 交由命名-d/e） | ✅ |
-| P7 | 后端+前端+agent 测试全绿；评估稿标记 G 完成 | ⏳ |
-| P8 | 架构文档同步：`docs/architecture/overview.md` + `features-overview.md` 执行节点语义 `Agent`→`Worker`（§9.3 概念边界注/§9.5 protocol 模型改 `WorkerSession`/§十 已改名「Worker 架构」已在先行提交；其余 `Agent`(执行节点) 引用随代码重命名同步扫） | ⏳ |
+| P7 | 后端+前端+agent 测试全绿；评估稿标记 G 完成 | ✅ |
+| P8 | 架构文档同步：`docs/architecture/overview.md` + `features-overview.md` 执行节点语义 `Agent`→`Worker`（§9.3 概念边界注/§9.5 protocol 模型改 `WorkerSession`/§十 已改名「Worker 架构」已在先行提交） | ✅ 归并 D/OQ-10（2026-08-30 用户决策：backend/docs prose 交由命名-d/e；本批收口 commit 补充清理执行节点语义残留：WorkerConfig/worker_service/worker_resolver/WorkerInfoSchema/Worker*PayloadSerializer/前端标识符，见 §5 验收） |
 
 #### Task P1.1: app 重命名（最重）
 

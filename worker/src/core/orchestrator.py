@@ -10,7 +10,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from core.config import AgentConfig
+from core.config import WorkerConfig
 from core.delay import DelayManager
 from core.error_codes import NodeErrorCode
 from core.recovery import HumanTakeoverError
@@ -47,11 +47,11 @@ class TaskOrchestrator:
         self,
         device_manager: DeviceManager,
         image_processor: ImageProcessor,
-        config: AgentConfig | None = None,
+        config: WorkerConfig | None = None,
     ):
         self._device_manager = device_manager
         self._image_processor = image_processor
-        self._config = config or AgentConfig()
+        self._config = config or WorkerConfig()
         self._delay_manager = DelayManager()
         self._state: TaskState = TaskState.PENDING
         self._current_step_index: int = 0
@@ -883,7 +883,7 @@ class TaskOrchestrator:
 
         # Create engine, load pipeline with device + display services injection.
         # Debug mode: prefer WS message parameters (per-execution), fall back
-        # to AgentConfig defaults (CLI --debug).
+        # to WorkerConfig defaults (CLI --debug).
         effective_debug_mode = debug_mode or self._config.debug_mode
         effective_debug_dir = debug_dir or self._config.debug_dir
         if effective_debug_mode:
@@ -916,7 +916,7 @@ class TaskOrchestrator:
 
         # S2-2.7 (2026-08-17): build InterfaceRecoveryManager when
         # interface_states.yaml exists (recovery-design.md §5.3 Step 4).
-        # All fields come from AgentConfig; missing yaml => recovery disabled.
+        # All fields come from WorkerConfig; missing yaml => recovery disabled.
         recovery_manager = None
         states_config_path = self._config.interface_states_path
         if states_config_path and Path(states_config_path).is_file():

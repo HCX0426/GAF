@@ -13,10 +13,10 @@ from workers.models import (
     Worker,
 )
 from workers.schema_types import (
-    AgentInfoSchema,
     DeviceStatsSchema,
     ResolutionSchema,
     ResolvedDeviceMethodsSchema,
+    WorkerInfoSchema,
 )
 
 
@@ -179,9 +179,9 @@ class DeviceSerializer(serializers.ModelSerializer):
             return None
         return sorted(MULTI_GAME_SAFE_INPUT_METHODS)
 
-    @extend_schema_field(AgentInfoSchema)
+    @extend_schema_field(WorkerInfoSchema)
     def get_agent_info(self, obj):
-        """返回关联 Agent 的摘要信息。"""
+        """返回关联 Worker 的摘要信息。"""
         if obj.agent:
             return {
                 'id': obj.agent.id,

@@ -171,7 +171,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 # it explicit so all deployments land in the same on-disk location.
 #
 # 默认使用 <项目根>/debug (即 d:/code/GAF/debug), 与 agent 侧
-# AgentConfig.debug_dir 默认值对齐. BASE_DIR 是 backend/, 所以要 .parent
+# WorkerConfig.debug_dir 默认值对齐. BASE_DIR 是 backend/, 所以要 .parent
 # 才能拿到项目根. 通过 DEBUG_DIR 环境变量可覆盖.
 DEBUG_DIR = os.getenv("DEBUG_DIR", str(BASE_DIR.parent / "debug"))
 # Archives subdir — derived from DEBUG_DIR unless explicitly overridden.
@@ -243,8 +243,8 @@ SPECTACULAR_SETTINGS = {
     "ENUM_NAME_OVERRIDES": {
         # [pending, running, success, failed, cancelled] — chain execution status
         "ChainExecutionStatusEnum": "pipeline.models.TaskChainExecution.Status",
-        # [online, offline, busy, idle] — agent heartbeat status
-        "AgentHeartbeatStatusEnum": "workers.models.Worker.Status",
+        # [online, offline, busy, idle] — worker heartbeat status
+        "WorkerHeartbeatStatusEnum": "workers.models.Worker.Status",
         # [online, offline, busy, error] — device lifecycle status
         "DeviceStatusEnum": "workers.models.Device.Status",
         # [pending, running, completed, failed] — shared by ModelEvaluation

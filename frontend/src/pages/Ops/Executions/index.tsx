@@ -42,7 +42,7 @@ import {
   failExecutionStep,
 } from '@/api/executions';
 import type { ColumnsType } from 'antd/es/table';
-import type { TaskExecution, TaskStep, ExecutionStatus, StepStatus } from '@/types/models';
+import type { TaskExecution, ExecutionStep, ExecutionStatus, StepStatus } from '@/types/models';
 import StepProgressBar, { type StepInfo } from '@/components/Pipeline/StepProgressBar';
 import ExecutionMonitorPanel from './ExecutionMonitorPanel';
 import DailyReportViewer from './analytics/DailyReportViewer';
@@ -157,7 +157,7 @@ export function ExecutionsPage() {
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null] | null>();
   const [expandedRowKeys, setExpandedRowKeys] = useState<number[]>([]);
-  const [stepsMap, setStepsMap] = useState<Record<number, { steps: TaskStep[]; total: number; completed: number }>>({});
+  const [stepsMap, setStepsMap] = useState<Record<number, { steps: ExecutionStep[]; total: number; completed: number }>>({});
   const [monitoringExecutionId, setMonitoringExecutionId] = useState<number | null>(null);
   const [monitoringAgentId, setMonitoringAgentId] = useState<string | undefined>();
   const [monitoringSteps, setMonitoringSteps] = useState<StepInfo[]>([]);
@@ -248,7 +248,7 @@ export function ExecutionsPage() {
     }
   };
 
-  const convertStepsToStepInfo = (taskSteps: TaskStep[]): StepInfo[] => {
+  const convertStepsToStepInfo = (taskSteps: ExecutionStep[]): StepInfo[] => {
     return taskSteps.map((ts) => {
       const rawStatus: string = ts.status ?? '';
       const mappedStatus: StepStatus = rawStatus as StepStatus;
@@ -257,7 +257,7 @@ export function ExecutionsPage() {
       // REST /steps/ 端点会返回 error_code 字段; 但 OpenAPI schema 未同步更新,
       // 此处通过类型扩展访问 ts.error_code, 让历史执行也能展示多语言错误码 Tag,
       // 与 WS 实时事件 (handleStepUpdate 提取 error_code) 对称。
-      const tsWithErrorCode = ts as TaskStep & { error_code?: string };
+      const tsWithErrorCode = ts as ExecutionStep & { error_code?: string };
       return {
         index: ts.step_index,
         name: ts.step_name,
@@ -337,7 +337,7 @@ export function ExecutionsPage() {
     setInterveneModal({ open: true, action, executionId });
   };
 
-  const stepColumns: ColumnsType<TaskStep> = [
+  const stepColumns: ColumnsType<ExecutionStep> = [
     { title: t('executions.col_step_index'), dataIndex: 'step_index', key: 'step_index', width: 60 },
     { title: t('executions.col_step_name'), dataIndex: 'name', key: 'name', width: 160, ellipsis: true },
     { title: t('executions.col_description'), dataIndex: 'description', key: 'description', ellipsis: true },

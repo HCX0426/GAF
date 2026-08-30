@@ -9,7 +9,7 @@ error propagation, and device switching semantics.
 from unittest.mock import MagicMock, patch
 
 import pytest
-from core.config import AgentConfig, RetryConfig
+from core.config import WorkerConfig, RetryConfig
 from core.orchestrator import TaskOrchestrator, TaskState
 from core.result import fail_result, success_result
 from engine.context import PipelineState
@@ -44,8 +44,8 @@ def _make_image_processor():
 
 
 def _make_config():
-    """Build an AgentConfig with fast retry settings for test speed."""
-    cfg = AgentConfig()
+    """Build an WorkerConfig with fast retry settings for test speed."""
+    cfg = WorkerConfig()
     cfg.retry_config = RetryConfig(
         max_retries=2, base_delay=0.001, max_delay=0.005, backoff_factor=1.0
     )

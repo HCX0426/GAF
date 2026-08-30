@@ -9,8 +9,8 @@ Functions:
 - create_worker_token: create Worker + generate raw token (hash + preview stored)
 - list_worker_tokens: list all workers with token preview
 - revoke_worker_token: delete Worker by pk
-- get_agent_for_device_check: get Worker for GameAccount login test
-- is_agent_offline: status helper (replaces Worker.Status.OFFLINE ref in accounts)
+- get_worker_for_device_check: get Worker for GameAccount login test
+- is_worker_offline: status helper (replaces Worker.Status.OFFLINE ref in accounts)
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ def create_worker_token(name: str, permissions: list[str]) -> tuple[Worker, str]
     """Create a new Worker record with a generated token.
 
     Args:
-        name: Human-readable agent name (stored as hostname).
+        name: Human-readable worker name (stored as hostname).
         permissions: List of permission strings (stored in capabilities.permissions).
 
     Returns:
@@ -36,7 +36,7 @@ def create_worker_token(name: str, permissions: list[str]) -> tuple[Worker, str]
     token = secrets.token_urlsafe(32)
     agent_id = f"agent-{secrets.token_hex(8)}"
 
-    agent = Worker.objects.create(
+    worker = Worker.objects.create(
         agent_id=agent_id,
         hostname=name,
         worker_token_hash=hash_token(token),
@@ -44,7 +44,7 @@ def create_worker_token(name: str, permissions: list[str]) -> tuple[Worker, str]
         status=Worker.Status.OFFLINE,
         capabilities={'permissions': permissions},
     )
-    return agent, token
+    return worker, token
 
 
 def list_worker_tokens() -> list[dict[str, Any]]:
@@ -54,18 +54,18 @@ def list_worker_tokens() -> list[dict[str, Any]]:
         List of dicts suitable for WorkerTokenListSerializer. Never includes
         raw token values — only the stored preview.
     """
-    agents = Worker.objects.all().order_by('-created_at')
+    workers = Worker.objects.all().order_by('-created_at')
     return [
         {
-            'id': agent.id,
-            'agent_id': agent.agent_id,
-            'name': agent.hostname,
-            'status': agent.status,
-            'token_preview': agent.worker_token_preview or '',
-            'permissions': agent.capabilities.get('permissions', []),
-            'created_at': agent.created_at,
+            'id': worker.id,
+            'agent_id': worker.agent_id,
+            'name': worker.hostname,
+            'status': worker.status,
+            'token_preview': worker.worker_token_preview or '',
+            'permissions': worker.capabilities.get('permissions', []),
+            'created_at': worker.created_at,
         }
-        for agent in agents
+        for worker in workers
     ]
 
 
@@ -80,14 +80,14 @@ def revoke_worker_token(pk: int) -> Worker | None:
         responsible for audit logging using the returned instance.
     """
     try:
-        agent = Worker.objects.get(pk=pk)
+        worker = Worker.objects.get(pk=pk)
     except Worker.DoesNotExist:
         return None
-    agent.delete()
-    return agent
+    worker.delete()
+    return worker
 
 
-def get_agent_for_device_check(device_id: int) -> Worker | None:
+def get_worker_for_device_check(device_id: int) -> Worker | None:
     """Get a Worker for GameAccount login test (device status check).
 
     Args:
@@ -102,10 +102,10 @@ def get_agent_for_device_check(device_id: int) -> Worker | None:
         return None
 
 
-def is_agent_offline(agent: Worker) -> bool:
-    """Return True if the agent's status is OFFLINE.
+def is_worker_offline(worker: Worker) -> bool:
+    """Return True if the worker's status is OFFLINE.
 
     Helper for callers (e.g. accounts.views.GameAccountViewSet.test_login)
     that need to check offline status without importing ``Worker.Status``.
     """
-    return agent.status == Worker.Status.OFFLINE
+    return worker.status == Worker.Status.OFFLINE

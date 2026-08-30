@@ -1,7 +1,7 @@
 """Per-agent concurrency limiter for task dispatch.
 
 ✅ Status: wired into ``dispatch_task`` (acquire on dispatch) and
-``AgentConsumer`` (release on task.completed / task.failed) plus the
+``WorkerConsumer`` (release on task.completed / task.failed) plus the
 force-terminate paths in ``tasks/services.py`` (cancel / execution /
 heartbeat timeouts). Per-agent and global concurrency caps are now
 enforced end-to-end.

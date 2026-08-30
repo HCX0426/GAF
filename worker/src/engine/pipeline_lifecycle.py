@@ -239,7 +239,7 @@ class PipelineSetupMixin:
                     annotated debug PNGs to debug_dir. Defaults to False.
             debug_dir: Debug image output root. Defaults to "./debug".
             llm_client: Optional WorkerLlmClient instance (set by orchestrator
-                    from AgentConfig). Used by template_match and similar
+                    from WorkerConfig). Used by template_match and similar
                     nodes for debug-mode LLM auto-heal diagnosis per
                     project_rules.md §4.8.2. When None, nodes fall back
                     to the original error without LLM diagnosis.

@@ -43,7 +43,7 @@ import {
   fetchResourcePackVersionHistory,
   type ScanResult,
 } from '@/api/resources';
-import { fetchGameOptions } from '@/api/accounts';
+import { fetchGameOptions, type GameOption } from '@/api/accounts';
 import type { ResourcePack } from '@/types/models';
 import type { ColumnsType } from 'antd/es/table';
 import { classifyError, ErrorType } from '@/utils/errorHandler';
@@ -66,7 +66,7 @@ export function ResourcesPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form] = Form.useForm();
-  const [gameOptions, setGameOptions] = useState<string[]>([]);
+  const [gameOptions, setGameOptions] = useState<GameOption[]>([]);
 
   useEffect(() => {
     loadPacks();
@@ -467,7 +467,7 @@ export function ResourcesPage() {
               showSearch
               allowClear
               placeholder={t('resources.placeholder_target_app')}
-              options={gameOptions.map((g) => ({ label: g, value: g }))}
+              options={gameOptions.map((g) => ({ label: g.name, value: g.name }))}
               filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
             />
           </Form.Item>

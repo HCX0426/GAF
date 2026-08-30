@@ -74,7 +74,7 @@ class DebugImageSaver:
 
     Saves annotated screenshots with side-by-side template thumbnail for
     diagnosing match failures. Disabled by default; enabled via
-    ``AgentConfig.debug_mode`` + ``PipelineContext.debug_mode`` plumbing.
+    ``WorkerConfig.debug_mode`` + ``PipelineContext.debug_mode`` plumbing.
 
     Image-writing failures are non-fatal — they only emit a warning log so
     that the main pipeline flow is never blocked by debug output.

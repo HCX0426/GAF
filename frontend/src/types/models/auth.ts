@@ -56,7 +56,7 @@ export interface ChangePasswordRequest {
 
 /** Worker status type — matches backend Worker.Status choices */
 
-export type AgentStatus = API.components['schemas']['AgentHeartbeatStatusEnum'];
+export type WorkerStatus = API.components['schemas']['WorkerHeartbeatStatusEnum'];
 
 /**
  * Worker info — schema reference (spec-29j Phase 2a, 2026-07-19).

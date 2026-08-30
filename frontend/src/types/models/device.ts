@@ -128,7 +128,7 @@ export interface Resolution {
 
 /** associate Worker summary — matches backend DeviceSerializer.get_agent_info() */
 
-export interface AgentInfo {
+export interface WorkerInfo {
   id: number;
   agent_id: string;
   hostname: string;
@@ -142,7 +142,7 @@ export interface AgentInfo {
  *
  * Migrated from hand-written interface to `API.components['schemas']['Device']`
  * after spec-29k (TD-259 #7 Phase 2d) added `DeviceStatsSchema` to
- * `agents/schema_types.py` and converted `DeviceSerializer.device_stats`
+ * `workers/schema_types.py` and converted `DeviceSerializer.device_stats`
  * from `DictField` to `SerializerMethodField` + `@extend_schema_field(DeviceStatsSchema)`,
  * giving the 10 known stats keys precise types.
  *
@@ -157,7 +157,7 @@ export interface AgentInfo {
  *     - Consumers access `device.device_stats?.screenshot_latency_avg_ms`
  *       (still works — schema type is `number | null`, was `number | null`).
  *   - `agent_info` / `resolution` / `resolved_methods`: schema typed via
- *     `AgentInfoSchema` / `ResolutionSchema` / `ResolvedDeviceMethodsSchema`
+ *     `WorkerInfoSchema` / `ResolutionSchema` / `ResolvedDeviceMethodsSchema`
  *     (spec-29f Phase 1) vs models hand-written. Equivalent shape.
  *   - `status`: schema `DeviceStatusEnum` (`'online' | 'offline' | 'busy'
  *     | 'error'`) vs models `DeviceStatus` (same 4 + `'locked'`). The

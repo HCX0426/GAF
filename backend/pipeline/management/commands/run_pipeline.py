@@ -41,11 +41,11 @@ class Command(BaseCommand):
 
         # Resolve agent (B1 2026-08-27: shared resolver — same selection
         # semantics as TaskViewSet.execute / PipelineViewSet.execute).
-        from tasks.services.agent_resolver import resolve_online_agent
+        from tasks.services.worker_resolver import resolve_online_worker
 
-        agent = resolve_online_agent(agent_id)
+        agent = resolve_online_worker(agent_id)
         if not agent:
-            hint = f'Agent {agent_id} 不存在或不在线' if agent_id else '没有在线 Agent'
+            hint = f'Worker {agent_id} 不存在或不在线' if agent_id else '没有在线 Worker'
             self.stderr.write(hint)
             return
 

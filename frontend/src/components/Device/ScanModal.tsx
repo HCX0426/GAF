@@ -172,7 +172,7 @@ export function ScanModal({ mode, open, onClose, onRegistered }: ScanModalProps)
             name: emItem.name,
             agent_type: 'android',
             adb_serial: emItem.adb_serial || `127.0.0.1:${emItem.adb_port}`,
-            emulator: emItem.emulator,
+            emulator: emItem.emulator_brand,
           };
           if (emItem.resolution) {
             params.resolution = emItem.resolution;

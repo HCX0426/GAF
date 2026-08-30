@@ -135,7 +135,7 @@ export function TaskDetailDrawer({ open, task, onClose, onEdit, onExecute, onClo
         <Descriptions.Item label={t('tasks.detail_game_account')}>
           <Text>
             {(task?.game_account_details?.length ?? 0) > 0
-              ? task!.game_account_details!.map((acc) => `${acc.game_name_display} - ${acc.username}`).join(', ')
+              ? task!.game_account_details!.map((acc) => `${acc.game_name} - ${acc.username}`).join(', ')
               : t('tasks.detail_unbound')}
           </Text>
         </Descriptions.Item>

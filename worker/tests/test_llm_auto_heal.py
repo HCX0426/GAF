@@ -363,7 +363,7 @@ class TestOrchestratorLLMDiagnosis:
 
     def test_returns_none_when_llm_returns_error(self):
         """LLM unavailable — return None (don't attach empty diagnosis)."""
-        from core.config import AgentConfig
+        from core.config import WorkerConfig
         from core.orchestrator import TaskOrchestrator
         from devices.manager import DeviceManager
         from image.processor import ImageProcessor
@@ -371,7 +371,7 @@ class TestOrchestratorLLMDiagnosis:
         orch = TaskOrchestrator(
             device_manager=DeviceManager(),
             image_processor=ImageProcessor(),
-            config=AgentConfig(),
+            config=WorkerConfig(),
         )
 
         mock_llm = MagicMock()
@@ -397,7 +397,7 @@ class TestOrchestratorLLMDiagnosis:
 
     def test_returns_diagnosis_on_success(self):
         """LLM returns valid diagnosis — return it for caller to attach."""
-        from core.config import AgentConfig
+        from core.config import WorkerConfig
         from core.orchestrator import TaskOrchestrator
         from devices.manager import DeviceManager
         from engine.pipeline_engine import PipelineResult, PipelineState
@@ -406,7 +406,7 @@ class TestOrchestratorLLMDiagnosis:
         orch = TaskOrchestrator(
             device_manager=DeviceManager(),
             image_processor=ImageProcessor(),
-            config=AgentConfig(),
+            config=WorkerConfig(),
         )
 
         mock_llm = MagicMock()
@@ -434,7 +434,7 @@ class TestOrchestratorLLMDiagnosis:
 
     def test_returns_none_when_llm_raises(self):
         """diagnose_failure raises — return None (non-blocking)."""
-        from core.config import AgentConfig
+        from core.config import WorkerConfig
         from core.orchestrator import TaskOrchestrator
         from devices.manager import DeviceManager
         from engine.pipeline_engine import PipelineResult, PipelineState
@@ -443,7 +443,7 @@ class TestOrchestratorLLMDiagnosis:
         orch = TaskOrchestrator(
             device_manager=DeviceManager(),
             image_processor=ImageProcessor(),
-            config=AgentConfig(),
+            config=WorkerConfig(),
         )
 
         mock_llm = MagicMock()
@@ -465,7 +465,7 @@ class TestOrchestratorLLMDiagnosis:
 
     def test_error_context_includes_first_failed_step(self):
         """When a step failed, its error_msg is included in error_context.extra."""
-        from core.config import AgentConfig
+        from core.config import WorkerConfig
         from core.orchestrator import TaskOrchestrator
         from devices.manager import DeviceManager
         from engine.pipeline_engine import PipelineResult, PipelineState
@@ -474,7 +474,7 @@ class TestOrchestratorLLMDiagnosis:
         orch = TaskOrchestrator(
             device_manager=DeviceManager(),
             image_processor=ImageProcessor(),
-            config=AgentConfig(),
+            config=WorkerConfig(),
         )
 
         mock_llm = MagicMock()

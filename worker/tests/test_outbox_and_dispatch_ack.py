@@ -12,12 +12,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from client.connection import OUTBOX_MAX_SIZE, WorkerConnection
-from core.config import AgentConfig
+from core.config import WorkerConfig
 
 pytestmark = pytest.mark.unit
 
 
-def _make_config(**overrides) -> AgentConfig:
+def _make_config(**overrides) -> WorkerConfig:
     defaults = {
         "server_url": "ws://127.0.0.1:8000/ws/protocol/agents/",
         "agent_token": "test-token",
@@ -25,7 +25,7 @@ def _make_config(**overrides) -> AgentConfig:
         "heartbeat_interval": 30,
     }
     defaults.update(overrides)
-    return AgentConfig(**defaults)
+    return WorkerConfig(**defaults)
 
 
 def _make_connection(**kwargs):

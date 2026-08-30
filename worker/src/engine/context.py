@@ -122,7 +122,7 @@ class PipelineContext:
     # None in tests / local mode — nodes must fall back to mock behavior.
     monitor_manager: Any | None = None
     # Runtime-only LLM client for debug-mode auto-heal diagnosis (set by
-    # orchestrator from AgentConfig, not serialized). When debug_mode=True
+    # orchestrator from WorkerConfig, not serialized). When debug_mode=True
     # and a node exhausts local auto-heal (e.g. template_match tried all
     # screenshot methods), the node calls llm_client.diagnose_failure()
     # to get an LLM-suggested fix before surfacing the error to the user
@@ -153,7 +153,7 @@ class PipelineContext:
     device_type: str = ""
     transformer_id: str = ""
     # Runtime-only debug visualization toggle (set by orchestrator from
-    # AgentConfig.debug_mode, not serialized). When True, template_match
+    # WorkerConfig.debug_mode, not serialized). When True, template_match
     # and similar nodes write annotated debug PNGs to debug_dir.
     debug_mode: bool = False
     debug_dir: str = "./debug"

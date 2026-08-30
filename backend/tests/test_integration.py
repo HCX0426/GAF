@@ -107,8 +107,8 @@ class AuthFlowIntegrationTests(TestCase):
         self.assertIn('access', _unwrap(resp))
 
 
-class AgentLifecycleIntegrationTests(TestCase):
-    """Agent 全生命周期集成测试：创建→Token生成→状态变更→能力查询"""
+class WorkerLifecycleIntegrationTests(TestCase):
+    """Worker 全生命周期集成测试：创建→Token生成→状态变更→能力查询"""
 
     def setUp(self):
         """初始化操作员用户并认证"""

@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from client.handler import MessageHandler
-from core.config import AgentConfig
+from core.config import WorkerConfig
 from core.orchestrator import TaskOrchestrator
 from engine.pipeline_engine import PipelineEngine
 
@@ -326,7 +326,7 @@ class TestEngineLoadRecoveryWiring:
 class TestOrchestratorRecoveryInjection:
     """orchestrator injects InterfaceRecoveryManager when yaml exists (S2-2.7 P3)."""
 
-    def _orchestrator(self, config: AgentConfig):
+    def _orchestrator(self, config: WorkerConfig):
         dm = MagicMock()
         device = MagicMock()
         device.capture_screen.return_value = MagicMock()
@@ -355,7 +355,7 @@ class TestOrchestratorRecoveryInjection:
         yaml_path.write_text(
             "states:\n  main_menu:\n    is_safe_state: true\n", encoding="utf-8"
         )
-        cfg = AgentConfig()
+        cfg = WorkerConfig()
         cfg.interface_states_path = str(yaml_path)
         orch = self._orchestrator(cfg)
 
@@ -374,7 +374,7 @@ class TestOrchestratorRecoveryInjection:
         assert kwargs.get("max_recovery_retries") == cfg.max_recovery_retries
 
     def test_no_manager_when_yaml_missing(self):
-        cfg = AgentConfig()
+        cfg = WorkerConfig()
         cfg.interface_states_path = "C:/does/not/exist.yaml"
         orch = self._orchestrator(cfg)
 
@@ -394,7 +394,7 @@ class TestOrchestratorRecoveryInjection:
     def test_manager_init_failure_disables_recovery(self, tmp_path):
         yaml_path = tmp_path / "interface_states.yaml"
         yaml_path.write_text("states: {}\n", encoding="utf-8")
-        cfg = AgentConfig()
+        cfg = WorkerConfig()
         cfg.interface_states_path = str(yaml_path)
         orch = self._orchestrator(cfg)
 

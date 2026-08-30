@@ -325,7 +325,7 @@ export function DeviceDetailPanel({ device, open, onClose, onDelete }: DeviceDet
         <Space>
           <Typography.Text strong>{device.name}</Typography.Text>
           <Tag color={STATUS_COLOR_MAP[displayStatus]}>{STATUS_LABEL_MAP[displayStatus]}</Tag>
-          {device.emulator && <Tag color="blue">{device.emulator}</Tag>}
+          {device.emulator_brand && <Tag color="blue">{device.emulator_brand}</Tag>}
         </Space>
       }
       placement="right"

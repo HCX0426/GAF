@@ -97,8 +97,8 @@ def build_error_frame(message, trace_id=None):
     )
 
 
-class AgentRegisterPayloadSerializer(serializers.Serializer):
-    """Agent 注册消息负载校验器，校验 agent_id、能力声明、资源配额等字段。"""
+class WorkerRegisterPayloadSerializer(serializers.Serializer):
+    """Worker 注册消息负载校验器，校验 agent_id、能力声明、资源配额等字段。"""
 
     agent_id = serializers.CharField(max_length=64)
     hostname = serializers.CharField(max_length=255, required=False, default="")
@@ -109,8 +109,8 @@ class AgentRegisterPayloadSerializer(serializers.Serializer):
     resource_quota = serializers.DictField(required=False, default=dict)
 
 
-class AgentHeartbeatPayloadSerializer(serializers.Serializer):
-    """Agent 心跳消息负载校验器，校验资源统计字段。"""
+class WorkerHeartbeatPayloadSerializer(serializers.Serializer):
+    """Worker 心跳消息负载校验器，校验资源统计字段。"""
 
     agent_id = serializers.CharField(max_length=64, required=False)
     resource_stats = serializers.DictField(required=False, default=dict)
@@ -171,8 +171,8 @@ class TaskCancelPayloadSerializer(serializers.Serializer):
 def validate_payload(msg_type, payload):
     """根据消息类型校验负载，返回校验通过的数据。"""
     serializer_map = {
-        MessageType.AGENT_REGISTER: AgentRegisterPayloadSerializer,
-        MessageType.AGENT_HEARTBEAT: AgentHeartbeatPayloadSerializer,
+        MessageType.AGENT_REGISTER: WorkerRegisterPayloadSerializer,
+        MessageType.AGENT_HEARTBEAT: WorkerHeartbeatPayloadSerializer,
         MessageType.TASK_DISPATCH: TaskDispatchPayloadSerializer,
         MessageType.TASK_PROGRESS: TaskProgressPayloadSerializer,
         MessageType.TASK_RESULT: TaskResultPayloadSerializer,

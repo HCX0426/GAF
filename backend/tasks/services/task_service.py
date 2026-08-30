@@ -115,7 +115,7 @@ def execute_task(task, agent_id, user, device_id=None, game_account_id=None,
 
     from resources.models import ResourcePack  # cross-app import isolated
     from tasks.models import TaskExecution
-    from tasks.services.agent_resolver import resolve_online_agent
+    from tasks.services.worker_resolver import resolve_online_worker
     from tasks.tasks import dispatch_task
 
     agent = None
@@ -129,7 +129,7 @@ def execute_task(task, agent_id, user, device_id=None, game_account_id=None,
         # 用「最新心跳的在线 agent」代替 None。单 agent 部署下即是唯一
         # agent, 避免 execution.agent 为 null 导致派发链路语义不清
         # (dispatch_task 侧仍会二次校验 / 覆盖为实际可分配 agent)。
-        agent = resolve_online_agent()
+        agent = resolve_online_worker()
         if agent is None:
             raise TaskBindingError(
                 "无可用在线 Agent, 无法派发执行", status_code=400

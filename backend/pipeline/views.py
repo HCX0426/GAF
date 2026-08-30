@@ -286,11 +286,11 @@ class PipelineViewSet(AuditMixin, viewsets.ModelViewSet):
 
     def _get_online_agent(self, agent_id=None):
         # B1 (2026-08-27): delegate to the shared resolver so Task /
-        # Pipeline / CLI entry points select agents identically (see
-        # tasks/services/agent_resolver.py).
-        from tasks.services.agent_resolver import resolve_online_agent
+        # Pipeline / CLI entry points select workers identically (see
+        # tasks/services/worker_resolver.py).
+        from tasks.services.worker_resolver import resolve_online_worker
 
-        return resolve_online_agent(agent_id)
+        return resolve_online_worker(agent_id)
 
 
 class PipelineValidateView(APIView):

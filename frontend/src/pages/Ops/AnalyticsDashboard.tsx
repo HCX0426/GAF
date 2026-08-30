@@ -17,7 +17,7 @@ import {
   fetchStepHeatmap,
   fetchAnalyticsTrend,
   fetchWeeklyReport,
-  fetchAgentPerformance,
+  fetchWorkerPerformance,
   type TrendItem,
 } from '@/api/ops';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -45,7 +45,7 @@ interface WeeklyReport {
 }
 
 /** Worker performance record item */
-interface AgentPerfItem {
+interface WorkerPerfItem {
   agent_name: string;
   execution_count: number;
   success_rate: number;
@@ -61,7 +61,7 @@ export function AnalyticsDashboardPage() {
   const [stepData, setStepData] = useState<StepHeatItem[]>([]);
   const [trendData, setTrendData] = useState<TrendItem[]>([]);
   const [weeklyReport, setWeeklyReport] = useState<WeeklyReport | null>(null);
-  const [agentData, setAgentData] = useState<AgentPerfItem[]>([]);
+  const [workerData, setWorkerData] = useState<WorkerPerfItem[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -73,18 +73,18 @@ export function AnalyticsDashboardPage() {
   const loadAll = async () => {
     setLoading(true);
     try {
-      const [stepRes, trendRes, weeklyRes, agentRes] = await Promise.allSettled([
+      const [stepRes, trendRes, weeklyRes, workerRes] = await Promise.allSettled([
         fetchStepHeatmap(),
         fetchAnalyticsTrend(),
         fetchWeeklyReport(),
-        fetchAgentPerformance(),
+        fetchWorkerPerformance(),
       ]);
 
       if (stepRes.status === 'fulfilled') setStepData(Array.isArray(stepRes.value) ? stepRes.value : []);
       if (trendRes.status === 'fulfilled') setTrendData(Array.isArray(trendRes.value) ? trendRes.value : []);
       if (weeklyRes.status === 'fulfilled' && typeof weeklyRes.value === 'object' && weeklyRes.value !== null)
         setWeeklyReport(weeklyRes.value as WeeklyReport);
-      if (agentRes.status === 'fulfilled') setAgentData(Array.isArray(agentRes.value) ? agentRes.value : []);
+      if (workerRes.status === 'fulfilled') setWorkerData(Array.isArray(workerRes.value) ? workerRes.value : []);
 
       // calculate summary stats — backend trend entries use execution_count +
       // success_rate; success/failed are derived (success_rate is percent).
@@ -345,7 +345,7 @@ export function AnalyticsDashboardPage() {
             <Card title={t('analytics.card_agent')}>
               <Table
                 columns={agentColumns}
-                dataSource={agentData || []}
+                dataSource={workerData || []}
                 rowKey="agent_name"
                 size="small"
                 pagination={false}

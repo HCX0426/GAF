@@ -40,12 +40,12 @@ import {
   fetchTaskStats,
   cleanupData,
   generateDiagnosticPack,
-  fetchAgentDebug,
-  updateAgentDebug,
+  fetchWorkerDebug,
+  updateWorkerDebug,
   fetchWindowBackgroundWait,
   updateWindowBackgroundWait,
   type TaskStats,
-  type AgentDebugConfig,
+  type WorkerDebugConfig,
   type WindowBackgroundWaitConfig,
 } from '@/api/settings';
 import InfraHealthPanel from '@/components/Settings/InfraHealthPanel';
@@ -389,9 +389,9 @@ function DebugSettingsTab() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Worker debug mode state (backend AppSettings, not localStorage)
-  const [agentDebug, setAgentDebug] = useState<AgentDebugConfig>({ enabled: false, dir: 'debug' });
-  const [agentDebugLoading, setAgentDebugLoading] = useState(false);
-  const [agentDebugSaving, setAgentDebugSaving] = useState(false);
+  const [workerDebug, setWorkerDebug] = useState<WorkerDebugConfig>({ enabled: false, dir: 'debug' });
+  const [workerDebugLoading, setWorkerDebugLoading] = useState(false);
+  const [workerDebugSaving, setWorkerDebugSaving] = useState(false);
 
   // Window background wait state (backend AppSettings singleton upsert)
   const [windowBgWait, setWindowBgWait] = useState<WindowBackgroundWaitConfig>({
@@ -405,18 +405,18 @@ function DebugSettingsTab() {
   /** Fetch agent debug config from backend on mount */
   useEffect(() => {
     let cancelled = false;
-    setAgentDebugLoading(true);
-    fetchAgentDebug()
+    setWorkerDebugLoading(true);
+    fetchWorkerDebug()
       .then((cfg) => {
-        if (!cancelled) setAgentDebug(cfg);
+        if (!cancelled) setWorkerDebug(cfg);
       })
       .catch((err) => {
         // spec35 #12: backend may be unavailable; keep defaults. Log the
         // failure so protocol drift is debuggable.
-        console.warn('[SystemSettings] fetchAgentDebug failed:', err);
+        console.warn('[SystemSettings] fetchWorkerDebug failed:', err);
       })
       .finally(() => {
-        if (!cancelled) setAgentDebugLoading(false);
+        if (!cancelled) setWorkerDebugLoading(false);
       });
     return () => {
       cancelled = true;
@@ -424,16 +424,16 @@ function DebugSettingsTab() {
   }, []);
 
   /** Save agent debug config to backend */
-  const handleSaveAgentDebug = async () => {
-    setAgentDebugSaving(true);
+  const handleSaveWorkerDebug = async () => {
+    setWorkerDebugSaving(true);
     try {
-      const updated = await updateAgentDebug(agentDebug);
-      setAgentDebug(updated);
+      const updated = await updateWorkerDebug(workerDebug);
+      setWorkerDebug(updated);
       message.success(t('settings.agent_debug_saved'));
     } catch (err) {
       message.error(classifyError(err).message);
     } finally {
-      setAgentDebugSaving(false);
+      setWorkerDebugSaving(false);
     }
   };
 
@@ -633,7 +633,7 @@ function DebugSettingsTab() {
           </>
         }
         className="gaf-mb-lg"
-        loading={agentDebugLoading}
+        loading={workerDebugLoading}
       >
         <Space orientation="vertical" size="middle" className="gaf-w-full">
           <Alert type="info" showIcon description={t('settings.agent_debug_desc')} className="gaf-mb-sm" />
@@ -645,7 +645,7 @@ function DebugSettingsTab() {
                 {t('settings.agent_debug_enable_desc')}
               </Text>
             </div>
-            <Switch checked={agentDebug.enabled} onChange={(v) => setAgentDebug((prev) => ({ ...prev, enabled: v }))} />
+            <Switch checked={workerDebug.enabled} onChange={(v) => setWorkerDebug((prev) => ({ ...prev, enabled: v }))} />
           </div>
           <div>
             <Text>{t('settings.agent_debug_dir')}</Text>
@@ -654,13 +654,13 @@ function DebugSettingsTab() {
               {t('settings.agent_debug_dir_desc')}
             </Text>
             <Input
-              value={agentDebug.dir}
-              onChange={(e) => setAgentDebug((prev) => ({ ...prev, dir: e.target.value }))}
+              value={workerDebug.dir}
+              onChange={(e) => setWorkerDebug((prev) => ({ ...prev, dir: e.target.value }))}
               placeholder="debug"
               className="gaf-mt-xs"
             />
           </div>
-          <Button type="primary" icon={<SettingOutlined />} loading={agentDebugSaving} onClick={handleSaveAgentDebug}>
+          <Button type="primary" icon={<SettingOutlined />} loading={workerDebugSaving} onClick={handleSaveWorkerDebug}>
             {t('settings.agent_debug_save')}
           </Button>
         </Space>

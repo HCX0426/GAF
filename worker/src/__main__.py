@@ -15,7 +15,7 @@ from typing import Any
 
 from client.connection import WorkerConnection
 from client.handler import MessageHandler
-from core.config import AgentConfig
+from core.config import WorkerConfig
 from core.constants import EventType
 from core.orchestrator import TaskOrchestrator
 from devices.center import DeviceCenter
@@ -235,8 +235,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def build_config(args: argparse.Namespace) -> AgentConfig:
-    """Build AgentConfig from CLI args, loading token from multiple sources.
+def build_config(args: argparse.Namespace) -> WorkerConfig:
+    """Build WorkerConfig from CLI args, loading token from multiple sources.
 
     Token priority: CLI arg > env GAF_AGENT_TOKEN > local encrypted file
     Debug mode priority: CLI --debug > env GAF_DEBUG > config default
@@ -246,7 +246,7 @@ def build_config(args: argparse.Namespace) -> AgentConfig:
     env_debug = os.environ.get("GAF_DEBUG", "").lower() in ("true", "1", "yes")
     debug_mode = cli_debug or env_debug
 
-    return AgentConfig.from_args(
+    return WorkerConfig.from_args(
         server_url=args.server_url,
         agent_token=args.agent_token,
         is_local=args.local,
@@ -433,7 +433,7 @@ def _report_device_status(
         logger.exception("上报设备状态失败: device_id=%s", device_id)
 
 
-async def run_worker(config: AgentConfig, args: argparse.Namespace = None) -> None:
+async def run_worker(config: WorkerConfig, args: argparse.Namespace = None) -> None:
     """Create and start the Agent client with full component initialization.
 
     Initializes DeviceManager, DeviceCenter (auto-discovery),

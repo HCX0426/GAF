@@ -80,7 +80,7 @@ export interface WeeklyReport {
 }
 
 /** Worker performance record item */
-export interface AgentPerfItem {
+export interface WorkerPerfItem {
   agent_name: string;
   execution_count: number;
   success_rate: number;
@@ -105,9 +105,9 @@ export async function fetchWeeklyReport(): Promise<WeeklyReport> {
   return res.data;
 }
 
-/** Fetch agent performance comparison */
-export async function fetchAgentPerformance(): Promise<AgentPerfItem[]> {
-  const res = await client.get<AgentPerfItem[]>('/analytics/agent-performance/');
+/** Fetch worker performance comparison */
+export async function fetchWorkerPerformance(): Promise<WorkerPerfItem[]> {
+  const res = await client.get<WorkerPerfItem[]>('/analytics/agent-performance/');
   return res.data;
 }
 

@@ -16,7 +16,7 @@ related_files:
 - docs/business/tasks/pipeline-design.md
 - backend/protocol/consumers.py
 - backend/protocol/routing.py
-- backend/agents/routing.py
+- backend/workers/routing.py
 - backend/notifications/routing.py
 - worker/src/client/connection.py
 - worker/src/platforms/windows/
@@ -92,7 +92,7 @@ Backend (tasks app)
   │ → transaction.on_commit → dispatch_task.delay
   ▼
 Celery Worker (dispatch_task 统一入口)
-  │ 设备忙/并发/能力检查 → resolve_online_agent 或 WorkerSelector.select
+  │ 设备忙/并发/能力检查 → resolve_online_worker 或 WorkerSelector.select
   │   （TaskChain 节点用 force_agent_id 固定链 Agent, B1 2026-08-27）
   │ → 写 S1 dispatch_sent_at 快照 → group_send task.assign
   ▼
@@ -124,7 +124,7 @@ Frontend /ws/dashboard/ 收 execution_step_update + screenshot_frame
 User (Frontend 设备中心页)
   │ 点击 → POST /api/v2/devices/<id>/click/
   ▼
-Backend (agents app)
+Backend (workers app)
   │ DeviceClickView → 选对应 Agent 的 channel_name
   │ WorkerConsumer.send(device.action)
   ▼

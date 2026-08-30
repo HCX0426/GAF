@@ -289,29 +289,29 @@ export async function generateDiagnosticPack(): Promise<Blob> {
 // ============================================================
 
 /** Worker debug mode config stored as AppSettings(agent_debug). */
-export interface AgentDebugConfig {
+export interface WorkerDebugConfig {
   /** Whether to save annotated screenshots during pipeline execution. */
   enabled: boolean;
   /** Directory under repo root where debug images are organized. */
   dir: string;
 }
 
-const DEFAULT_AGENT_DEBUG: AgentDebugConfig = { enabled: false, dir: 'debug' };
+const DEFAULT_WORKER_DEBUG: WorkerDebugConfig = { enabled: false, dir: 'debug' };
 
-/** Fetch the current agent debug mode config (singleton upsert endpoint). */
-export async function fetchAgentDebug(): Promise<AgentDebugConfig> {
-  const res = await client.get<AgentDebugConfig>('/settings/agent-debug/');
+/** Fetch the current worker debug mode config (singleton upsert endpoint). */
+export async function fetchWorkerDebug(): Promise<WorkerDebugConfig> {
+  const res = await client.get<WorkerDebugConfig>('/settings/agent-debug/');
   // Merge with defaults to ensure both fields are present
-  return { ...DEFAULT_AGENT_DEBUG, ...res.data };
+  return { ...DEFAULT_WORKER_DEBUG, ...res.data };
 }
 
-/** Update the agent debug mode config (POST = upsert, no id needed). */
-export async function updateAgentDebug(config: AgentDebugConfig): Promise<AgentDebugConfig> {
-  const res = await client.post<AgentDebugConfig>('/settings/agent-debug/', {
+/** Update the worker debug mode config (POST = upsert, no id needed). */
+export async function updateWorkerDebug(config: WorkerDebugConfig): Promise<WorkerDebugConfig> {
+  const res = await client.post<WorkerDebugConfig>('/settings/agent-debug/', {
     enabled: config.enabled,
     dir: config.dir || 'debug',
   });
-  return { ...DEFAULT_AGENT_DEBUG, ...res.data };
+  return { ...DEFAULT_WORKER_DEBUG, ...res.data };
 }
 
 // ============================================================

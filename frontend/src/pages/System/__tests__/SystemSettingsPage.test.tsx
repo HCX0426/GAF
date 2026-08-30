@@ -12,8 +12,8 @@ vi.mock('@/api/settings', () => ({
   fetchTaskStats: vi.fn().mockResolvedValue({}),
   cleanupData: vi.fn(),
   generateDiagnosticPack: vi.fn(),
-  fetchAgentDebug: vi.fn().mockResolvedValue({}),
-  updateAgentDebug: vi.fn(),
+  fetchWorkerDebug: vi.fn().mockResolvedValue({}),
+  updateWorkerDebug: vi.fn(),
   fetchWindowBackgroundWait: vi.fn().mockResolvedValue({}),
   updateWindowBackgroundWait: vi.fn(),
 }));

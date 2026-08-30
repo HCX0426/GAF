@@ -201,7 +201,7 @@ class PipelineNodeExecutionMixin:
             last_result: 节点上一次 execute() 的失败结果.
             retry_cfg: 重试配置, 格式::
                 {"max_retries": int, "base_delay": float, "backoff_factor": float}
-                缺省字段用 AgentConfig 默认值 (与 chain _handle_retry 一致).
+                缺省字段用 WorkerConfig 默认值 (与 chain _handle_retry 一致).
 
         Returns:
             (最终结果, 实际重试次数). 重试次数 0 表示未重试.

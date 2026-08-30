@@ -31,8 +31,8 @@ from scheduler.models import GameAccountRotation
 from scheduler.serializers import GameAccountRotationSerializer
 from workers.services import (
     create_worker_token,
-    get_agent_for_device_check,
-    is_agent_offline,
+    get_worker_for_device_check,
+    is_worker_offline,
     list_worker_tokens,
     revoke_worker_token,
 )
@@ -1312,14 +1312,14 @@ class GameAccountViewSet(AuditMixin, viewsets.ModelViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         device_id = serializer.validated_data['device_id']
-        device = get_agent_for_device_check(device_id)
+        device = get_worker_for_device_check(device_id)
         if device is None:
             return Response(
                 {'success': False, 'message': '设备不存在'},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        if is_agent_offline(device):
+        if is_worker_offline(device):
             return Response({
                 'success': False,
                 'message': '设备离线，无法执行测试登录',

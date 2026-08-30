@@ -6,7 +6,7 @@ cannot infer structure from a method's return value. The inline serializers
 below give Spectacular explicit field definitions so the generated OpenAPI
 schema matches the actual JSON response shape.
 
-Kept in a dedicated module so `agents/serializers.py` stays focused on
+Kept in a dedicated module so `workers/serializers.py` stays focused on
 serialization logic. Importing this module has no side effects (no model
 imports) so it is safe to load at module-init time without risking circular
 imports.
@@ -15,12 +15,12 @@ imports.
 from rest_framework import serializers
 
 
-class AgentInfoSchema(serializers.Serializer):
+class WorkerInfoSchema(serializers.Serializer):
     """Schema for `DeviceSerializer.get_agent_info` return value.
 
     Mirrors the dict returned by `DeviceSerializer.get_agent_info` (a
-    6-field summary of the related Agent). `ip_address` and
-    `last_heartbeat` are nullable on the Agent model.
+    6-field summary of the related Worker). `ip_address` and
+    `last_heartbeat` are nullable on the Worker model.
     """
 
     id = serializers.IntegerField(read_only=True)

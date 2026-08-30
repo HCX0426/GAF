@@ -1,20 +1,20 @@
-# agents/services package — Service layer for agent & device business logic.
+# workers/services package — Service layer for worker & device business logic.
 #
 # Phase 1 (2026-08-08): Extract device health-check, status management,
 # and screenshot method detection from flat views.py into domain-specific
 # service classes. Views become thin delegates that handle HTTP concerns
 # (request/response) while services handle business rules.
 #
-# The original agents/services.py was renamed to agents/agent_service.py to
+# The original agents/services.py was renamed to workers/worker_service.py to
 # avoid shadowing the services/ package directory. All exports are re-exported
 # here for backward compatibility.
 
 # Device service
-# Worker token services (from the original agents/services.py → agent_service.py)
-from workers.agent_service import (
+# Worker token services (from the original agents/services.py → worker_service.py)
+from workers.worker_service import (
     create_worker_token,
-    get_agent_for_device_check,
-    is_agent_offline,
+    get_worker_for_device_check,
+    is_worker_offline,
     list_worker_tokens,
     revoke_worker_token,
 )
@@ -39,6 +39,6 @@ __all__ = [
     "create_worker_token",
     "list_worker_tokens",
     "revoke_worker_token",
-    "get_agent_for_device_check",
-    "is_agent_offline",
+    "get_worker_for_device_check",
+    "is_worker_offline",
 ]

@@ -7825,30 +7825,6 @@ export interface components {
             is_active?: boolean;
         };
         /**
-         * @description * `online` - Online
-         *     * `offline` - Offline
-         *     * `busy` - Busy
-         *     * `idle` - Idle
-         * @enum {string}
-         */
-        AgentHeartbeatStatusEnum: "online" | "offline" | "busy" | "idle";
-        /**
-         * @description Schema for `DeviceSerializer.get_agent_info` return value.
-         *
-         *     Mirrors the dict returned by `DeviceSerializer.get_agent_info` (a
-         *     6-field summary of the related Agent). `ip_address` and
-         *     `last_heartbeat` are nullable on the Agent model.
-         */
-        AgentInfoSchema: {
-            readonly id: number;
-            readonly agent_id: string;
-            readonly hostname: string;
-            readonly ip_address: string | null;
-            readonly status: string;
-            /** Format: date-time */
-            readonly last_heartbeat: string | null;
-        };
-        /**
          * @description * `pending` - Pending
          *     * `running` - Running
          *     * `completed` - Completed
@@ -8377,7 +8353,7 @@ export interface components {
              * @description 设备所属的 Agent 记录
              */
             agent?: number | null;
-            readonly agent_info: components["schemas"]["AgentInfoSchema"] | null;
+            readonly agent_info: components["schemas"]["WorkerInfoSchema"] | null;
             /**
              * 分辨率宽
              * Format: int64
@@ -12229,7 +12205,7 @@ export interface components {
              *     * `busy` - Busy
              *     * `idle` - Idle
              */
-            status?: components["schemas"]["AgentHeartbeatStatusEnum"];
+            status?: components["schemas"]["WorkerHeartbeatStatusEnum"];
             /**
              * 最后心跳时间
              * Format: date-time
@@ -14280,7 +14256,7 @@ export interface components {
              *     * `busy` - Busy
              *     * `idle` - Idle
              */
-            status?: components["schemas"]["AgentHeartbeatStatusEnum"];
+            status?: components["schemas"]["WorkerHeartbeatStatusEnum"];
             /**
              * 最后心跳时间
              * Format: date-time
@@ -14324,6 +14300,30 @@ export interface components {
              */
             readonly updated_at: string;
         };
+        /**
+         * @description * `online` - Online
+         *     * `offline` - Offline
+         *     * `busy` - Busy
+         *     * `idle` - Idle
+         * @enum {string}
+         */
+        WorkerHeartbeatStatusEnum: "online" | "offline" | "busy" | "idle";
+        /**
+         * @description Schema for `DeviceSerializer.get_agent_info` return value.
+         *
+         *     Mirrors the dict returned by `DeviceSerializer.get_agent_info` (a
+         *     6-field summary of the related Worker). `ip_address` and
+         *     `last_heartbeat` are nullable on the Worker model.
+         */
+        WorkerInfoSchema: {
+            readonly id: number;
+            readonly agent_id: string;
+            readonly hostname: string;
+            readonly ip_address: string | null;
+            readonly status: string;
+            /** Format: date-time */
+            readonly last_heartbeat: string | null;
+        };
         /** @description Agent 信息序列化器，包含全部字段。 */
         WorkerRequest: {
             /**
@@ -14355,7 +14355,7 @@ export interface components {
              *     * `busy` - Busy
              *     * `idle` - Idle
              */
-            status?: components["schemas"]["AgentHeartbeatStatusEnum"];
+            status?: components["schemas"]["WorkerHeartbeatStatusEnum"];
             /**
              * 最后心跳时间
              * Format: date-time

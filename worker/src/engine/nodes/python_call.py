@@ -6,7 +6,7 @@ interface-recovery-design.md §13.
 调用指定函数。函数签名契约:
     def my_function(device, context, **kwargs) -> dict
 
-模块路径相对 custom_tasks_base_dir 解析 (AgentConfig.custom_tasks_base_dir,
+模块路径相对 custom_tasks_base_dir 解析 (WorkerConfig.custom_tasks_base_dir,
 默认 "." — 项目根目录)。路径校验防止逃逸 (§13.6)。
 
 超时采用协作式中断: 主线程等 timeout 秒, 超时设 cancel_event 标志位,

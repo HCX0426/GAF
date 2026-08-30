@@ -243,7 +243,7 @@ verified_baseline: >
 | P3 | 高危 | `C-default-routine` | 高 | `default_routine`→`default_task_chain` + 端点 | ✅ 已完成 2026-08-29 |
 | P3 | 高危 | `C-taskstep-merge` | 高 | `TaskStep` 合并入 `ExecutionStep` | ✅ 已完成 2026-08-30 |
 | P3 | 高危 | `C-task-assign` | 高 | `task.assign` 帧名统一 + alias | ✅ 已完成 2026-08-29 |
-| P4 | 最高危（Agent→Worker 全量） | `G`（含 `C-agentsession` 的 `WorkerSession` 改名 + `E` 概念落地） | 高 | `Agent` 模型/`backend/agents`→`backend/workers`/`agent/`→`worker/` + 全部 `Agent*` 符号 + 前端类型重生成 |
+| P4 | 最高危（Agent→Worker 全量） | `G`（含 `C-agentsession` 的 `WorkerSession` 改名 + `E` 概念落地） | 高 | `Agent` 模型/`backend/agents`→`backend/workers`/`agent/`→`worker/` + 全部 `Agent*` 符号 + 前端类型重生成 | ✅ 已完成 2026-08-30（架构文档 sync 并入 D/OQ-10 章） |
 | P5 | 文档收口（反映最终命名） | `D`, `F`（可并行） | 中/低 | D: overview/features/子文档修正 + Worker/Agent 术语章；F: device_bridge + Device 抽象命名 |
 
 **依赖与合并说明**：

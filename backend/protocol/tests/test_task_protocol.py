@@ -21,12 +21,12 @@ from protocol.schemas import (
     TaskState,
 )
 from protocol.serializers import (
-    AgentHeartbeatPayloadSerializer,
-    AgentRegisterPayloadSerializer,
     TaskCancelPayloadSerializer,
     TaskDispatchPayloadSerializer,
     TaskProgressPayloadSerializer,
     TaskResultPayloadSerializer,
+    WorkerHeartbeatPayloadSerializer,
+    WorkerRegisterPayloadSerializer,
     serialize_frame,
     validate_payload,
 )
@@ -119,12 +119,12 @@ class TestJsonSchemas(TestCase):
         )
 
 
-class TestAgentRegisterPayloadSerializer(TestCase):
+class TestWorkerRegisterPayloadSerializer(TestCase):
     """测试 Agent 注册负载序列化器。"""
 
     def test_valid_minimal_payload(self):
         """验证最小合法负载（仅 agent_id）通过校验。"""
-        serializer = AgentRegisterPayloadSerializer(data={"agent_id": "agent-001"})
+        serializer = WorkerRegisterPayloadSerializer(data={"agent_id": "agent-001"})
         self.assertTrue(serializer.is_valid(), serializer.errors)
 
     def test_valid_full_payload(self):
@@ -142,32 +142,32 @@ class TestAgentRegisterPayloadSerializer(TestCase):
             },
             "resource_quota": {"max_concurrent_tasks": 2, "max_memory_mb": 4096},
         }
-        serializer = AgentRegisterPayloadSerializer(data=payload)
+        serializer = WorkerRegisterPayloadSerializer(data=payload)
         self.assertTrue(serializer.is_valid(), serializer.errors)
         self.assertEqual(serializer.validated_data["agent_id"], "agent-001")
         self.assertEqual(serializer.validated_data["capabilities"]["screenshot_methods"], ["pyautogui", "dxcam"])
 
     def test_missing_agent_id(self):
         """验证缺少 agent_id 校验失败。"""
-        serializer = AgentRegisterPayloadSerializer(data={"hostname": "test"})
+        serializer = WorkerRegisterPayloadSerializer(data={"hostname": "test"})
         self.assertFalse(serializer.is_valid())
         self.assertIn("agent_id", serializer.errors)
 
     def test_default_values(self):
         """验证默认值填充。"""
-        serializer = AgentRegisterPayloadSerializer(data={"agent_id": "agent-002"})
+        serializer = WorkerRegisterPayloadSerializer(data={"agent_id": "agent-002"})
         self.assertTrue(serializer.is_valid())
         self.assertEqual(serializer.validated_data["hostname"], "")
         self.assertEqual(serializer.validated_data["capabilities"], {})
         self.assertEqual(serializer.validated_data["resource_quota"], {})
 
 
-class TestAgentHeartbeatPayloadSerializer(TestCase):
+class TestWorkerHeartbeatPayloadSerializer(TestCase):
     """测试 Agent 心跳负载序列化器。"""
 
     def test_valid_empty_payload(self):
         """验证空负载通过校验。"""
-        serializer = AgentHeartbeatPayloadSerializer(data={})
+        serializer = WorkerHeartbeatPayloadSerializer(data={})
         self.assertTrue(serializer.is_valid(), serializer.errors)
 
     def test_valid_full_payload(self):
@@ -182,13 +182,13 @@ class TestAgentHeartbeatPayloadSerializer(TestCase):
             },
             "status": "busy",
         }
-        serializer = AgentHeartbeatPayloadSerializer(data=payload)
+        serializer = WorkerHeartbeatPayloadSerializer(data=payload)
         self.assertTrue(serializer.is_valid(), serializer.errors)
         self.assertEqual(serializer.validated_data["status"], "busy")
 
     def test_invalid_status_choice(self):
         """验证非法 status 值被拒绝。"""
-        serializer = AgentHeartbeatPayloadSerializer(data={"status": "unknown_status"})
+        serializer = WorkerHeartbeatPayloadSerializer(data={"status": "unknown_status"})
         self.assertFalse(serializer.is_valid())
         self.assertIn("status", serializer.errors)
 

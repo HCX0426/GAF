@@ -18,7 +18,7 @@ from typing import Any
 from urllib.parse import urlencode, urlparse, urlunparse
 
 import websockets
-from core.config import AgentConfig
+from core.config import WorkerConfig
 from core.constants import ServerStatus
 from core.context_vars import current_user_trace_id
 from core.retry import NETWORK_RETRY_EXCEPTIONS, retry_network
@@ -155,7 +155,7 @@ class WorkerConnection:
 
     def __init__(
         self,
-        config: AgentConfig,
+        config: WorkerConfig,
         resource_monitor: ResourceMonitor | None = None,
         outbox_store: Any | None = None,
     ):
@@ -638,7 +638,7 @@ class WorkerConnection:
         return headers
 
     def _build_ssl_context(self) -> ssl.SSLContext | None:
-        """根据 AgentConfig 构建 SSLContext，支持 CA 证书、客户端证书（mTLS）。
+        """根据 WorkerConfig 构建 SSLContext，支持 CA 证书、客户端证书（mTLS）。
 
         当 server_url 以 wss:// 开头时自动启用 TLS。
 
