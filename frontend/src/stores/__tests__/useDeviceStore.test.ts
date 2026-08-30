@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useDeviceStore } from '@/stores/useDeviceStore';
-import type { Device, DeviceGroup, Agent } from '@/types/models';
+import type { Device, DeviceGroup, Worker } from '@/types/models';
 
 // Mock devices API
 vi.mock('@/api/devices', () => ({
@@ -61,7 +61,7 @@ const makeDevice = (id: number, overrides: Partial<Device> = {}): Device =>
   }) as Device;
 
 const makeGroup = (id: number, name = `Group ${id}`): DeviceGroup => ({ id, name }) as DeviceGroup;
-const makeAgent = (id: number): Agent => ({ id, name: `Agent ${id}` }) as unknown as Agent;
+const makeAgent = (id: number): Worker => ({ id, name: `Agent ${id}` }) as unknown as Worker;
 
 beforeEach(() => {
   useDeviceStore.setState({

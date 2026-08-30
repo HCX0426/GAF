@@ -7,7 +7,7 @@
  */
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { fetchAgents } from '@/api/agents';
-import type { Agent, PaginatedResponse } from '@/types/models';
+import type { Worker, PaginatedResponse } from '@/types/models';
 
 /** Query key factory — stable keys for cache invalidation. */
 export const agentsQueryKeys = {
@@ -22,7 +22,7 @@ export const agentsQueryKeys = {
  * @param enabled - set false to skip the fetch
  */
 export function useAgentsQuery(params?: Record<string, unknown>, enabled = true) {
-  return useQuery<PaginatedResponse<Agent>>({
+  return useQuery<PaginatedResponse<Worker>>({
     queryKey: agentsQueryKeys.list(params),
     queryFn: () => fetchAgents(params),
     enabled,

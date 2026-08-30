@@ -10,7 +10,7 @@ import { DesktopOutlined, WarningFilled, CheckCircleFilled } from '@ant-design/i
 import { useDeviceStore } from '@/stores/useDeviceStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useTranslation, getLocale } from '@/i18n';
-import type { Agent, Device } from '@/types/models';
+import type { Worker, Device } from '@/types/models';
 
 // TD-294 Phase 1: STATUS_COLOR moved to function so it can resolve antd theme tokens.
 function getStatusColor(token: GlobalToken): Record<string, string> {
@@ -23,7 +23,7 @@ function getStatusColor(token: GlobalToken): Record<string, string> {
 }
 
 /** Extract numeric stat from device.device_stats, falling back to agent fields. */
-function getStat(agent: Agent, device: Device | undefined, key: 'cpu' | 'memory' | 'fps'): number | null {
+function getStat(agent: Worker, device: Device | undefined, key: 'cpu' | 'memory' | 'fps'): number | null {
   if (key === 'cpu') {
     const deviceValue = (device?.device_stats as Record<string, unknown> | undefined)?.cpu;
     if (typeof deviceValue === 'number') return deviceValue;
@@ -42,7 +42,7 @@ function getStat(agent: Agent, device: Device | undefined, key: 'cpu' | 'memory'
   return device ? (device.screenshot_fps ?? null) : null;
 }
 
-function isAbnormal(agent: Agent, device?: Device): boolean {
+function isAbnormal(agent: Worker, device?: Device): boolean {
   const cpu = getStat(agent, device, 'cpu');
   const memory = getStat(agent, device, 'memory');
   if (cpu !== null && cpu > 90) return true;
@@ -52,7 +52,7 @@ function isAbnormal(agent: Agent, device?: Device): boolean {
   return false;
 }
 
-function getHealthColor(agent: Agent, device: Device | undefined, token: GlobalToken): string {
+function getHealthColor(agent: Worker, device: Device | undefined, token: GlobalToken): string {
   if (isAbnormal(agent, device)) return token.colorError;
   if (agent.status === 'online') return token.colorSuccess;
   return token.colorTextQuaternary;
@@ -92,14 +92,14 @@ const StatValue = memo(function StatValue({ value }: StatValueProps) {
 });
 
 interface AgentCardProps {
-  agent: Agent;
+  agent: Worker;
   devices: Device[];
 }
 
 /** Compare only the fields that affect rendering to keep the card stable. */
 function agentCardPropsEqual(prev: AgentCardProps, next: AgentCardProps): boolean {
   if (prev.agent.id !== next.agent.id) return false;
-  const agentFields: (keyof Agent)[] = [
+  const agentFields: (keyof Worker)[] = [
     'agent_id',
     'status',
     'hostname',
@@ -255,7 +255,7 @@ const AgentCard = memo(function AgentCard({ agent, devices }: AgentCardProps) {
  * and discovers every window on it — PC windows AND emulator instances are all
  * registered as Device rows under that Agent.
  */
-function findAgentDevices(agent: Agent, devices: Device[]): Device[] {
+function findAgentDevices(agent: Worker, devices: Device[]): Device[] {
   return devices.filter(
     (d) => d.agent === agent.id || d.agent_info?.id === agent.id || d.agent_info?.agent_id === agent.agent_id,
   );

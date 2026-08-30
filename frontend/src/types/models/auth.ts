@@ -59,10 +59,11 @@ export interface ChangePasswordRequest {
 export type AgentStatus = API.components['schemas']['AgentHeartbeatStatusEnum'];
 
 /**
- * Agent info — schema reference (spec-29j Phase 2a, 2026-07-19).
+ * Worker info — schema reference (spec-29j Phase 2a, 2026-07-19).
  *
- * Migrated from hand-written interface to `API.components['schemas']['Agent']`
- * after TD-266 Phase 1 fixed the `capabilities: JSONField` schema regression.
+ * Migrated from hand-written interface to `API.components['schemas']['Worker']`
+ * after TD-266 Phase 1 fixed the `capabilities: JSONField` schema regression
+ * (model renamed Agent -> Worker in naming-g P1).
  *
  * Schema differences vs the pre-migration hand-written interface:
  *   - `ip_address`: schema `string | null` (optional) vs models was `string` (required)
@@ -73,7 +74,7 @@ export type AgentStatus = API.components['schemas']['AgentHeartbeatStatusEnum'];
  * optional chaining / nullish coalescing when accessing them.
  */
 
-export type Agent = API.components['schemas']['Agent'];
+export type Worker = API.components['schemas']['Worker'];
 
 /**
  * Task definition — schema reference (spec-29j Phase 2c, 2026-07-19).

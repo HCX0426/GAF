@@ -25,7 +25,7 @@ import {
   checkCompatibility as apiCheckCompatibility,
 } from '@/api/devices';
 import type {
-  Agent,
+  Worker,
   Device,
   DeviceGroup,
   ScreenshotResponse,
@@ -39,7 +39,7 @@ import type {
 
 /** device Store status API */
 interface DeviceState {
-  agents: Agent[];
+  agents: Worker[];
   devices: Device[];
   groups: DeviceGroup[];
   total: number;
