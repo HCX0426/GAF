@@ -279,7 +279,7 @@ verified_baseline: >
 - **OQ-6 `rotation_rule`/轮换模型** — ✅ **KEEP 双模型**（代码核实最优：共享配置 vs 每会话运行时游标，跨层不可合并）。
 - **OQ-7 "监控任务"分类** — ✅ 不新增；文档加"概念速查"澄清循环≠监控。
 - **OQ-8 "系统运行标志"** — ✅ 文档澄清三块健康面 + Header UI 标签"系统运行状态"→"系统综合状态"（纯文案）；`overall` 逻辑不动。
-- **OQ-9 双设备发现权威** — ⚠️ 设计决策(非重命名)：backend `DeviceScanView`(`scan_all_emulators`) 与 agent `DeviceCenter.auto_discover()` 均写 `agents.Device`(→`workers.Device`)。需定 source-of-truth/触发时机，不在本次重命名范围，单独开设计 spec（批 F-10）。
+- **OQ-9 双设备发现权威** — ✅ **已定方案 A（2026-08-30 用户确认）**：agent WS `device.sync` 为 Device 生命周期单一权威；`DeviceRegisterView` 收敛为设置/校正渠道；统一身份键 `find_device_by_identity()` 两端复用；可选周期重扫 `GAF_AUTO_RESCAN_INTERVAL`（默认 0）。实现 spec = `docs/specs/active/2026-08-30-oq9-device-discovery-authority.md`（原批 F-10 单独立项）。
 - **OQ-10 Worker / Agent 术语拆分** — ✅ **锁定（2026-08-29）**："Agent" 保留给未来 AI 智能体（`backend/gaf_ai` LangGraph agent，其会话 `AgentSession` 保留）；执行节点/进程/客户端/状态/令牌/消费者/视图/运行时/选择器/目录/app 全部改称 **Worker**（批 G）。Device 保持被控设备。三者清晰：Device / Worker / Agent(AI)。
 
 ## 10. 下一步

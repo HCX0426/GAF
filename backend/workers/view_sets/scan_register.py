@@ -26,6 +26,7 @@ from workers.serializers import (
     DeviceSerializer,
 )
 from workers.services import _invalidate_available_methods_cache
+from workers.services.device_identity import find_device_by_identity
 from workers.view_sets.crud import DeviceViewSet
 
 logger = logging.getLogger(__name__)
@@ -419,13 +420,19 @@ class DeviceRegisterView(APIView):
             except Exception as e:
                 logger.warning("ADB status check failed during device registration: %s", e)
 
-        # Deduplication: check for existing device before creating.
-        # R37-P0: priority hwnd (windows) > adb_serial (emulator) > window_title > name+type
-        # Removed the previous `status=OFFLINE` filter that caused online duplicates.
-        device = None
-        emulator_type = data.get("emulator", "")
-        hwnd = data.get("hwnd", "")
+        # Deduplication (OQ-9, 2026-08-30): single identity resolver shared with
+        # the agent device.sync path — no more independent 5-step dedup here.
+        # Priority: hwnd (windows) > adb_serial > emulator_brand+empty serial >
+        # window_title > name+type (see workers/services/device_identity.py).
         window_title = data.get("window_title", "")
+        device = find_device_by_identity(
+            device_type,
+            hwnd=data.get("hwnd", ""),
+            adb_serial=adb_serial,
+            emulator_brand=data.get("emulator", ""),
+            window_title=window_title,
+            name=data["name"],
+        )
 
         # R37-P1: Auto-bind device to GameProfile by window_title (HTTP path).
         # Returns None if window_title is empty OR no GameProfile matches.
@@ -447,41 +454,6 @@ class DeviceRegisterView(APIView):
             )
             auto_game_profile = None
 
-        # 1) Windows device: match by (device_type, window_handle) when hwnd provided
-        if device_type == Device.DeviceType.WINDOWS and hwnd:
-            device = Device.objects.filter(
-                device_type=device_type,
-                window_handle=hwnd,
-            ).first()
-
-        # 2) Emulator: match by adb_serial (most reliable)
-        if not device and adb_serial:
-            device = Device.objects.filter(adb_serial=adb_serial).first()
-
-        # 3) Emulator fuzzy: same emulator type + empty serial (stale entry from config scan)
-        if not device and device_type == Device.DeviceType.EMULATOR and emulator_type:
-            device = Device.objects.filter(
-                device_type=device_type,
-                emulator=emulator_type,
-                adb_serial="",
-            ).first()
-
-        # 4) Windows fallback: match by window_title (same title = same window).
-        #    Catches re-registration when hwnd changed but title is stable.
-        if not device and device_type == Device.DeviceType.WINDOWS and window_title:
-            device = Device.objects.filter(
-                device_type=device_type,
-                extra_info__window_title=window_title,
-            ).first()
-
-        # 5) Last resort: match by name + type (ANY status, not just offline).
-        #    Previous `status=OFFLINE` filter caused online duplicates (R37-P0 bug root cause).
-        if not device:
-            device = Device.objects.filter(
-                name=data["name"],
-                device_type=device_type,
-            ).first()
-
         # Track whether this registration created a new device or updated an
         # existing one, so the WS broadcast can carry the right action verb.
         register_action = "updated" if device else "created"
@@ -498,8 +470,8 @@ class DeviceRegisterView(APIView):
             if not device.adb_serial and adb_serial:
                 device.adb_serial = adb_serial
                 update_fields.append("adb_serial")
-            if not device.emulator_brand and emulator_type:
-                device.emulator_brand = emulator_type
+            if not device.emulator_brand and data.get("emulator"):
+                device.emulator_brand = data["emulator"]
                 update_fields.append("emulator_brand")
             # Re-registration often means the window was reopened and got a new
             # handle. Update window_handle so the device can come back online.
@@ -539,12 +511,12 @@ class DeviceRegisterView(APIView):
                 "status": initial_status,
                 "adb_serial": adb_serial,
                 "window_handle": data.get("hwnd", ""),
-                "emulator": data.get("emulator", ""),
+                "emulator_brand": data.get("emulator", ""),
                 "resolution_width": res_width,
                 "resolution_height": res_height,
                 "extra_info": {
                     "window_title": data.get("window_title", ""),
-                    "registered_via": "scan",
+                    "registered_via": "manual",
                 },
             }
             # R37-P1: auto-bind game_profile on creation if matched.

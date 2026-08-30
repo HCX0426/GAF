@@ -113,6 +113,10 @@ class WorkerConfig:
     # N196: 心跳间隔（秒），从 .env 的 GAF_HEARTBEAT_INTERVAL 读取
     # 后端 HEARTBEAT_OFFLINE_SECONDS 应 >= 3x 此值
     heartbeat_interval: int = int(os.environ.get("GAF_HEARTBEAT_INTERVAL", "10"))
+    # OQ-9/P4: 周期设备重扫间隔（秒）。>0 时后台线程周期 auto_discover +
+    # 重发 device.sync（连接断线后会再次 sync，新设备及时入库）；
+    # 0（默认）= 关闭，仅连接建立时 sync 一次。
+    auto_rescan_interval: int = int(os.environ.get("GAF_AUTO_RESCAN_INTERVAL", "0"))
     # S2-2.7 (2026-08-17): 界面恢复配置 (recovery-design.md §5.2 Step 3).
     # 全部可选, 缺省不启用恢复. interface_states_path 指向 yaml 状态图;
     # orchestrator 在 Path.is_file() 为真时才注入 InterfaceRecoveryManager.

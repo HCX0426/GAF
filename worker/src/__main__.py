@@ -255,6 +255,28 @@ def build_config(args: argparse.Namespace) -> WorkerConfig:
     )
 
 
+async def _auto_rescan_loop(connection, device_manager: DeviceManager, interval_secs: int) -> None:
+    """Periodically re-discover devices and re-sync to the server (OQ-9/P4).
+
+    ``GAF_AUTO_RESCAN_INTERVAL=0`` (default) disables this loop — the
+    connect-time ``device.sync`` remains the baseline lifecycle sync.
+    """
+    while True:
+        await asyncio.sleep(interval_secs)
+        try:
+            if connection is None or not getattr(connection, "connected", False):
+                continue
+            global _device_center
+            if _device_center is not None:
+                _device_center.auto_discover()
+            await connection._sync_devices(device_manager)
+            logger.info("[OQ-9] 周期设备重扫完成 interval=%ds", interval_secs)
+        except asyncio.CancelledError:
+            break
+        except Exception as exc:
+            logger.warning("[OQ-9] 周期设备重扫失败（非致命）: %s", exc)
+
+
 def _setup_devices(device_manager: DeviceManager, args: argparse.Namespace) -> None:
     """Auto-discover and register all available devices.
 
@@ -548,6 +570,13 @@ async def run_worker(config: WorkerConfig, args: argparse.Namespace = None) -> N
             logger.info("设备同步完成")
         except Exception as exc:
             logger.warning("设备同步失败（非致命）: %s", exc)
+
+    # OQ-9/P4: optional periodic re-scan (GAF_AUTO_RESCAN_INTERVAL, default off).
+    if getattr(config, "auto_rescan_interval", 0) > 0:
+        asyncio.create_task(
+            _auto_rescan_loop(connection, device_manager, config.auto_rescan_interval)
+        )
+        logger.info("周期设备重扫已启用: interval=%ds", config.auto_rescan_interval)
 
     try:
         await connection.listen(handler)

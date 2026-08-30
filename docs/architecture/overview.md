@@ -856,6 +856,18 @@ desktop/
 
 > 三者清晰：**Device** / **Worker** / **Agent(AI)**。所有"执行节点语义"的 `Agent` 已归一化为 `Worker`（批 G），仅 AI 智能体保留 `Agent`。
 
+### 11.6 设备发现权威（OQ-9 / F-10）
+
+| 写入源 | 权威 | 触发 | 语义 |
+|--------|------|------|------|
+| **agent WS `device.sync`** | ✅ **生命周期权威** | 连接建立 / 重连 / 可选周期重扫 (`GAF_AUTO_RESCAN_INTERVAL`，默认 0) | 创建设备基线 + 更新基础字段（status/serial/hwnd/归属）；**不覆盖**用户已保存的 name/绑定 |
+| **HTTP `DeviceRegisterView`** | 设置/校正渠道 | 用户扫描→注册（ScanModal） | 手动创建（`registered_via='manual'`）+ 个性化字段（name/绑定/方法）更新 |
+| **`DeviceScanView`** | 只读预览 | 用户点击扫描 | 不写库 |
+
+> **统一身份键**：`workers/services/device_identity.py::find_device_by_identity()` 是两端共用的设备查找（优先级：window_handle > adb_serial > emulator_brand+空serial > window_title > name+type），确保同一物理设备两端写同一个 `Device` 记录（spec `2026-08-30-oq9-device-discovery-authority`）。
+>
+> **冲突仲裁（P-3）**：基础字段（status/serial/hwnd/归属）同步时补缺；个性化字段（name/绑定/方法）手动优先，sync 不 touch。
+
 ---
 
 ---

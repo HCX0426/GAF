@@ -530,6 +530,7 @@ def register_agent_device(agent_id, device_data):
         dict: ``{"id": int, "created": bool, "updated": bool}``.
     """
     from workers.models import Device, Worker  # cross-app import isolated (TD-259 #29)
+    from workers.services.device_identity import find_device_by_identity  # OQ-9
 
     device_type = device_data.get("device_type", "emulator")
     name = device_data.get("name", f"{device_type}-{uuid.uuid4().hex[:6]}")
@@ -579,80 +580,70 @@ def register_agent_device(agent_id, device_data):
         if _reported_status in (Device.Status.ONLINE, Device.Status.OFFLINE, Device.Status.BUSY)
         else Device.Status.ONLINE
     )
-    defaults = {
-        "name": name,
-        "device_type": device_type,
-        "status": _status,
-        "agent": agent,
-        "resolution_width": device_data.get("resolution_width"),
-        "resolution_height": device_data.get("resolution_height"),
-        "emulator": device_data.get("emulator", ""),
-        "extra_info": device_data,
-    }
+    # OQ-9 (2026-08-30): single identity resolver shared with the HTTP
+    # DeviceRegisterView — no more independent 4-branch dedup here.
+    # Priority: window_handle > adb_serial > emulator_brand+empty serial >
+    # window_title > name+type (see workers/services/device_identity.py).
+    emulator_brand = device_data.get("emulator_brand") or device_data.get("emulator", "")
+    device = find_device_by_identity(
+        device_type,
+        hwnd=window_handle,
+        adb_serial=adb_serial,
+        emulator_brand=emulator_brand,
+        window_title=device_data.get("window_title", ""),
+        name=name,
+        agent=agent,
+    )
 
-    # Priority 1: match by adb_serial (most reliable for emulator devices)
-    if adb_serial:
-        defaults["adb_serial"] = adb_serial
-        device, created = Device.objects.update_or_create(
-            adb_serial=adb_serial,
-            defaults=defaults,
-        )
-    # Priority 2: match by window_handle (for window devices)
-    elif window_handle:
-        defaults["window_handle"] = window_handle
-        device, created = Device.objects.update_or_create(
-            window_handle=window_handle,
-            defaults=defaults,
-        )
-    # Priority 2.5 (R37-P0): match by window_title when hwnd is empty.
-    # Same title = same window. Prevents duplicate Device records when
-    # agent reports device without window_handle.
-    elif device_data.get("window_title"):
-        window_title = device_data.get("window_title")
-        device = Device.objects.filter(
+    created = device is None
+    if created:
+        # Agent sync is the lifecycle authority: create the baseline record.
+        # Personalization (name/绑定/方法) is refined later via manual
+        # register or device settings — never overwritten by sync.
+        extra_info = dict(device_data)
+        extra_info["registered_via"] = "agent"
+        device = Device.objects.create(
+            name=name,
             device_type=device_type,
-            extra_info__window_title=window_title,
-        ).first()
-        if device:
-            # Update existing device
-            for key, value in defaults.items():
-                setattr(device, key, value)
-            device.save(update_fields=list(defaults.keys()) + ["updated_at"])
-            created = False
-        else:
-            device = Device.objects.create(**defaults)
-            created = True
-    # Priority 3: fallback to name, but first try to find existing device
-    # by name prefix to avoid creating duplicates with slightly different names
-    else:
-        # Try to find existing device with same name or name prefix
-        # e.g. "LDPlayer" should match "LDPlayer-5555" if same type and agent
-        device = (
-            Device.objects.filter(
-                agent=agent,
-                device_type=device_type,
-            )
-            .filter(
-                Q(name=name)
-                | Q(name__startswith=f"{name}-")
-                | Q(name__startswith=name.rsplit("-", 1)[0] if "-" in name else "")
-            )
-            .first()
-            if agent
-            else Device.objects.filter(name=name).first()
+            status=_status,
+            agent=agent,
+            adb_serial=adb_serial or "",
+            window_handle=window_handle or "",
+            emulator_brand=emulator_brand,
+            resolution_width=device_data.get("resolution_width"),
+            resolution_height=device_data.get("resolution_height"),
+            extra_info=extra_info,
         )
-
-        if device:
-            # Update existing device
-            for key, value in defaults.items():
-                setattr(device, key, value)
-            device.save(update_fields=list(defaults.keys()) + ["updated_at"])
-            created = False
-        else:
-            device, created = Device.objects.update_or_create(
-                name=name,
-                defaults=defaults,
-            )
+    else:
+        # P-3 conflict arbitration: base/lifecycle fields only — never
+        # overwrite a user-saved name; keep the registration source marker.
+        update_fields = ["status", "updated_at"]
+        device.status = _status
+        if adb_serial and not device.adb_serial:
+            device.adb_serial = adb_serial
+            update_fields.append("adb_serial")
+        if window_handle and not device.window_handle:
+            device.window_handle = window_handle
+            update_fields.append("window_handle")
+        if emulator_brand and not device.emulator_brand:
+            device.emulator_brand = emulator_brand
+            update_fields.append("emulator_brand")
+        if device_data.get("resolution_width"):
+            device.resolution_width = device_data["resolution_width"]
+            update_fields.append("resolution_width")
+        if device_data.get("resolution_height"):
+            device.resolution_height = device_data["resolution_height"]
+            update_fields.append("resolution_height")
+        if not device.agent_id and agent:
+            device.agent = agent
+            update_fields.append("agent")
+        extra_info = dict(device.extra_info or {})
+        if "registered_via" not in extra_info:
+            extra_info["registered_via"] = "agent"
+        extra_info.update(device_data)
+        device.extra_info = extra_info
+        update_fields.append("extra_info")
+        device.save(update_fields=update_fields)
 
     # R37-P1: auto-bind device to GameProfile by window_title (WS path).
     # Single post-bind step covering all 4 priority branches above.
