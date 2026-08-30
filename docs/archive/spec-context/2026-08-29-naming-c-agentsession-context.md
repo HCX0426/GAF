@@ -8,7 +8,7 @@ root_cause_if_over: Within baseline (20 min actual vs 120 min baseline)
 {
   "spec": "2026-08-29-naming-c-agentsession",
   "phase": "C-3 P1/P3",
-  "commit_hash": "",
+  "commit_hash": "8ff7889",
   "status": "completed",
   "n151_arch_audit": {
     "step1_schemas": "protocol.AgentSession (WS 会话) renamed WorkerSession; gaf_ai.agent.AgentSession (AI 会话) untouched; FK field agent_session on MessageFrameLog kept (field name not in scope); db_table protocol_agentsession -> protocol_workersession via migration 0004 (RenameModel + AlterModelTable); settings AGENT_2_ENUM key ProtocolAgentSessionStatusEnum -> WorkerSessionStatusEnum",

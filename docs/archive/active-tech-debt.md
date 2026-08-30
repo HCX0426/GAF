@@ -1,7 +1,7 @@
 ---
 summary: 活跃技术债务清单 — 🔧 待修/待办/待决 和 🚧 进行中 条目 (完整详情)
 applies_to: [project]
-last_updated: "2026-08-30 (TD-422 前端类型漂移登记: naming-g P6.1 重生成 OpenAPI 后 tsc 仍有 11 条跨 spec drift)"
+last_updated: "2026-08-30 (TD-422 闭环迁移至 fixed.md; active 全部清零)"
 ---
 
 # Active Tech Debts (待修 / 进行中)
@@ -11,7 +11,7 @@ last_updated: "2026-08-30 (TD-422 前端类型漂移登记: naming-g P6.1 重生
 > 本文件只包含真正活跃的技术债务（🔧 待修/待办/待决 和 🚧 进行中）。
 > 已关闭条目（✅ FIXED / ❌ WONTFIX / ❌ INVALIDATED / ❌ EVALUATED）已迁移到 `fixed.md` 或 `wontfix.md`。
 >
-> **状态**: 🚧 进行中 (TD-422 前端类型漂移待各命名 spec 收口; TD-415~421 已闭环)
+> **状态**: ✅ 全部闭环 (TD-422 已迁移至 fixed.md, 2026-08-30)
 
 ## TD 处理顺序 (2026-07-18 spec-26 强化)
 
@@ -45,21 +45,6 @@ last_updated: "2026-08-30 (TD-422 前端类型漂移登记: naming-g P6.1 重生
 - **验证标准**: <how to verify the fix>
 - **何时修**: <when to fix>
 -->
-
----
-
-## TD-422: 前端类型漂移 11 条 — OpenAPI 重生成后 tsc 仍红 (🔧 待修)
-
-- **状态**: 🔧 待修
-- **优先级**: P1
-- **登记时间**: 2026-08-30
-- **来源**: naming-g P6.1 重生成 OpenAPI (commit 1c25e92) — 生成文件现为真实后端 schema, 不再掩盖既有 drift
-- **症状**: `npx tsc -b` 在 frontend 11 条 error: DeviceDetailPanel emulator×2 (新暴露) / ScanModal emulator×1 / TaskDetailDrawer+Tasks game_name_display×2 / DetailPage default_routine×4 / Executions TaskStep×1 / Resources GameOption×1
-- **根因**: 各 naming-c 系列 spec 后端已改名/改字段 (emulator→emulator_brand, game_name_display, default_routine, TaskStep, GameOption), 前端对应代码/建模未同步; 旧 api.generated.ts 过期掩盖 (head mid-state 快照含旧字段), 手写 models 桶 (TaskStep/GameOption) 缺 re-export
-- **影响**: `npm run build` / typecheck 红; 每轮前端构建触发 (提示 DB 数据字段如 default_routine 成功改名前的工作残留)
-- **修复方案**: 逐条归属修复 — emulator/emulator_brand (naming-c-device-emulator P 前端)、game_name_display (naming-c-* P 前端)、default_routine 前端移除或后端补字段 (naming-c-default-routine 收口时定)、TaskStep/GameOption 桶 re-export 补齐 (naming-c-taskstep-merge/naming-c-* P 前端)。归属各 spec, 不占 naming-g
-- **验证标准**: `npx tsc -b` 0 errors + `npm run build` 绿 (需依赖 spec 各自前端阶段落地后)
-- **何时修**: naming-c-* 各 spec 前端阶段实施时逐条落地; naming-g P7 (全绿验证) 前复核本清单清零
 
 ---
 

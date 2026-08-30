@@ -8,7 +8,7 @@ root_cause_if_over: D/E/F 三批收口在一次 commit（批内连续，无超�
 {
   "spec": "2026-08-29-naming-f-device-bridge",
   "phase": "D-E-F-close",
-  "commit_hash": "",
+  "commit_hash": "73f6d1b",
   "status": "completed",
   "related_specs": [
     "2026-08-29-naming-d-docs",

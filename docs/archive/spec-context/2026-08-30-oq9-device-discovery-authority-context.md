@@ -8,7 +8,7 @@ root_cause_if_over: single-phase implementation with pre-reviewed spec
 {
   "spec": "2026-08-30-oq9-device-discovery-authority",
   "phase": "implement",
-  "commit_hash": "",
+  "commit_hash": "eecd871",
   "status": "completed",
   "n151_arch_audit": {
     "step1_schemas": "方案 A 用户确认 (2026-08-30)：agent WS device.sync 生命周期权威 / HTTP register 设置渠道；统一身份键 find_device_by_identity (优先级 hwnd > adb_serial > emulator_brand+空serial > window_title > name+type)",

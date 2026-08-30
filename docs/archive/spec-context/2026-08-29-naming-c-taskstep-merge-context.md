@@ -1,7 +1,7 @@
 {
   "spec": "2026-08-29-naming-c-taskstep-merge",
   "phase": "C-4",
-  "commit_hash": "",
+  "commit_hash": "e56eec8",
   "status": "completed",
   "n151_arch_audit": {
     "step1_schemas": "Verified: TaskStep/ExecutionStep model contracts, ExecutionStep FK task_result, serializer fields",

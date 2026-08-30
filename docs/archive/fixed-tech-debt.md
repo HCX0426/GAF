@@ -1,7 +1,7 @@
 ---
 summary: 已修复技术债务清单 — ✅ FIXED 条目 (完整详情)
 applies_to: [project]
-last_updated: "2026-08-28 (TD-412 闭环; TD-413 闭环; TD-414 闭环; 2026-08-27 TD-411 闭环; TD-409 闭环; TD-410 闭环; TD-408 闭环; TD-402 闭环; 2026-08-26 TD-400 闭环)"
+last_updated: "2026-08-30 (TD-422 闭环: naming-c-* 前端字段落地 + tsc -b 0 errors)"
 ---
 
 # Fixed Tech Debts
@@ -23,6 +23,7 @@ last_updated: "2026-08-28 (TD-412 闭环; TD-413 闭环; TD-414 闭环; 2026-08-
 | [TD-418](#L) | 审计日志双入口重复 (✅ FIXED 于 2026-08-29, 日志中心审计 tab 移除, 单入口 /system/audit-log, commit d484c39) |
 | [TD-419](#L) | 服务管理页 e2e 缺失 + 日志体系分界文档 (✅ FIXED 于 2026-08-29, e2e spec + handbook 指引, spec P4/P5) |
 | [TD-420](#L) | MonitorRule 模型被游戏 UI 规则占用 (✅ FIXED 于 2026-08-29, rule_kind 字段拆分 monitor/game_ui + 数据迁移 + 4 测试) |
+| [TD-422](#L) | 前端类型漂移 11 条 — OpenAPI 重生成后 tsc 仍红 (✅ FIXED 于 2026-08-30, naming-c-* 前端字段落地 + tsc -b 0 errors) |
 | [TD-421](#L) | 通知中心输入侧缺口 dev 无新事件 (✅ FIXED 于 2026-08-29, 执行失败/event.alert 打点 + chain-health 接口 + 8 测试) |
 | [TD-413](#L) | gaf-orchestrator SKILL.md 27.6KB 瘦身 (✅ FIXED 于 2026-08-28, 27,655B→18,260B, 9 处冗余外迁, sync_skills 通过) |
 | [TD-414](#L) | N209/N210/N211 补 yn-matrices 条目 (✅ FIXED 于 2026-08-28, _testing.md 2 段 + _misc.md 1 段 + 索引同步, doc_health 0) |
@@ -953,5 +954,18 @@ last_updated: "2026-08-28 (TD-412 闭环; TD-413 闭环; TD-414 闭环; 2026-08-
 - **修复**: ① task.result 失败 → EventBus.persist 打点 MonitorEvent (agent 执行失败包含 OCR/模板匹配等真实故障源); ② event.alert 协议打通 (原 TD-134 stub → 持久化); ③ GET /api/v2/monitors/chain-health/ 链路健康指标 (事件计数/最近事件/升级任务痕痕); ④ 前端通知中心空态区分"无告警"vs"链路异常" + 4 语言 i18n
 - **验证**: `backend/protocol/tests/test_notification_chain_puncturing.py` 8 passed (失败打点/成功不打/坏 broadcast 不阻断/event.alert 持久化/severity 映射/帧取数); ruff 通过; 全量 monitors 57 passed
 - **关联**: backend/protocol/consumers.py + monitors/views.py + urls.py; frontend/src/pages/System/Notifications.tsx + api/monitors.ts
+
+## TD-422: 前端类型漂移 11 条 — OpenAPI 重生成后 tsc 仍红 (✅ FIXED — 2026-08-30)
+
+- **状态**: ✅ FIXED (naming-c-* 前端字段落地后 `npx tsc -b` 0 errors)
+- **优先级**: P1
+- **登记时间**: 2026-08-30
+- **修复时间**: 2026-08-30
+- **来源**: naming-g P6.1 重生成 OpenAPI (commit 1c25e92) — 生成文件现为真实后端 schema, 不再掩盖既有 drift
+- **症状**: `npx tsc -b` 在 frontend 11 条 error: DeviceDetailPanel emulator×2 (新暴露) / ScanModal emulator×1 / TaskDetailDrawer+Tasks game_name_display×2 / DetailPage default_routine×4 / Executions TaskStep×1 / Resources GameOption×1
+- **根因**: 各 naming-c 系列 spec 后端已改名/改字段 (emulator→emulator_brand, game_name_display, default_routine, TaskStep, GameOption), 前端对应代码/建模未同步; 旧 api.generated.ts 过期掩盖, 手写 models 桶 (TaskStep/GameOption) 缺 re-export
+- **修复**: 逐条归属修复 — emulator→emulator_brand (C-1, commit 186ad79; DeviceDetailPanel/ScanModal 前端同步) + default_routine→default_task_chain (C-2, commit bb51b42; DetailPage×4 前端同步) + TaskStep 并 ExecutionStep (C-4, commit e56eec8; Executions 前端 + models 桶 re-export) + game_name_display (C-3 AgentSession 前端) + GameOption 桶 re-export (Resources)
+- **验证**: `npx tsc -b` 退出码 0 (2026-08-30 实测) + frontend grep 24 处新字段落地 (13 文件) + `npm run build` 绿
+- **关联**: naming-c-* 各 spec (C-1/C-2/C-4) + naming-g P6.1 (1c25e92); 修复归属各 naming-c spec, 未占用 naming-g P7 验收
 
 <!-- Template:

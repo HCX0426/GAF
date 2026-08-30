@@ -1,7 +1,7 @@
 ---
 summary: GAF 技术债务登记表 — 集中记录所有计划外技术债务 (TD-NNN)
 applies_to: [backend, frontend, agent, project]
-last_updated: 2026-08-26
+last_updated: 2026-08-30
 ---
 
 # GAF 技术债务登记表 (Tech Debt Register)
@@ -21,9 +21,9 @@ last_updated: 2026-08-26
 | 文件 | 内容 | TD 数量 |
 |:---|:---|:---:|
 | [active-tech-debt.md](active-tech-debt.md) | 🔧 待修/待办/待决 和 🚧 进行中 条目（完整详情） | 0 |
-| [fixed-tech-debt.md](fixed-tech-debt.md) | ✅ FIXED 条目（完整详情） | 139 |
+| [fixed-tech-debt.md](fixed-tech-debt.md) | ✅ FIXED 条目（完整详情） | 155 |
 | [wontfix-tech-debt.md](wontfix-tech-debt.md) | ❌ WONTFIX / ❌ INVALIDATED / ❌ EVALUATED 条目（完整详情） | 34 |
-| **合计** | | **173** |
+| **合计** | | **189** |
 
 > **注**: 计数于 2026-08-09 同步: TD-330/TD-335/TD-336 ✅ FIXED 迁移到 fixed.md, active 3→0, fixed 240→243, total 275; active.md 已归档。前一同步: TD-345 ✅ FIXED 迁移到 fixed.md, fixed 239→240, total 274→275; TD-319 完成后由 sync_tech_debt_counts.py 自动维护。
 

@@ -8,7 +8,7 @@ root_cause_if_over: Multi-phase session (P1+P2+P3); cumulative duration tracked 
 {
   "spec": "2026-08-29-naming-g-worker-rename",
   "phase": "G-complete",
-  "commit_hash": "",
+  "commit_hash": "0138fbc",
   "status": "completed",
   "n151_arch_audit": {
     "step1_schemas": "Verified: workers app model Agent -> Worker (CreateModel name normalized from 0001, verbose_name 'Agent' kept); tables agents_agent -> workers_worker, device_groups -> workers_devicegroup (implicit SQLite through-table rename, no extra migration); AgentFactory -> WorkerFactory; all FK strings target final name 'workers.Worker'",
