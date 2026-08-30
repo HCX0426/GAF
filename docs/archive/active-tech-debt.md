@@ -60,6 +60,7 @@ last_updated: "2026-08-31 (TD-423 登记: LLM 多 provider + AI 页签分组)"
 - **修复方案**: 对齐开源两级结构 (Provider[apiKey/baseUrl] → Model[], 集中管理 + 按用途激活 + 每 provider 连通测试): ① LLMConfig 升级为多行/多 provider（或新 LLMProvider 模型 + 迁移）; ② AI 侧边栏分 4 组 (对话/分析/Skill/配置运维); ③ assistant/qa 归一做 N151 架构评估（LangGraph Agent vs QASession 取舍）
 - **验证标准**: 可同时配置 ≥2 个 provider 且互不覆盖; 各 provider 可独立 test 连通 + 一键切换激活; AI 侧边栏分组后导航清晰; (对话归一见独立评估)
 - **何时修**: 用户确认推进时（2026-08-31 已确认"仅评估暂不动"）; 触发点 = 用户明确要落地 AI 多 provider 改造时
+- **实施计划**: 2026-08-31 已产出学习型总纲 spec — `docs/specs/active/2026-08-31-ai-tab-agent-learning-spec.md`（Phase1 多 provider + Phase2 手写 LangGraph/MCP + Phase3 RAG rerank/Agent 评测，含 2026 年 JD 对标与框架选型评估）
 
 ---
 
