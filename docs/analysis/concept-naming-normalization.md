@@ -1,7 +1,7 @@
 ---
 summary: GAF 概念关系与命名归一化评估（最优方案稿；已结合 docs/architecture 全量文档 + backend/agent/frontend 代码核实，结论 = 最优方案，七维 31 分）
 applies_to: ['architecture', 'naming', 'concept', 'evaluation']
-status: draft | 创建: 2026-08-29 | 扩展盘点: 2026-08-29 | 重新整理: 2026-08-29 | 决策采纳: 2026-08-29 | 二次复核+影响面: 2026-08-29 | 结构核查+七维: 2026-08-29 | 融合重整理: 2026-08-29 | 三 agent 目录审计+批 F: 2026-08-29 | Worker/Agent 术语拆分: 2026-08-29
+status: final-archived | 创建: 2026-08-29 | 扩展盘点: 2026-08-29 | 重新整理: 2026-08-29 | 决策采纳: 2026-08-29 | 二次复核+影响面: 2026-08-29 | 结构核查+七维: 2026-08-29 | 融合重整理: 2026-08-29 | 三 agent 目录审计+批 F: 2026-08-29 | Worker/Agent 术语拆分: 2026-08-29 | **全部落地: 2026-08-30（A/B/C/G/E/D/F + OQ-9 spec 完成；本稿随行归档）**
 how_to_use: >
   本文档是"评估稿"，非最终规范。结论稳定后：
   (1) 拆为 docs/specs/active/ 下的归一化 spec（含阶段表）；
@@ -104,7 +104,7 @@ verified_baseline: >
 
 | 概念 | 文档名 | 代码符号 | 状态 | 备注 |
 |------|--------|---------|:---:|------|
-| **Routine** | `default_routine`/`routine.json` | `GameProfile.default_routine` FK→`TaskChain`（`gamestate/models.py:53`） | ⚠️ 别名 | "Routine"=默认 TaskChain |
+| **Routine** | `default_routine`/`routine.json` | `GameProfile.default_routine` FK→`TaskChain`（`gamestate/models.py:53`） | ✅ D11 已解 | C 批已改 `default_task_chain`；文档无 Routine 残留 |
 | **RotationRule** | 核心表"轮换规则(RotationRule)" | 模型 `GameAccountRotation`（`scheduler/models.py:4`） | ❌ 标签≠模型 | 见 §5 |
 | **轮换策略** | overview 3 种 / features 3 种+松散"4 种" | 代码 **4 选** `sequential`/`random`/`by_stamina`/`by_last_executed` | ❌ 两文档均漏 by_last_executed | 见 §4-D7 |
 | **loop_rotation** | — | `UnattendedSession.loop_rotation`+`rotation_index`（每会话运行时）FK→`GameAccountRotation` | ✅ 互补 | 与 GameAccountRotation 非冗余（代码核实最优 KEEP） |
@@ -118,18 +118,18 @@ verified_baseline: >
 | **PerformanceMonitor** | dispatch-flow(Py) / concurrency-design(TS) | **后端类** `gaf_core/perf_monitor.py` + agent `utils/perf_monitor.py` | ❌ 同名异物(实为后端) | 见 §1/§5 |
 | **Dispatcher / TaskDispatcher** | concurrency-design 画框 "TaskDispatcher" | 无此类；实为 `dispatch_task`+`WorkerSelector` | ❌ 幽灵符号 | 见 §5/§1 |
 | **TraceSpan** | — | 代码已删（残骸 43） | ❌ 死概念(仅代码) | 文档无此词，无需改 |
-| **WorkerToken**(原 AgentToken) | 似实体 | `Agent.agent_token_hash`→`Worker.worker_token_hash` 字段 + 端点 | ⚠️ 字段≠实体 | 与 AI `AgentSession.token_hash` 不同物(审计 E-2 修订) |
+| **WorkerToken**(原 AgentToken) | 似实体 | `Agent.agent_token_hash`→`Worker.worker_token_hash` 字段 + 端点 | ✅ D15 已解（G 批 `worker_token_hash`） | 与 AI `AgentSession.token_hash` 不同物(审计 E-2 修订) |
 | **ChainManager** | "链式执行" | `StateMachine` 封装（`chain_manager.py:20`） | ❌ 名不副实 | 见 §5/§1 |
-| **StateMachine** | optimal-solution "373 行" | 实际 `worker/src/core/state_machine.py:64` = 354 行 | ⚠️ 行数漂移 | — |
-| **AuditLog** | overview "models.py:454" | 实际 `accounts/models.py:450` | ⚠️ 行数漂移 | — |
+| **StateMachine** | optimal-solution "373 行" | 实际 `worker/src/core/state_machine.py:64`（现 374 行） | ✅ D16 已解（不再断言动态行数） | — |
+| **AuditLog** | overview "models.py:454" | 实际 `accounts/models.py:450` | ✅ D17 已解 | — |
 | **ScheduledTask** | 列 tasks app | `tasks/models.py:603` | ⚠️ 归属歧义 | — |
 | **Pipeline** | Pipeline(JSON)/PipelineEngine/模式/node_type | 均存在 | ⚠️ 一词四义 | — |
 | **Tag** | overview 在 tasks/resources 两 app 均列裸 `Tag` | **仅 `resources.Tag`（`resources/models.py:166`）** | ⚠️ 文档暗示双 Tag | 单一模型 |
 | **DeviceDiscovery** | `DeviceDiscoveryRegistry` | agent `DeviceCenter.auto_discover`/`EmulatorDiscovery`/`WindowDiscovery` | ⚠️ 双机制 | — |
-| **GafDaemon** | overview "GafDaemon" | `gaf_daemon.py`；`gaf_services.ps1` 委托它 | ❌ 三渲染 | 见 §1/§5 |
+| **GafDaemon** | overview "GafDaemon" | `gaf_daemon.py`；`gaf_services.ps1` 委托它 | ✅ D19 已解（A 批归一：GafDaemon 权威/.py 实现/.ps1 兼容层） | 见 §1/§5 |
 | **Device 抽象三层** | Device(ORM)/DeviceInfo(DTO×2)/DeviceCenter(BaseDevice) | `agents.Device`(`models.py:178`) + `device_bridge`/`agent` 各 DTO | ⚠️ 三抽象 | 见 §1/F 批(审计 F-1/F-2) |
-| **AnomalyPattern** | features `AnomalyPatternPanel` | 无模型（用 `LLMAnalysisResult`） | ❌ 未定义 | 前端-only |
-| **9 个 features-only 概念** | UnattendedStrategy/.../AnomalyPattern | 未在 overview §9 枚举 | ⚠️ 文档缺口 | — |
+| **AnomalyPattern** | features `AnomalyPatternPanel` | 无模型（用 `LLMAnalysisResult`） | ✅ D13 已解（overview §9.7 注前端-only） | 前端-only |
+| **9 个 features-only 概念** | UnattendedStrategy/.../AnomalyPattern | 未在 overview §9 枚举 | ✅ D13 已解（overview §9.7 面板/概念表 2026-08-30） | — |
 
 ## 4. 差异与问题清单（统一，带严重度，已逐条 doc+code 核实）
 
@@ -137,22 +137,22 @@ verified_baseline: >
 |---|------|---------|---------|------|----|
 | D1 | overview:529 / dispatch-flow:609 | `graph.py` DAG 执行 | `PipelineGraph` 在 `parser.py`；`graph.py` DAG 执行+工具**仅测试 import，生产零引用**（外部生产 import=0） | 死路径/未接线 | P0 |
 | D2 | overview:559,790 | `ChainManager 链式执行` | `StateMachine` 封装 | 名不副实 | P0 |
-| D3 | overview:734 | "Windows + Android + 模拟器" | Android 归入 emulator（L27 用 Windows/macOS/Linux，自身两说） | 措辞不精确 | P1 |
+| D3 | overview:737 | "Windows + Android + 模拟器" | Android 归入 emulator | 措辞不精确 | P1 ✅ 2026-08-30 已改（device_type∈{windows,emulator}） |
 | D4 | overview:505 | gamestate 列 GameState/GameVersionCheck/GameProfile（评估稿曾误记 GameStateRule） | 已收敛 `game_profile` FK（spec 已归档） | 时序滞后 | 已解 |
-| D5 | （缺章） | 无"线性/链式/循环" | 用户分类口径 | 缺口 | P1 |
+| D5 | （缺章） | 无"线性/链式/循环" | 用户分类口径 | 缺口 | P1 ✅ 2026-08-30（overview §11.7 任务分类章） |
 | D7 | overview:121,207（"RotationRule"标签+3 中文类型）/ features:269,317（sequential/random/by_stamina + 松散"4 种策略"） | 文档两处均列 3 种且 **缺失 `by_last_executed`**；代码实际 **4 选**（scheduler/migrations/0001） | 标签≠模型 + 两文档均漏 1 类型 | P1 |
 | D8 | overview:474 vs features:302 | TaskStep / ExecutionStep | `TaskStep`=遗留死模型；`ExecutionStep`=运行期权威（代码核实 MERGE） | 双模型债 | P0 |
 | D9 | overview:496 vs features:526 | BackupRecord / BackupJob | 均无 ORM 模型（ZIP API） | 捏造 | P1 |
 | D10 | overview:482 vs :502 | AgentSession 属 gaf_ai/protocol | 两独立模型：Worker WS 会话(protocol) / AI 会话(gaf_ai)（代码核实改名） | 双重归属 | P0 |
-| D11 | overview:149,464,739 | Routine / routine.json | = 默认 TaskChain | 别名 | P1 |
-| D12 | overview §9.1 tasks app 与 resources app 两处均列裸 `Tag` | 仅 resources.Tag 一个（tasks 复用） | 文档暗示双 Tag | P2 |
-| D13 | overview §9 | 缺 9 概念 | features 当真 | 文档缺口 | P1 |
+| D11 | overview:149,464,739 | Routine / routine.json | = 默认 TaskChain | 别名 | P1 ✅（C 批 `default_task_chain`；overview 已无 Routine/default_routine 残留） |
+| D12 | overview §9.1 tasks app 与 resources app 两处均列裸 `Tag` | 仅 resources.Tag 一个（tasks 复用） | 文档暗示双 Tag | P2 ✅ |
+| D13 | overview §9 | 缺 9 概念 | features 当真 | 文档缺口 | P1 ✅ 2026-08-30（overview §9.7 前端面板/概念表，含 AnomalyPattern 前端-only 注） |
 | D14 | 评估稿曾称 overview/features 提 "TraceSpan" | 复核：overview/features/子文档**均无 "TraceSpan" 一词**（用 链路追踪/trace_id）；死模型仅存**代码**(已删，43 残骸) | 文档无此词→文档无需改；代码清理项 | P0(代码) |
-| D15 | 隐含 AgentToken 实体 | `Agent.agent_token_hash` 字段+端点 | 字段≠实体（改名 `WorkerToken` 后更清） | P1 |
-| D16 | optimal-solution:144 "373 行" | state_machine.py=354 行 | 数字过时 | P2 |
-| D17 | overview:744 "models.py:454" | accounts/models.py:450 | 数字过时 | P2 |
+| D15 | 隐含 AgentToken 实体 | `Agent.agent_token_hash` 字段+端点 | 字段≠实体（改名 `WorkerToken` 后更清） | P1 ✅（G 批 `worker_token_hash`；overview 已清） |
+| D16 | optimal-solution:144 "373 行" | state_machine.py 现 374 行 | 数字过时 | P2 ✅ 2026-08-30（去掉行数断言，注明动态） |
+| D17 | overview:747 "models.py:454" | accounts/models.py:450 | 数字过时 | P2 ✅ 2026-08-30（改 :450） |
 | D18 | concurrency-design:70 "TaskDispatcher" 框 | 框存在；无类，真实 `dispatch_task` | 幽灵符号 | P0 |
-| D19 | overview "GafDaemon" / gaf_daemon.py / gaf_services.ps1 | 三渲染（GafDaemon 权威/.py 实现/.ps1 兼容） | 命名不一 | P1 |
+| D19 | overview "GafDaemon" / gaf_daemon.py / gaf_services.ps1 | 三渲染（GafDaemon 权威/.py 实现/.ps1 兼容） | 命名不一 | P1 ✅（A 批归一） |
 | D20 | debug-logging S1-S4 | 死 hour-bucket(✓)/chain-mode 路径(✓跨废弃文档)/路径 key task_name vs safe_pipeline(§8.1 已统一为 `<task_name>` ✅ 2026-08-30 D 批 P2)/`_status`(✗架构树无) | 内部矛盾（4 中 3 有据） | P2 ✅ |
 | D21 | concurrency-design **§3**（非 S7） | ScreenshotCache 50ms vs RedisScreenshotCache 100ms | TTL 口径已归一（本地秒级 config.cache_ttl=300 vs Redis 毫秒级，50ms 标示意）✅ 2026-08-30 D 批 P2 | P2 |
 | D22 | deployment-design **§4.2**（非 S8） | SQLite 配置带 Postgres 字段 | 已改默认 SQLite+WAL（base.py 实参），PG 字段仅 DB_ENGINE 切换时 ✅ 2026-08-30 D 批 P2 | P2 |
@@ -282,8 +282,8 @@ verified_baseline: >
 - **OQ-9 双设备发现权威** — ✅ **已定方案 A（2026-08-30 用户确认）**：agent WS `device.sync` 为 Device 生命周期单一权威；`DeviceRegisterView` 收敛为设置/校正渠道；统一身份键 `find_device_by_identity()` 两端复用；可选周期重扫 `GAF_AUTO_RESCAN_INTERVAL`（默认 0）。实现 spec = `docs/specs/active/2026-08-30-oq9-device-discovery-authority.md`（原批 F-10 单独立项）。
 - **OQ-10 Worker / Agent 术语拆分** — ✅ **锁定（2026-08-29）**："Agent" 保留给未来 AI 智能体（`backend/gaf_ai` LangGraph agent，其会话 `AgentSession` 保留）；执行节点/进程/客户端/状态/令牌/消费者/视图/运行时/选择器/目录/app 全部改称 **Worker**（批 G）。Device 保持被控设备。三者清晰：Device / Worker / Agent(AI)。
 
-## 10. 下一步
+## 10. 下一步（全部完成）
 
-1. OQ-1~OQ-10 已全锁定（含代码核实的最优结构决策），无需再回复。
-2. 结论稳定后拆 `docs/specs/active/` 归一化 spec（按 P0→P2 排期，含全部采纳项 + F1/F2 文档澄清）。**执行顺序遵循 §7 分阶段：先低危(A/B 批)后高危(C/G 批，必带迁移 + 前端类型重生成)**。
-3. 本稿随结论更新，最终随 spec 归档。
+1. OQ-1~OQ-10 已全锁定（含代码核实的最优结构决策）。 ✅
+2. 归一化 spec（A/B/C×4/G/E/D/F + OQ-9）已全部实现并标记完成（2026-08-30）。 ✅
+3. 本稿结论已随各 spec 落地回写（§3/§4 全 ✅）；本稿**作为评估结论稿归档**（`docs/specs/archived/2026-08/`），不再作为 active 计划。

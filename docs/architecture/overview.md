@@ -514,6 +514,20 @@ Agent 启动
 | [notifications](file:///d:/code/GAF/backend/notifications) | 7 渠道通知 | Notification, AlertRule, WebhookConfig |
 | [plugins](file:///d:/code/GAF/backend/plugins) | 插件系统/沙箱 | PluginPackage, PluginSandbox |
 
+### 9.7 前端功能面板 / 概念（features-only，D13）
+
+> 以下面板/概念见于 `docs/architecture/features-overview.md`，为 **UI 层能力**，不属后端 app 模型表（§9.1-9.6 为后端 app 视角），多数**无独立 ORM 模型**。
+
+| 概念 | 入口组件 | 后端支撑 |
+|------|---------|---------|
+| 无人值守策略 | `/ops/unattended` Strategy tab | `settings.UnattendedStrategy`（单例：5 层恢复 + 夜间模式 + 频率限制） |
+| 模式识别 | `AnomalyPatternPanel` | `LLMAnalysisResult`（异常模式聚类；**AnomalyPattern 为前端-only 概念，无模型**） |
+| 模型对比 | `ModelComparisonPanel` | gaf_ai 模型评估（`ModelEvaluation`） |
+| 设备会话 | `DeviceSessionPanel` | `protocol.WorkerSession`（设备/Worker WS 会话列表） |
+| 基础设施健康 | `InfraHealthPanel` | `GafDaemon` 健康探针 + `/accounts/init/health/`（OQ-8 三健康面之一） |
+| LLM 日志分析 | `/ai/log-analysis` | `debug.LLMAnalysisResult`（历史落在 debug app，归属 AI 模块 §9.3 注） |
+| 执行监控 | `ExecutionMonitorPanel` / `DailyReportViewer` / `UnattendedLogViewer` | `tasks` 执行/统计端点 |
+
 ---
 
 ## 十、Worker 架构（自动化执行节点）
@@ -734,7 +748,7 @@ desktop/
 | 模块 | 状态 | 说明 |
 |------|------|------|
 | 认证系统 | [OK] | JWT + 2FA + OAuth + API Key |
-| 设备管理 | [OK] | Windows + Android + 模拟器 + 自动关联 |
+| 设备管理 | [OK] | Windows 窗口 + 模拟器（Android 归入 emulator，`device_type∈{windows,emulator}`）+ 自动关联 |
 | 任务管理 | [OK] | CRUD + Pipeline 编辑 + 录制 + 市场 |
 | 资源包管理 | [OK] | 导入/导出 + 模板库 + 标注 |
 | 游戏账户 | [OK] | CRUD + 分组 + 轮换 + AES 加密 |
@@ -744,7 +758,7 @@ desktop/
 | AI 模块 | [OK] | 助手 + QA + Skill + LangGraph Agent + RAG |
 | 跨平台层 | [OK] | Windows 完整 (agent 侧 `worker/src/platforms/windows/`) + macOS/Linux 已落地 (backend 侧 `backend/device_bridge/platforms/{macos,linux}/`, P-028); 注: agent 侧仅 Windows, macOS/Linux 在 backend 侧 |
 | 运维监控 | [OK] | 链路追踪 + SLA 指标 + 崩溃报告 + 日志归档 |
-| **审计日志 (C-045)** | [OK] | AuditMixin (gaf_core/mixins/audit.py) — 114 接入点, 19 个 ViewSet 自动写 AuditLog (accounts/tasks/agents/pipeline/resources/qa/notifications/scheduler/settings/gamestate/debug/protocol/monitors/plugins); AuditLog 模型在 `accounts/models.py:454` |
+| **审计日志 (C-045)** | [OK] | AuditMixin (gaf_core/mixins/audit.py) — 114 接入点, 19 个 ViewSet 自动写 AuditLog (accounts/tasks/agents/pipeline/resources/qa/notifications/scheduler/settings/gamestate/debug/protocol/monitors/plugins); AuditLog 模型在 `accounts/models.py:450` |
 | 通知系统 | [OK] | 7 渠道 (邮件/Webhook/钉钉/飞书/企微/Telegram/自定义) |
 | 插件系统 | [OK] | 上传/安装/启停/沙箱 |
 | 国际化 | [OK] | 4 语言 (en/zh_Hans/ja/ko) |
@@ -867,6 +881,16 @@ desktop/
 > **统一身份键**：`workers/services/device_identity.py::find_device_by_identity()` 是两端共用的设备查找（优先级：window_handle > adb_serial > emulator_brand+空serial > window_title > name+type），确保同一物理设备两端写同一个 `Device` 记录（spec `2026-08-30-oq9-device-discovery-authority`）。
 >
 > **冲突仲裁（P-3）**：基础字段（status/serial/hwnd/归属）同步时补缺；个性化字段（name/绑定/方法）手动优先，sync 不 touch。
+
+### 11.7 任务分类（线性 / 链式 / 循环）(D5)
+
+| 用户分类 | 代码所指 | 归一执行点 |
+|---------|---------|-----------|
+| **线性** | 普通 `Task`（单线性 Pipeline） | `TaskExecutor` + `dispatch_task`（B1 收敛） |
+| **链式** | `TaskChain` + `TaskChainNode`（有序序列，支持 `is_default`） | 同上（`TaskChainExecution` 链引擎） |
+| **循环** | `LoopNode` / `UnattendedSession.loop_rotation` + `rotation_index` | 同上（循环模式不触发 `all_completed` 停止） |
+
+> **与引擎模式区分**：执行引擎层为 `PipelineEngine`（线性）/ `StateMachineEngine`（原 `ChainManager` 封装，批 B）；"链式/循环"是**任务组织分类**，与引擎内部模式无关（评估稿 §2.1 / D5）。
 
 ---
 
