@@ -9,7 +9,7 @@ TaskService picked by last_heartbeat).
 
 from __future__ import annotations
 
-from agents.models import Agent
+from workers.models import Worker
 
 
 def resolve_online_agent(agent_id=None):
@@ -25,19 +25,19 @@ def resolve_online_agent(agent_id=None):
         Agent instance or None when unavailable (missing / offline /
         no online agent).
     """
-    online_statuses = (Agent.Status.ONLINE, Agent.Status.IDLE)
+    online_statuses = (Worker.Status.ONLINE, Worker.Status.IDLE)
 
     if agent_id:
         try:
-            agent = Agent.objects.get(agent_id=agent_id)
-        except Agent.DoesNotExist:
+            agent = Worker.objects.get(agent_id=agent_id)
+        except Worker.DoesNotExist:
             return None
         if agent.status in online_statuses:
             return agent
         return None
 
     return (
-        Agent.objects.filter(status__in=online_statuses)
+        Worker.objects.filter(status__in=online_statuses)
         .order_by("-last_heartbeat")
         .first()
     )

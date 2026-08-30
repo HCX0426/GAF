@@ -2,9 +2,9 @@
 import pytest
 from django.test import TestCase
 from pipeline.models import TaskChain
+from workers.models import Device
 
 from accounts.models import GameAccount
-from agents.models import Device
 from gamestate.models import GameProfile
 from tasks.models import Task, TaskDevice, TaskExecution
 
@@ -210,20 +210,20 @@ class DeadCodeCleanupTest(TestCase):
     """
 
     def test_game_binding_no_task_resource_pack_ref(self):
-        """agents/game_binding.py should not reference Task.resource_pack."""
+        """workers/game_binding.py should not reference Task.resource_pack."""
         import pathlib
         # Resolve relative to this test file so the test works regardless of
         # whether pytest is invoked from the repo root or from backend/.
         # __file__ = backend/tasks/tests/test_window_centric_models.py
         backend_dir = pathlib.Path(__file__).resolve().parent.parent.parent
-        path = backend_dir / 'agents' / 'game_binding.py'
+        path = backend_dir / 'workers' / 'game_binding.py'
         content = path.read_text(encoding='utf-8')
         assert 'task.resource_pack' not in content, (
-            "agents/game_binding.py should not reference task.resource_pack — "
+            "workers/game_binding.py should not reference task.resource_pack — "
             "field was deleted in task 1.1"
         )
         assert "'resource_pack'" not in content, (
-            "agents/game_binding.py should not save resource_pack — "
+            "workers/game_binding.py should not save resource_pack — "
             "field was deleted in task 1.1"
         )
 
@@ -246,7 +246,7 @@ class DeadCodeCleanupTest(TestCase):
 
     def test_backfill_game_profile_links_runs_without_error(self):
         """backfill_game_profile_links() should run without AttributeError."""
-        from agents.game_binding import backfill_game_profile_links
+        from workers.game_binding import backfill_game_profile_links
         # Should not raise even with empty DB
         result = backfill_game_profile_links()
         assert isinstance(result, dict)

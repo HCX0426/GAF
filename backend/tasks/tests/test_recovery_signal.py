@@ -22,9 +22,9 @@ from unittest.mock import patch
 import pytest
 from django.test import TestCase
 from scheduler.models import RecoveryLog
+from workers.models import Worker
 
 from accounts.models import User
-from agents.models import Agent
 from tasks.models import ExecutionStep, Task, TaskDevice, TaskExecution
 
 pytestmark = pytest.mark.integration
@@ -34,7 +34,7 @@ pytestmark = pytest.mark.integration
 def setup_task(db):
     """创建 task + agent + device, 返回 task 实例"""
     user = User.objects.create_user(username='p020d_user', password='test123')
-    agent = Agent.objects.create(
+    agent = Worker.objects.create(
         hostname='p020d-host',
         status='online',
         last_heartbeat=__import__('django.utils.timezone', fromlist=['now']).now(),
@@ -44,7 +44,7 @@ def setup_task(db):
     )
     device = agent.devices.first() if hasattr(agent, 'devices') else None
     if device is None:
-        from agents.models import Device
+        from workers.models import Device
         device = Device.objects.create(
             agent=agent,
             name='p020d-device',
@@ -59,13 +59,13 @@ class TestTaskFailureSignal(TestCase):
 
     def setUp(self):
         user = User.objects.create_user(username='p020d_user', password='test123')
-        agent = Agent.objects.create(
+        agent = Worker.objects.create(
             hostname='p020d-host',
             status='online',
             last_heartbeat=__import__('django.utils.timezone', fromlist=['now']).now(),
         )
         self.task = Task.objects.create(name='p020d-test-task')
-        from agents.models import Device
+        from workers.models import Device
         device = Device.objects.create(agent=agent, name='p020d-device', status='online')
         TaskDevice.objects.create(task=self.task, device=device)
         self.agent = agent
@@ -200,7 +200,7 @@ class TestStepRecoverySignal(TestCase):
         _processing_step_ids.clear()
 
         self.user = User.objects.create_user(username='p010_user', password='test123')
-        self.agent = Agent.objects.create(
+        self.agent = Worker.objects.create(
             hostname='p010-host',
             status='online',
             last_heartbeat=__import__('django.utils.timezone', fromlist=['now']).now(),

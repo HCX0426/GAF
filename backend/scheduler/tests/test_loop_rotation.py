@@ -15,9 +15,9 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from pipeline.models import TaskChain, TaskChainExecution
+from workers.models import Device, Worker
 
 from accounts.models import GameAccount
-from agents.models import Agent, Device
 from gamestate.models import GameProfile
 from scheduler.models import AutoStopCondition, UnattendedSession
 from scheduler.tasks import on_chain_execution_completed
@@ -31,8 +31,8 @@ def base_data(db):
     user = User.objects.create_user(username='loop_user', password='Pass123!')
     chain = TaskChain.objects.create(name='Loop Chain', is_enabled=True)
     profile = GameProfile.objects.create(game_name='LoopGame', default_task_chain=chain)
-    agent = Agent.objects.create(
-        agent_id='loop-agent-1', hostname='h', status=Agent.Status.ONLINE,
+    agent = Worker.objects.create(
+        agent_id='loop-agent-1', hostname='h', status=Worker.Status.ONLINE,
     )
     device = Device.objects.create(
         name='loop-device', device_type=Device.DeviceType.WINDOWS,

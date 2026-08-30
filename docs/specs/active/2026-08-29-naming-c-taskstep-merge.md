@@ -4,7 +4,7 @@ title: 命名归一化 C-4：TaskStep 合并入 ExecutionStep（删 TaskStep）
 status: done
 created: 2026-08-29
 completed: 2026-08-30
-commit: (filled after commit)
+commit: e56eec8
 estimated_effort: 1 day
 risk: high
 depends_on: []

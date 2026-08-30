@@ -10,9 +10,9 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.response import Response as DRFResponse
 from rest_framework.test import APIClient
+from workers.models import Worker
 
 from accounts.models import User
-from agents.models import Agent
 from debug.models import DebugLogArchive, LLMAnalysisResult
 from monitors.models import MonitorEvent, MonitorRule
 from resources.models import ResourcePack
@@ -137,7 +137,7 @@ class AgentLifecycleIntegrationTests(TestCase):
         }, format='json')
         self.assertEqual(create_resp.status_code, status.HTTP_201_CREATED)
         agent_pk = _unwrap(create_resp)['id']
-        agent = Agent.objects.get(pk=agent_pk)
+        agent = Worker.objects.get(pk=agent_pk)
 
         token_resp = self.client.post(f'/api/v2/agents/{agent_pk}/generate-token/')
         self.assertEqual(token_resp.status_code, status.HTTP_200_OK)
@@ -152,36 +152,36 @@ class AgentLifecycleIntegrationTests(TestCase):
         }, format='json')
         self.assertEqual(online_resp.status_code, status.HTTP_200_OK)
         agent.refresh_from_db()
-        self.assertEqual(agent.status, Agent.Status.ONLINE)
+        self.assertEqual(agent.status, Worker.Status.ONLINE)
 
         busy_resp = self.client.patch(f'/api/v2/agents/{agent_pk}/', {
             'status': 'busy',
         }, format='json')
         self.assertEqual(busy_resp.status_code, status.HTTP_200_OK)
         agent.refresh_from_db()
-        self.assertEqual(agent.status, Agent.Status.BUSY)
+        self.assertEqual(agent.status, Worker.Status.BUSY)
 
         offline_resp = self.client.patch(f'/api/v2/agents/{agent_pk}/', {
             'status': 'offline',
         }, format='json')
         self.assertEqual(offline_resp.status_code, status.HTTP_200_OK)
         agent.refresh_from_db()
-        self.assertEqual(agent.status, Agent.Status.OFFLINE)
+        self.assertEqual(agent.status, Worker.Status.OFFLINE)
 
     def test_agent_list_and_filter(self):
         """Agent列表查询和过滤"""
-        Agent.objects.create(agent_id='agent-filter-001', hostname='host-a', status=Agent.Status.ONLINE)
-        Agent.objects.create(agent_id='agent-filter-002', hostname='host-b', status=Agent.Status.OFFLINE)
+        Worker.objects.create(agent_id='agent-filter-001', hostname='host-a', status=Worker.Status.ONLINE)
+        Worker.objects.create(agent_id='agent-filter-002', hostname='host-b', status=Worker.Status.OFFLINE)
         list_resp = self.client.get('/api/v2/agents/')
         self.assertEqual(list_resp.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(len(_unwrap(list_resp)), 2)
 
     def test_agent_token_regeneration(self):
         """Agent Token重新生成——新Token覆盖旧Token"""
-        agent = Agent.objects.create(
+        agent = Worker.objects.create(
             agent_id='agent-regen-001',
             hostname='regen-host',
-            status=Agent.Status.OFFLINE,
+            status=Worker.Status.OFFLINE,
         )
         first_resp = self.client.post(f'/api/v2/agents/{agent.pk}/generate-token/')
         first_token = _unwrap(first_resp)['agent_token']
@@ -206,10 +206,10 @@ class TaskExecutionFlowIntegrationTests(TestCase):
             version='1.0.0',
             directory_path='/tmp/task_flow_resources',
         )
-        self.agent = Agent.objects.create(
+        self.agent = Worker.objects.create(
             agent_id='task-flow-agent',
             hostname='task-flow-host',
-            status=Agent.Status.IDLE,
+            status=Worker.Status.IDLE,
         )
         login_resp = self.client.post('/api/v2/accounts/auth/login/', {
             'username': 'task_flow_op',
@@ -547,10 +547,10 @@ class MonitorRuleFlowIntegrationTests(TestCase):
             version='1.0.0',
             directory_path='/tmp/monitor_resources',
         )
-        self.agent = Agent.objects.create(
+        self.agent = Worker.objects.create(
             agent_id='monitor-agent',
             hostname='monitor-host',
-            status=Agent.Status.ONLINE,
+            status=Worker.Status.ONLINE,
         )
         login_resp = self.client.post('/api/v2/accounts/auth/login/', {
             'username': 'monitor_flow_op',
@@ -631,10 +631,10 @@ class MonitorRuleFlowIntegrationTests(TestCase):
 
     def test_monitor_event_filter_by_agent(self):
         """按Agent过滤监控事件"""
-        agent_b = Agent.objects.create(
+        agent_b = Worker.objects.create(
             agent_id='monitor-agent-b',
             hostname='monitor-host-b',
-            status=Agent.Status.ONLINE,
+            status=Worker.Status.ONLINE,
         )
         MonitorEvent.objects.create(
             event_type='error', agent=self.agent, resource_pack=self.resource_pack,

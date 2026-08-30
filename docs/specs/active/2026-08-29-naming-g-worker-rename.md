@@ -3,6 +3,7 @@ spec: 2026-08-29-naming-g-worker-rename
 title: 命名归一化 G 批：Agent → Worker 术语重构（执行节点/进程及全部派生符号）
 status: active
 created: 2026-08-29
+started: 2026-08-30
 estimated_effort: 3 days
 risk: high
 depends_on: [2026-08-29-naming-c-agentsession, 2026-08-29-naming-e-agent-concepts]
@@ -48,7 +49,7 @@ source: docs/analysis/concept-naming-normalization.md §1(Agent→Worker 多行)
 
 | 阶段 | 内容 | 状态 |
 |------|------|------|
-| P1 | 后端 Django app 重命名 `agents`→`workers` + 迁移(含数据迁移) + settings/urls/import | ⏳ |
+| P1 | 后端 Django app 重命名 `agents`→`workers` + 迁移(含数据迁移) + settings/urls/import | ✅ |
 | P2 | 模型/字段改名：G-1 `Agent`→`Worker`、G-7 `agent_token_hash`→`worker_token_hash`、G-13 `agents.Device`→`workers.Device` | ⏳ |
 | P3 | agent 进程目录 `agent/`→`worker/` + 符号 G-4/G-5/G-10/G-11 + `__main__` 入口 | ⏳ |
 | P4 | protocol/WS 符号 G-6 `AgentConsumer`→`WorkerConsumer`、G-14 `AgentSession`→`WorkerSession`(C-3) + consumers.py 路由(随 F-5) | ⏳ |

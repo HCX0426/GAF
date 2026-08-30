@@ -3,7 +3,7 @@ S2 (2026-08-16): 恢复链接线接线测试
 
 覆盖:
 - reassign 补派发: 换 agent 后 dispatch_task.delay 被调用; 终态不派发
-- 语义动作落地: retry 重置 step → PENDING; skip 标记 SKIPPED; task 级
+- 语义动作落地: retry 重置 step ??PENDING; skip 标记 SKIPPED; task ??
   skip 宽容成功; restart/switch_account 解析 agent 设备后派发 device.command
   (S2-2.7 解除诚实降级, 2026-08-17)
 - sleep 移出 signal: handle_step_failure 不再调用 time.sleep
@@ -14,8 +14,8 @@ from unittest.mock import patch
 
 import pytest
 from django.test import TestCase
+from workers.factories import DeviceFactory, WorkerFactory
 
-from agents.factories import AgentFactory, DeviceFactory
 from scheduler.recovery_engine import (
     ActionSpec,
     RecoveryActionChain,
@@ -35,7 +35,7 @@ def _make_agent(**kwargs):
         "capabilities": {"adb": True, "windows": True},
     }
     defaults.update(kwargs)
-    return AgentFactory.create(**defaults)
+    return WorkerFactory.create(**defaults)
 
 
 def _make_execution(**kwargs):
@@ -122,7 +122,7 @@ class TestSemanticActions(TestCase):
         self.assertEqual(step.status, ExecutionStep.Status.SKIPPED)
 
     def test_task_level_skip_acknowledges_failed(self):
-        """task 级默认链 failureAction='skip', target 是 execution id"""
+        """task 级默认链 failureAction='skip', target ??execution id"""
         execution = _make_execution(status=TaskExecution.Status.FAILED)
 
         result = execute_recovery_action("skip", execution.id, {})
@@ -215,10 +215,10 @@ class TestStepFailureNoSleep(TestCase):
 
 
 class TestActionTimeout:
-    """P6: ActionSpec.timeout_seconds 生效 (pytest 普通类, 用 pytest 断言)"""
+    """P6: ActionSpec.timeout_seconds 生效 (pytest 普通类, ??pytest 断言)"""
 
     def test_timeout_marks_action_failed(self):
-        """动作体耗时超过 timeout_seconds → ChainStepResult(success=False)"""
+        """动作体耗时超过 timeout_seconds ??ChainStepResult(success=False)"""
         import time as _time
 
         chain = RecoveryActionChain(

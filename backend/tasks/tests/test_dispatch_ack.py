@@ -13,8 +13,8 @@ from unittest.mock import AsyncMock, patch
 
 from django.test import TestCase
 from django.utils import timezone
+from workers.factories import WorkerFactory
 
-from agents.factories import AgentFactory
 from tasks.factories import TaskExecutionFactory
 from tasks.models import TaskExecution
 
@@ -26,11 +26,11 @@ def _make_agent(**kwargs):
         "capabilities": {"adb": True, "windows": True},
     }
     defaults.update(kwargs)
-    return AgentFactory.create(**defaults)
+    return WorkerFactory.create(**defaults)
 
 
 class TestDispatchAckTracking(TestCase):
-    """dispatch_task 派发后应记录 dispatch_sent_at 供 ack 扫描使用."""
+    """dispatch_task 派发后应记录 dispatch_sent_at ??ack 扫描使用."""
 
     @patch("tasks.tasks.get_channel_layer")
     def test_dispatch_records_dispatch_sent_at(self, mock_layer):

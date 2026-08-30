@@ -4,8 +4,8 @@ Models under test: SLAMetric.
 """
 
 from django.test import TestCase
+from workers.models import Worker
 
-from agents.models import Agent
 from monitors.models import SLAMetric
 
 
@@ -23,7 +23,7 @@ class SLAMetricModelTests(TestCase):
         self.assertEqual(str(metric), 'latency_ms = 42.0')
 
     def test_agent_fk_cascade_delete(self):
-        agent = Agent.objects.create(agent_id='m-agent-001', hostname='m-host')
+        agent = Worker.objects.create(agent_id='m-agent-001', hostname='m-host')
         metric = SLAMetric.objects.create(
             metric_name='mem_usage', value=50, agent=agent,
         )

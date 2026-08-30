@@ -167,7 +167,7 @@ class TokenAuthMiddleware(BaseMiddleware):
             token: Agent Token 字符串（明文，来自客户端请求）
 
         Returns:
-            Agent | None: 匹配的 Agent 实例，未找到返回 None
+            Worker | None: 匹配的 Worker 实例，未找到返回 None
         """
         if not token:
             return None
@@ -183,6 +183,6 @@ class TokenAuthMiddleware(BaseMiddleware):
         (TD-259 #29: cross-app Agent model import isolated in service).
 
         Returns:
-            Agent | None: 本地 Agent 实例，不存在返回 None
+            Worker | None: 本地 Worker 实例，不存在返回 None
         """
         return get_local_agent()

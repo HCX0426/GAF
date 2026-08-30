@@ -18,9 +18,9 @@ from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from workers.auth import AgentTokenAuthentication
 
 from accounts.permissions import RoleBasedPermission
-from agents.auth import AgentTokenAuthentication
 from pipeline.estimator import PipelineTimeEstimator
 from pipeline.models import Pipeline, PipelineSnapshot, Recording, TaskChain, TaskChainExecution, TaskChainNode
 from pipeline.serializers import (
@@ -226,7 +226,7 @@ class PipelineViewSet(AuditMixin, viewsets.ModelViewSet):
         # 自动检测 device: 优先指定 device_id，否则选 agent 绑定的非 ADB 在线设备
         device = None
         if device_id:
-            from agents.models import Device
+            from workers.models import Device
             with contextlib.suppress(Device.DoesNotExist):
                 device = Device.objects.get(pk=device_id)
         if device is None:
@@ -274,7 +274,7 @@ class PipelineViewSet(AuditMixin, viewsets.ModelViewSet):
         spec-2026-08-02-backend-execution-unification: 避免不传 device_id
         时 agent 连到断连的 ADB 模拟器。
         """
-        from agents.models import Device
+        from workers.models import Device
         return Device.objects.filter(
             agent=agent,
             status='online',
@@ -551,17 +551,17 @@ class TaskChainViewSet(AuditMixin, viewsets.ModelViewSet):
 
     def _get_online_agent(self, agent_id=None):
         """Find an online/idle agent for chain execution."""
-        from agents.models import Agent
-        online_statuses = (Agent.Status.ONLINE, Agent.Status.IDLE)
+        from workers.models import Worker
+        online_statuses = (Worker.Status.ONLINE, Worker.Status.IDLE)
         if agent_id:
             try:
-                agent = Agent.objects.get(agent_id=agent_id)
+                agent = Worker.objects.get(agent_id=agent_id)
                 if agent.status in online_statuses:
                     return agent
-            except Agent.DoesNotExist:
-                pass
+            except Worker.DoesNotExist:
+                logger.debug("_get_online_agent: worker %s not found", agent_id)
             return None
-        return Agent.objects.filter(status__in=online_statuses).first()
+        return Worker.objects.filter(status__in=online_statuses).first()
 
 
 class TaskChainNodeSchema(AutoSchema):

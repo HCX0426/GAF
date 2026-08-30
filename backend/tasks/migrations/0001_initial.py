@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('agents', '0001_initial'),
+        ('workers', '0001_initial'),
         ('resources', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
@@ -94,7 +94,7 @@ class Migration(migrations.Migration):
                 ('completed_at', models.DateTimeField(blank=True, null=True, verbose_name='完成时间')),
                 ('duration', models.DurationField(blank=True, null=True, verbose_name='执行耗时')),
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='创建时间')),
-                ('agent', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='executions', to='agents.agent', verbose_name='执行 Agent')),
+                ('agent', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='executions', to='workers.Worker', verbose_name='执行 Agent')),
                 ('task', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='executions', to='tasks.task', verbose_name='关联任务')),
                 ('triggered_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='triggered_executions', to=settings.AUTH_USER_MODEL, verbose_name='触发用户')),
             ],

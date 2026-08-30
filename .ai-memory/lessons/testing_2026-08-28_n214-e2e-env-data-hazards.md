@@ -6,7 +6,7 @@ related_files:
   - backend/config/settings/base.py
   - scripts/e2e/scenarios/full_routes.py
   - backend/resources/views.py
-  - backend/agents/view_sets/scan_register.py
+  - backend/workers/view_sets/scan_register.py
 created_by: AI
 priority: medium
 n_id: N214

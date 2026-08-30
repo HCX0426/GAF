@@ -15,9 +15,9 @@ from django.test import TestCase
 from gaf_core.utils.tokens import hash_token
 from rest_framework import status
 from rest_framework.test import APIClient
+from workers.models import Worker
 
 from accounts.models import User
-from agents.models import Agent
 from pipeline.models import (
     Pipeline,
     PipelineSnapshot,
@@ -467,8 +467,8 @@ class PipelineExecuteTests(TestCase):
         self.pipe = Pipeline.objects.create(
             name='Exec Pipe', user=self.admin, graph_data=VALID_GRAPH,
         )
-        self.agent = Agent.objects.create(
-            agent_id='exec-agent-001', hostname='exec-host', status=Agent.Status.IDLE,
+        self.agent = Worker.objects.create(
+            agent_id='exec-agent-001', hostname='exec-host', status=Worker.Status.IDLE,
         )
 
     @mock.patch('tasks.tasks.dispatch_task')
@@ -491,7 +491,7 @@ class PipelineExecuteTests(TestCase):
         self.assertEqual(execution.status, TaskExecution.Status.PENDING)
 
     def test_execute_no_online_agent(self):
-        Agent.objects.filter(agent_id='exec-agent-001').update(status=Agent.Status.OFFLINE)
+        Worker.objects.filter(agent_id='exec-agent-001').update(status=Worker.Status.OFFLINE)
         resp = self.client.post(f'{PIPELINE_URL}{self.pipe.id}/execute/', {}, format='json')
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -740,7 +740,7 @@ class RecordingScreenshotTests(TestCase):
                 {'event_type': 'screenshot', 'timestamp': 1.0, 'screenshot_path': 'local.png'},
             ]},
         )
-        self.agent = Agent.objects.create(
+        self.agent = Worker.objects.create(
             agent_id='shot-agent-001', hostname='shot-agent',
             agent_token_hash=hash_token('shot-agent-token-1234'),
         )

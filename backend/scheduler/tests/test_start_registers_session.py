@@ -11,9 +11,9 @@ import pytest
 from django.contrib.auth import get_user_model
 from pipeline.models import TaskChain, TaskChainExecution, TaskChainNode
 from rest_framework.test import APIClient
+from workers.models import Device, Worker
 
 from accounts.models import GameAccount
-from agents.models import Agent, Device
 from gamestate.models import GameProfile
 from scheduler.models import GameAccountRotation, UnattendedSession
 from scheduler.tasks import on_chain_execution_completed
@@ -38,8 +38,8 @@ def _build_stack(start_user):
     TaskChainNode.objects.create(chain=chain, task=task, order=1)
     profile.default_task_chain = chain
     profile.save(update_fields=['default_task_chain'])
-    agent = Agent.objects.create(
-        agent_id='start-agent', hostname='h', status=Agent.Status.ONLINE,
+    agent = Worker.objects.create(
+        agent_id='start-agent', hostname='h', status=Worker.Status.ONLINE,
     )
     device = Device.objects.create(
         name='start-device', device_type=Device.DeviceType.WINDOWS,

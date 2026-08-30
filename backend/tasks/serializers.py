@@ -105,8 +105,8 @@ class TaskExecutionSerializer(serializers.ModelSerializer):
         agent = getattr(obj, 'agent', None)
         if agent is not None:
             return agent.agent_id
-        from agents.models import Agent
-        return Agent.objects.filter(pk=obj.agent_id).values_list('agent_id', flat=True).first()
+        from workers.models import Worker
+        return Worker.objects.filter(pk=obj.agent_id).values_list('agent_id', flat=True).first()
 
     @extend_schema_field(OpenApiTypes.STR)
     def get_device_name(self, obj):

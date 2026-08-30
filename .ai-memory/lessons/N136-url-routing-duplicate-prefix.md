@@ -29,10 +29,10 @@ priority: high
 diff_keywords: ["backend", "tests", "agents", "failed", "with", "api", "and"]
 related_files:
 - backend/config/urls.py
-- backend/agents/urls.py
-- backend/agents/views.py
-- backend/agents/tests/test_device_api.py
-- backend/agents/tests/test_token_api.py
+- backend/workers/urls.py
+- backend/workers/views.py
+- backend/workers/tests/test_device_api.py
+- backend/workers/tests/test_token_api.py
 - frontend/src/api/agents.ts
 - frontend/src/api/devices.ts
 - docs/standards/backend-conventions.md

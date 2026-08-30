@@ -677,11 +677,11 @@ def _action_notify(target_id, config):
 
 def _action_mark_offline(target_id, config):
     """将 Agent 状态置为 OFFLINE."""
-    from agents.models import Agent
+    from workers.models import Worker
 
     try:
-        agent = Agent.objects.get(agent_id=target_id)
-        agent.status = Agent.Status.OFFLINE
+        agent = Worker.objects.get(agent_id=target_id)
+        agent.status = Worker.Status.OFFLINE
         agent.save(update_fields=['status'])
         return {
             'success': True,
@@ -689,7 +689,7 @@ def _action_mark_offline(target_id, config):
             'target_id': target_id,
             'details': {'agent_id': target_id},
         }
-    except Agent.DoesNotExist:
+    except Worker.DoesNotExist:
         return {
             'success': False,
             'action': 'mark_offline',
@@ -712,7 +712,8 @@ def _action_reassign(target_id, config):
     现在换 agent 后调用 dispatch_task.delay 重新派发; 仅在执行
     非终态时派发 (防 FAILED/CANCELLED 执行被重新激活).
     """
-    from agents.models import Agent
+    from workers.models import Worker
+
     from tasks.models import ExecutionStep, TaskExecution
 
     if not isinstance(target_id, int):
@@ -743,8 +744,8 @@ def _action_reassign(target_id, config):
         }
 
     # 查找可用 agent (ONLINE, 排除当前执行 agent)
-    available = Agent.objects.filter(
-        status=Agent.Status.ONLINE,
+    available = Worker.objects.filter(
+        status=Worker.Status.ONLINE,
     ).exclude(pk=execution.agent_id).first()
 
     if available is None:
@@ -780,7 +781,7 @@ def _action_reassign(target_id, config):
 
 def _resolve_agent_or_device_owner(target_id):
     """将 target_id (Device.pk) 解析为 (agent_id, device_id) 元组."""
-    from agents.models import Device
+    from workers.models import Device
 
     try:
         device = Device.objects.get(pk=target_id)
@@ -968,7 +969,7 @@ def _action_semantic(action_type, target_id, config):
             'error': f'{action_type} requires an execution bound to an agent; cannot resolve target',
         }
 
-    from agents.models import Device
+    from workers.models import Device
 
     device = Device.objects.filter(
         agent=execution.agent_id,

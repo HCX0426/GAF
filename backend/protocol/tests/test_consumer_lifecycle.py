@@ -21,9 +21,9 @@ from unittest.mock import MagicMock
 from asgiref.sync import sync_to_async
 from channels.testing import WebsocketCommunicator
 from django.test import TestCase, override_settings
+from workers.factories import DeviceFactory
+from workers.models import Device
 
-from agents.factories import DeviceFactory
-from agents.models import Device
 from protocol.constants import MessageType
 from protocol.consumers import AgentConsumer
 from protocol.serializers import serialize_frame

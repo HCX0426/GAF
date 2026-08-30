@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('accounts', '0015_window_centric_game_account'),
-        ('agents', '0013_device_game_account_fk'),
+        ('workers', '0013_device_game_account_fk'),
         ('tasks', '0044_task_device_remove_is_default'),
     ]
 
@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='taskexecution',
             name='device',
-            field=models.ForeignKey(blank=True, help_text='Window-centric: 本次执行的具体设备（一个 task 可关联多设备，execution 记录具体在哪台执行）', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='task_executions', to='agents.device', verbose_name='执行设备'),
+            field=models.ForeignKey(blank=True, help_text='Window-centric: 本次执行的具体设备（一个 task 可关联多设备，execution 记录具体在哪台执行）', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='task_executions', to='workers.Device', verbose_name='执行设备'),
         ),
         migrations.AddField(
             model_name='taskexecution',

@@ -25,9 +25,9 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from workers.models import Worker
 
 from accounts.permissions import RoleBasedPermission
-from agents.models import Agent
 from monitors.models import MonitorEvent, MonitorRule, SLAMetric
 from monitors.serializers import (
     MonitorEventSerializer,
@@ -139,7 +139,7 @@ class MonitorRuleViewSet(AuditMixin, viewsets.ModelViewSet):
             # Broadcast to all online agents. Walk the Agent table to enumerate
             # known agent_ids rather than relying on a channel-layer registry
             # (which differs between InMemoryChannelLayer and RedisChannelLayer).
-            online_agents = Agent.objects.filter(status='online')
+            online_agents = Worker.objects.filter(status='online')
             for agent in online_agents:
                 group_name = f'agent_{agent.agent_id}'
                 try:
@@ -312,9 +312,9 @@ def system_status_view(request):
     # @api_view allowed: cross-model aggregation (Agent + TaskExecution + RecoveryLog), not model CRUD
     agent_error = None
     try:
-        from agents.models import Agent
+        from workers.models import Worker
 
-        agents = Agent.objects.all()
+        agents = Worker.objects.all()
         devices_online = agents.filter(status='online').count()
         devices_idle = agents.filter(status='idle').count()
         devices_total = agents.count()
@@ -751,9 +751,9 @@ def device_health_view(request):
     若 Agent 未上报性能指标，返回基础状态信息。
     """
     # @api_view allowed: computes per-device health score from Agent capabilities, not model CRUD
-    from agents.models import Agent
+    from workers.models import Worker
 
-    agents = Agent.objects.all()
+    agents = Worker.objects.all()
     devices = []
     for agent in agents:
         caps = agent.capabilities or {}
@@ -907,9 +907,9 @@ def diagnose_view(request):
     agent_status = 'ok'
     agent_message = 'Agent 进程正常'
     try:
-        from agents.models import Agent
-        online_agents = Agent.objects.filter(status='online').count()
-        total_agents = Agent.objects.count()
+        from workers.models import Worker
+        online_agents = Worker.objects.filter(status='online').count()
+        total_agents = Worker.objects.count()
         if total_agents == 0:
             agent_status = 'warning'
             agent_message = '未注册 Agent，请启动 Agent 进程'
@@ -1006,7 +1006,7 @@ def auto_fix_view(request):
 
     # 2. 重新探测设备
     try:
-        from agents.views import DeviceScanView
+        from workers.views import DeviceScanView
         scan_view = DeviceScanView()
         scan_view.request = request
         scan_result = scan_view.get(request)
@@ -1018,15 +1018,15 @@ def auto_fix_view(request):
 
     # 3. 检查 Agent 连接
     try:
-        from agents.models import Agent
-        offline_agents = Agent.objects.filter(status='offline')
+        from workers.models import Worker
+        offline_agents = Worker.objects.filter(status='offline')
         if offline_agents.exists():
             fixed.append({
                 'category': 'agent',
                 'message': f'{offline_agents.count()} 个 Agent 离线，请检查 Agent 进程',
             })
         else:
-            online_count = Agent.objects.filter(status='online').count()
+            online_count = Worker.objects.filter(status='online').count()
             fixed.append({'category': 'agent', 'message': f'{online_count} 个 Agent 在线'})
     except Exception as e:
         logger.warning("auto_fix: agent check failed: %s", e, exc_info=True)

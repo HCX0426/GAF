@@ -12,9 +12,9 @@ from unittest.mock import patch
 
 from django.test import TestCase
 from rest_framework.test import APIClient
+from workers.models import Worker
 
 from accounts.models import User
-from agents.models import Agent
 from pipeline.models import TaskChain, TaskChainExecution, TaskChainNode
 from pipeline.tasks import (
     _cancel_chain,
@@ -270,10 +270,10 @@ class TaskChainExecutorAPITests(TestCase):
             chain=self.chain, task=self.task, order=1,
         )
         # Create an online agent
-        self.agent = Agent.objects.create(
+        self.agent = Worker.objects.create(
             agent_id='test-agent-api',
             hostname='test-host',
-            status=Agent.Status.ONLINE,
+            status=Worker.Status.ONLINE,
         )
 
     @patch('pipeline.tasks.dispatch_chain_node.delay')
@@ -320,7 +320,7 @@ class TaskChainExecutorAPITests(TestCase):
 
     def test_execute_chain_no_agent_returns_400(self):
         """POST execute with no online agent returns 400."""
-        Agent.objects.filter(agent_id='test-agent-api').update(status=Agent.Status.OFFLINE)
+        Worker.objects.filter(agent_id='test-agent-api').update(status=Worker.Status.OFFLINE)
         response = self.client.post(
             f'/api/v2/pipeline/task-chains/{self.chain.id}/execute/',
             data={},

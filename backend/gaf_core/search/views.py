@@ -47,7 +47,7 @@ def _search_tasks(keyword: str, limit: int) -> list:
 def _search_devices(keyword: str, limit: int) -> list:
     """搜索设备名称。"""
     try:
-        from agents.models import Device
+        from workers.models import Device
 
         queryset = Device.objects.filter(name__icontains=keyword)[:limit]
         return [

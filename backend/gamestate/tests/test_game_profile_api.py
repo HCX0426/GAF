@@ -215,7 +215,7 @@ class GameProfileDispatchRoutineAPITest(TestCase):
 
     def test_dispatch_routine_skips_devices_without_online_agent(self):
         """Devices without a bound Agent should be skipped, not failed."""
-        from agents.models import Device
+        from workers.models import Device
 
         chain = TaskChain.objects.create(
             name='active-chain',

@@ -10,7 +10,6 @@ from __future__ import annotations
 import tempfile
 import zipfile
 from pathlib import Path
-from unittest import mock
 
 from django.test import TestCase, override_settings
 

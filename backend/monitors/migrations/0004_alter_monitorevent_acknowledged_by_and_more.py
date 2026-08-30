@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0010_r37_p1_game_profile_fk'),
+        ('workers', '0010_r37_p1_game_profile_fk'),
         ('monitors', '0003_alert_escalation'),
         ('resources', '0008_templateeffectiveness'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='monitorevent',
             name='agent',
-            field=models.ForeignKey(help_text='事件来源的 Agent 记录', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='monitor_events', to='agents.agent', verbose_name='关联 Agent'),
+            field=models.ForeignKey(help_text='事件来源的 Agent 记录', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='monitor_events', to='workers.Worker', verbose_name='关联 Agent'),
         ),
         migrations.AlterField(
             model_name='monitorevent',

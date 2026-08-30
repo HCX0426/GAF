@@ -5,9 +5,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
+from workers.models import Worker
 
 from accounts.models import User
-from agents.models import Agent
 from gamestate.models import GameProfile
 from tasks.models import Task, TaskExecution
 from tasks.tasks import dispatch_task
@@ -26,11 +26,11 @@ class TestTaskExecutionFlow(TestCase):
         )
         self.client.force_authenticate(user=self.admin)
 
-        self.agent = Agent.objects.create(
+        self.agent = Worker.objects.create(
             agent_id='test-agent-001',
             # TD-141 (2026-07-18): agent_token plaintext field removed.
             hostname='test-host',
-            status=Agent.Status.IDLE,
+            status=Worker.Status.IDLE,
             is_local=True,
         )
 
@@ -273,8 +273,9 @@ class DispatchTaskResourcePackTest(TestCase):
     @patch('tasks.tasks.get_channel_layer')
     def test_dispatch_task_includes_resource_pack(self, mock_channel_layer):
         """dispatch_task should read GameAccount.resource_pack and pass to agent."""
+        from workers.models import Device
+
         from accounts.models import GameAccount
-        from agents.models import Device
         from resources.models import ResourcePack
         from tasks.concurrency_controller import get_default_controller
 
@@ -301,9 +302,9 @@ class DispatchTaskResourcePackTest(TestCase):
         )
         # Agent must be IDLE and have capability matching task_definition.
         # task_definition has 'click' action → required capability 'windows'.
-        agent = Agent.objects.create(
+        agent = Worker.objects.create(
             agent_id='rp-test-agent', hostname='rp-host',
-            status=Agent.Status.IDLE,
+            status=Worker.Status.IDLE,
             capabilities={'windows': True, 'adb': True},
             is_local=True,
         )
@@ -352,8 +353,9 @@ class DispatchTaskResourcePackTest(TestCase):
     @patch('tasks.tasks.get_channel_layer')
     def test_dispatch_task_prefers_task_resource_pack(self, mock_channel_layer):
         """N197-8: dispatch_task should prefer Task.resource_pack over GameAccount.resource_pack."""
+        from workers.models import Device
+
         from accounts.models import GameAccount
-        from agents.models import Device
         from resources.models import ResourcePack
         from tasks.concurrency_controller import get_default_controller
 
@@ -380,9 +382,9 @@ class DispatchTaskResourcePackTest(TestCase):
             encrypted_password='encrypted-blob',
             resource_pack=account_pack,  # should NOT be used
         )
-        agent = Agent.objects.create(
+        agent = Worker.objects.create(
             agent_id='priority-test-agent', hostname='priority-host',
-            status=Agent.Status.IDLE,
+            status=Worker.Status.IDLE,
             capabilities={'windows': True, 'adb': True},
             is_local=True,
         )
@@ -451,9 +453,9 @@ class DispatchTaskTraceIdTest(TestCase):
                 controller.reset()
 
                 # Setup minimal Agent + Task + TaskExecution
-                Agent.objects.create(
+                Worker.objects.create(
                     agent_id='b3-4-trace-agent', hostname='b3-4-host',
-                    status=Agent.Status.IDLE,
+                    status=Worker.Status.IDLE,
                     capabilities={'windows': True},
                     is_local=True,
                 )
@@ -502,9 +504,9 @@ class DispatchTaskTraceIdTest(TestCase):
                 controller = get_default_controller()
                 controller.reset()
 
-                Agent.objects.create(
+                Worker.objects.create(
                     agent_id='b3-4-meta-agent', hostname='b3-4-meta-host',
-                    status=Agent.Status.IDLE,
+                    status=Worker.Status.IDLE,
                     capabilities={'windows': True},
                     is_local=True,
                 )
@@ -566,9 +568,9 @@ class DispatchTaskTraceIdTest(TestCase):
                 controller = get_default_controller()
                 controller.reset()
 
-                Agent.objects.create(
+                Worker.objects.create(
                     agent_id='b3-4-jsonl-agent', hostname='b3-4-jsonl-host',
-                    status=Agent.Status.IDLE,
+                    status=Worker.Status.IDLE,
                     capabilities={'windows': True},
                     is_local=True,
                 )

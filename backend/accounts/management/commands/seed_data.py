@@ -5,13 +5,13 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from scheduler.models import RecoveryLog
+from workers.models import Device, DeviceGroup, Worker
 
 from accounts.models import User
-from agents.models import Agent, Device, DeviceGroup
 from monitors.models import MonitorEvent, MonitorRule
 from notifications.models import Notification
 from resources.models import ResourcePack
-from tasks.models import Task, TaskExecution, ExecutionStep
+from tasks.models import ExecutionStep, Task, TaskExecution
 
 
 class Command(BaseCommand):
@@ -37,7 +37,7 @@ class Command(BaseCommand):
         # R37-P1: re-run backfill after all seed data is in place to link
         # Device/ResourcePack/Task rows to their GameProfile by window_title /
         # target_app / game_account.game_name. Safe no-op if GameProfile empty.
-        from agents.game_binding import backfill_game_profile_links
+        from workers.game_binding import backfill_game_profile_links
         backfill_counts = backfill_game_profile_links()
         self.stdout.write(self.style.SUCCESS(
             f'  R37-P1 backfill: devices={backfill_counts["devices"]} '
@@ -148,7 +148,7 @@ class Command(BaseCommand):
                 'hostname': 'GAF-Workstation',
                 'ip_address': '192.168.1.100',
                 'os_info': 'Windows 11 Pro 24H2',
-                'status': Agent.Status.ONLINE,
+                'status': Worker.Status.ONLINE,
                 'is_local': True,
                 'capabilities': {'wgc': True, 'ocr': 'rapid', 'onnx': True},
             },
@@ -157,7 +157,7 @@ class Command(BaseCommand):
                 'hostname': 'GAF-Android',
                 'ip_address': '192.168.1.101',
                 'os_info': 'Android 14',
-                'status': Agent.Status.ONLINE,
+                'status': Worker.Status.ONLINE,
                 'is_local': False,
                 'capabilities': {'adb': True, 'scrcpy': True},
             },
@@ -165,7 +165,7 @@ class Command(BaseCommand):
 
         agents = []
         for data in agent_data:
-            agent, created = Agent.objects.get_or_create(
+            agent, created = Worker.objects.get_or_create(
                 agent_id=data['agent_id'],
                 defaults={
                     'hostname': data['hostname'],

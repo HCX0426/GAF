@@ -1791,13 +1791,13 @@ class AgentConsumer(AsyncWebsocketConsumer):
         若 Agent 记录尚不存在 (首次连接 / 测试用 MagicMock scope), 返回 True
         放行 — 记录由后续 register/心跳路径创建并接管.
         """
-        from agents.models import Agent
+        from workers.models import Worker
 
-        exists = Agent.objects.filter(agent_id=self.agent_id).exists()
+        exists = Worker.objects.filter(agent_id=self.agent_id).exists()
         if exists:
-            Agent.objects.filter(agent_id=self.agent_id).update(
+            Worker.objects.filter(agent_id=self.agent_id).update(
                 active_channel=self.channel_name,
-                status=Agent.Status.ONLINE,
+                status=Worker.Status.ONLINE,
                 last_heartbeat=django_timezone.now(),
             )
         # 记录不存在 → 只是没得接管, 放行 (测试/首次连接, 后续 register 会 create)
@@ -1806,10 +1806,10 @@ class AgentConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def _db_am_i_active_owner(self) -> bool:
         """spec P4: 查询 DB 确认自己仍是 agent 的现任 active_channel."""
-        from agents.models import Agent
+        from workers.models import Worker
 
         return (
-            Agent.objects.filter(
+            Worker.objects.filter(
                 agent_id=self.agent_id,
                 active_channel=self.channel_name,
             ).exists()

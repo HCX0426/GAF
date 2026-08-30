@@ -264,7 +264,7 @@ def generate_execution_plan(days: int = 7) -> list:
             - task_chain_id / task_chain_name (from game_profile.default_task_chain)
             - day_offset (0 = today)
     """
-    from agents.models import Device
+    from workers.models import Device
 
     devices = Device.objects.filter(
         game_profile__default_task_chain__isnull=False,

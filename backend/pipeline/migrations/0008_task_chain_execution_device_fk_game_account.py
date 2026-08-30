@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('accounts', '0015_window_centric_game_account'),
-        ('agents', '0013_device_game_account_fk'),
+        ('workers', '0013_device_game_account_fk'),
         ('pipeline', '0007_task_chain_game_profile'),
     ]
 
@@ -36,7 +36,7 @@ class Migration(migrations.Migration):
                 null=True,
                 on_delete=django.db.models.deletion.SET_NULL,
                 related_name='chain_executions',
-                to='agents.device',
+                to='workers.Device',
                 verbose_name='执行设备',
             ),
         ),

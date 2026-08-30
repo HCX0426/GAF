@@ -14,8 +14,8 @@ from datetime import timedelta
 from celery import shared_task
 from django.db.models import Q
 from django.utils import timezone
+from workers.models import Worker
 
-from agents.models import Agent
 from tasks.models import TaskExecution
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ def mark_agent_devices_offline(agent) -> int:
 
     Returns the number of devices flipped.
     """
-    from agents.models import Device
+    from workers.models import Device
 
     updated = Device.objects.filter(
         agent=agent,
@@ -90,7 +90,7 @@ def _restore_device_status(execution):
     if execution is None or execution.device_id is None:
         return
     try:
-        from agents.models import Device as _Device
+        from workers.models import Device as _Device
         still_running = TaskExecution.objects.filter(
             device_id=execution.device_id,
             status=TaskExecution.Status.RUNNING,
@@ -124,8 +124,8 @@ def check_agent_heartbeats():
     # status=ONLINE) would stay ONLINE forever and appear as a phantom agent
     # on the dashboard. Union the IS NULL case so those rows are flipped OFFLINE
     # too — the real agent process re-registers online on its next heartbeat.
-    stale_agents = Agent.objects.filter(
-        status__in=[Agent.Status.ONLINE, Agent.Status.BUSY, Agent.Status.IDLE],
+    stale_agents = Worker.objects.filter(
+        status__in=[Worker.Status.ONLINE, Worker.Status.BUSY, Worker.Status.IDLE],
     ).filter(
         Q(last_heartbeat__isnull=True) | Q(last_heartbeat__lt=timeout_threshold),
     )
@@ -150,7 +150,7 @@ def check_agent_heartbeats():
             result = {'action': 'waiting'}
 
         # 2. 标记 Agent 为 OFFLINE
-        agent.status = Agent.Status.OFFLINE
+        agent.status = Worker.Status.OFFLINE
         agent.save(update_fields=['status'])
 
         # 3. 若 action 为 'waiting' (grace period 未到) 或 fallback 异常,
@@ -258,8 +258,8 @@ def check_dispatch_acks():
         attempts = int((execution.execution_snapshot or {}).get("dispatch_attempts") or 1)
         # 注意: execution.agent_id 是 FK 列 (Agent.pk), 不是 Agent.agent_id
         # 字符串标识符 — 用 pk 查询避免查不到在线 agent 误判为离线.
-        agent = Agent.objects.filter(pk=execution.agent_id).first()
-        if agent is not None and agent.status != Agent.Status.OFFLINE and attempts < DISPATCH_MAX_ATTEMPTS:
+        agent = Worker.objects.filter(pk=execution.agent_id).first()
+        if agent is not None and agent.status != Worker.Status.OFFLINE and attempts < DISPATCH_MAX_ATTEMPTS:
             logger.warning(
                 "check_dispatch_acks: execution %s 派发超时未确认 (attempt=%d), 重新派发 agent=%s",
                 execution.id, attempts, agent.agent_id,

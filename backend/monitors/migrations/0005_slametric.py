@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0017_device_game_profile_account_indexes'),
+        ('workers', '0017_device_game_profile_account_indexes'),
         ('monitors', '0004_alter_monitorevent_acknowledged_by_and_more'),
     ]
 
@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
                 ('value', models.FloatField(verbose_name='指标值')),
                 ('labels', models.JSONField(blank=True, default=dict, verbose_name='标签')),
                 ('timestamp', models.DateTimeField(auto_now_add=True, db_index=True, verbose_name='时间戳')),
-                ('agent', models.ForeignKey(blank=True, help_text='Agent that reported this metric (null for system-level metrics).', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='sla_metrics', to='agents.agent', verbose_name='Agent')),
+                ('agent', models.ForeignKey(blank=True, help_text='Agent that reported this metric (null for system-level metrics).', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='sla_metrics', to='workers.Worker', verbose_name='Agent')),
             ],
             options={
                 'verbose_name': 'SLA 指标',

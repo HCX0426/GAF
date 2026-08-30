@@ -64,7 +64,7 @@ def create_chain_execution_and_dispatch(
         ChainDispatchError: if chain is missing, disabled, has no nodes,
             or no online agent is available
     """
-    from agents.models import Agent
+    from workers.models import Worker
 
     try:
         chain = TaskChain.objects.get(pk=chain_id)
@@ -80,18 +80,18 @@ def create_chain_execution_and_dispatch(
         raise ChainDispatchError(f'TaskChain [{chain.name}] has no nodes')
 
     # Resolve agent: explicit agent_id wins, else auto-pick online agent
-    online_statuses = (Agent.Status.ONLINE, Agent.Status.IDLE)
+    online_statuses = (Worker.Status.ONLINE, Worker.Status.IDLE)
     if agent_id:
         try:
-            agent = Agent.objects.get(agent_id=agent_id)
+            agent = Worker.objects.get(agent_id=agent_id)
             if agent.status not in online_statuses:
                 raise ChainDispatchError(
                     f'Agent {agent_id} is not online (status={agent.status})'
                 )
-        except Agent.DoesNotExist as exc:
+        except Worker.DoesNotExist as exc:
             raise ChainDispatchError(f'Agent {agent_id} not found') from exc
     else:
-        agent = Agent.objects.filter(status__in=online_statuses).first()
+        agent = Worker.objects.filter(status__in=online_statuses).first()
         if agent is None:
             raise ChainDispatchError('No online Agent available')
         agent_id = agent.agent_id

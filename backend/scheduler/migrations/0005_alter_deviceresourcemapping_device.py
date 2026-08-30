@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0005_add_agent_health_fields'),
+        ('workers', '0005_add_agent_health_fields'),
         ('scheduler', '0004_phase6_unattended_scheduler'),
     ]
 
@@ -15,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='deviceresourcemapping',
             name='device',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='resource_mappings', to='agents.device', verbose_name='设备'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='resource_mappings', to='workers.Device', verbose_name='设备'),
         ),
     ]

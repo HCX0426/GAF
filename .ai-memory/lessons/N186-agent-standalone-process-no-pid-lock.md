@@ -8,7 +8,7 @@ solution: agent 独立进程 __main__.py 加 acquire_singleton_lock PID 文件�
 diff_keywords: ["main", "__main__", "agent", "runtime", "agent_runtime", "overview", "deployment", "design", "deployment-design", "agent-startup", "pid-lock", "singleton"]
 related_files:
   - agent/src/__main__.py
-  - backend/agents/agent_runtime.py
+  - backend/workers/agent_runtime.py
   - docs/architecture/overview.md
   - docs/architecture/desktop/deployment-design.md
 created_by: AI

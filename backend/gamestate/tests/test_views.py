@@ -242,7 +242,7 @@ class TaskSerializerFieldsTest(TestCase):
         assert 'allowed_resource_packs' not in fields
 
     def test_device_serializer_has_game_account(self):
-        from agents.serializers import DeviceSerializer
+        from workers.serializers import DeviceSerializer
         fields = DeviceSerializer().fields
         assert 'game_account' in fields
 

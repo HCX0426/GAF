@@ -23,10 +23,10 @@ from django.test import TestCase
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
+from workers.models import Worker
 
 from accounts.models import User
-from agents.models import Agent
-from tasks.models import Task, TaskExecution, ExecutionStep
+from tasks.models import ExecutionStep, Task, TaskExecution
 
 
 class TestNodeTraceAction(TestCase):
@@ -46,10 +46,10 @@ class TestNodeTraceAction(TestCase):
         )
         self.client.force_authenticate(user=self.admin)
 
-        self.agent = Agent.objects.create(
+        self.agent = Worker.objects.create(
             agent_id='node-trace-test-agent',
             hostname='trace-host',
-            status=Agent.Status.IDLE,
+            status=Worker.Status.IDLE,
             is_local=True,
             capabilities={"windows": True},
         )

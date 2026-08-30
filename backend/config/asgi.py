@@ -22,8 +22,8 @@ from channels.auth import AuthMiddlewareStack  # noqa: E402
 from channels.routing import ProtocolTypeRouter, URLRouter  # noqa: E402
 from django.core.asgi import get_asgi_application  # noqa: E402
 from gaf_core.tracing.channels_middleware import TracingChannelsMiddleware  # noqa: E402
+from workers.routing import websocket_urlpatterns as agents_ws_urlpatterns  # noqa: E402
 
-from agents.routing import websocket_urlpatterns as agents_ws_urlpatterns  # noqa: E402
 from notifications.routing import websocket_urlpatterns as notifications_ws_urlpatterns  # noqa: E402
 from protocol.middleware import TokenAuthMiddleware  # noqa: E402
 from protocol.routing import websocket_urlpatterns as protocol_ws_urlpatterns  # noqa: E402

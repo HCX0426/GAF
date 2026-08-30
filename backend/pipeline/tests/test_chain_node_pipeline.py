@@ -11,9 +11,9 @@ Tests the dispatch_chain_node branching logic:
 from unittest.mock import patch
 
 from django.test import TestCase
+from workers.models import Worker
 
 from accounts.models import User
-from agents.models import Agent
 from pipeline.models import (
     Pipeline,
     TaskChain,
@@ -34,9 +34,9 @@ class ChainPipelineNodeTestBase(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(username='td110_user', password='Pass123!')
-        self.agent = Agent.objects.create(
+        self.agent = Worker.objects.create(
             agent_id='td110-agent-001',
-            status=Agent.Status.ONLINE,
+            status=Worker.Status.ONLINE,
         )
         self.chain = TaskChain.objects.create(
             name='TD-110 Test Chain',
@@ -159,7 +159,7 @@ class DispatchPipelineNodeTests(ChainPipelineNodeTestBase):
         self.assertIn('WS connection refused', execution.error_message)
 
     def test_dispatch_pipeline_node_missing_agent_fails_chain(self):
-        """Agent.DoesNotExist → chain FAILED without creating TaskExecution."""
+        """Worker.DoesNotExist → chain FAILED without creating TaskExecution."""
         chain_exec = self._make_chain_exec()
         chain_exec.agent_id = 'ghost-agent'
         chain_exec.save(update_fields=['agent_id'])

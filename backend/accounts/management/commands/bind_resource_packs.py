@@ -17,9 +17,9 @@ Usage:
     conda run -n gaf python manage.py bind_resource_packs --include-devices  # 同时修 Device.game_profile
 """
 from django.core.management.base import BaseCommand
+from workers.models import Device
 
 from accounts.models import GameAccount
-from agents.models import Device
 from resources.models import ResourcePack
 
 
@@ -107,7 +107,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.MIGRATE_HEADING(
                 '=== Pass 2: Device.game_profile (按 extra_info.window_title) ==='
             ))
-            from agents.game_binding import bind_game_profile_by_title
+            from workers.game_binding import bind_game_profile_by_title
             dev_bound = 0
             dev_skipped = 0
             for dev in Device.objects.all():

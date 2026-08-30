@@ -39,7 +39,7 @@ class Migration(migrations.Migration):
         # window (e.g. protocol.0002_agentsession_token_hash) crashes building
         # StateApps with an unresolved lazy reference.
         ('resources', '0009_alter_resourcepack_game_profile_fk'),
-        ('agents', '0011_alter_device_game_profile_fk'),
+        ('workers', '0011_alter_device_game_profile_fk'),
     ]
 
     operations = [

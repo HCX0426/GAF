@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock
 from asgiref.sync import async_to_sync
 from django.test import TestCase
 from gaf_core.utils.tokens import hash_token, make_token_preview
+from workers.models import Worker
 
-from agents.models import Agent
 from protocol.middleware import TokenAuthMiddleware, _is_localhost_bypass_enabled
 from protocol.tests import TEST_WS_PATH
 
@@ -19,12 +19,12 @@ class TestTokenAuthMiddleware(TestCase):
         """初始化测试数据：创建 Agent 记录和中间件实例。"""
         # C4 fix: middleware now queries agent_token_hash (not plaintext agent_token).
         self.plaintext_token = 'test-token-abc123'
-        self.agent = Agent.objects.create(
+        self.agent = Worker.objects.create(
             agent_id='middleware-test-agent',
             hostname='middleware-test',
             agent_token_hash=hash_token(self.plaintext_token),
             agent_token_preview=make_token_preview(self.plaintext_token),
-            status=Agent.Status.OFFLINE,
+            status=Worker.Status.OFFLINE,
         )
         self.middleware = TokenAuthMiddleware(MagicMock())
 
@@ -183,11 +183,11 @@ class TestLocalhostBypassFlag(TestCase):
     def test_localhost_accepted_when_bypass_enabled_with_local_agent(self):
         """TD-037: tokenless localhost accepted when bypass on + local agent exists."""
         self._set_env(GAF_ALLOW_LOCALHOST_BYPASS='1')
-        Agent.objects.create(
+        Worker.objects.create(
             agent_id='local-bypass-test',
             hostname='local-host',
             is_local=True,
-            status=Agent.Status.ONLINE,
+            status=Worker.Status.ONLINE,
         )
         inner_app = AsyncMock()
         middleware = TokenAuthMiddleware(inner_app)

@@ -5,14 +5,14 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from django.conf import settings
-
-from accounts.factories import AdminUserFactory, OperatorUserFactory, UserFactory
-from agents.factories import (
-    AgentFactory,
+from workers.factories import (
     DeviceFactory,
     DeviceGroupFactory,
     WindowsDeviceFactory,
+    WorkerFactory,
 )
+
+from accounts.factories import AdminUserFactory, OperatorUserFactory, UserFactory
 from tasks.factories import TaskExecutionFactory, TaskFactory
 
 
@@ -79,8 +79,8 @@ def admin(db):
 
 @pytest.fixture
 def agent(db):
-    """Return an online agent."""
-    return AgentFactory()
+    """Return an online agent (worker)."""
+    return WorkerFactory()
 
 
 @pytest.fixture

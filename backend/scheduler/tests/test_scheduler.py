@@ -33,9 +33,9 @@ from gaf_core.error_codes import ErrorCode
 from pipeline.models import TaskChain, TaskChainExecution, TaskChainNode
 from rest_framework import status
 from rest_framework.test import APIClient
+from workers.models import Device, Worker
 
 from accounts.models import GameAccount, User
-from agents.models import Agent, Device
 from gamestate.models import GameProfile
 from scheduler.engine import (
     calculate_account_order,
@@ -492,10 +492,10 @@ class TestUnattendedStartRealDispatch(TestCase):
         )
         profile.default_task_chain = chain
         profile.save(update_fields=['default_task_chain'])
-        agent = Agent.objects.create(
+        agent = Worker.objects.create(
             agent_id='online-agent-1',
             hostname='host-1',
-            status=Agent.Status.ONLINE,
+            status=Worker.Status.ONLINE,
         )
         Device.objects.create(
             name='Win-PC-1',
@@ -528,10 +528,10 @@ class TestUnattendedStartRealDispatch(TestCase):
         profile.default_task_chain = chain
         profile.save(update_fields=['default_task_chain'])
         # Device with offline agent
-        offline_agent = Agent.objects.create(
+        offline_agent = Worker.objects.create(
             agent_id='offline-agent-1',
             hostname='host-offline',
-            status=Agent.Status.OFFLINE,
+            status=Worker.Status.OFFLINE,
         )
         Device.objects.create(
             name='Win-Offline',
@@ -569,10 +569,10 @@ class TestUnattendedStartRealDispatch(TestCase):
         task = Task.objects.create(name='Task A')
         TaskChainNode.objects.create(chain=chain, task=task, order=1)
 
-        agent = Agent.objects.create(
+        agent = Worker.objects.create(
             agent_id='online-agent-2',
             hostname='host-2',
-            status=Agent.Status.ONLINE,
+            status=Worker.Status.ONLINE,
         )
         Device.objects.create(
             name='Win-Online',
@@ -1473,10 +1473,10 @@ def tick_game_profile(db):
 @pytest.fixture
 def online_agent(db):
     """Agent with status=ONLINE."""
-    return Agent.objects.create(
+    return Worker.objects.create(
         agent_id='tick-agent-001',
         hostname='tick-host',
-        status=Agent.Status.ONLINE,
+        status=Worker.Status.ONLINE,
     )
 
 
@@ -1881,10 +1881,10 @@ def test_tick_continues_after_device_exception(running_session, tick_user):
     # second; both devices must be attempted, and the successful one's
     # account must be tracked.
     profile = running_session.game_profile
-    agent = Agent.objects.create(
+    agent = Worker.objects.create(
         agent_id='tick-agent-002',
         hostname='tick-host-2',
-        status=Agent.Status.ONLINE,
+        status=Worker.Status.ONLINE,
     )
 
     dev1 = Device.objects.create(
@@ -1963,10 +1963,10 @@ def test_tick_scopes_devices_by_session_game_profile(
             name='Other Chain', is_enabled=True,
         ),
     )
-    other_agent = Agent.objects.create(
+    other_agent = Worker.objects.create(
         agent_id='other-agent',
         hostname='other-host',
-        status=Agent.Status.ONLINE,
+        status=Worker.Status.ONLINE,
     )
     other_device = Device.objects.create(
         name='other-device',
@@ -2247,9 +2247,9 @@ class TestRecoveryLogAuth:
 # ─────────────────────────────────────────────
 
 
-def _make_agent(*, status=Agent.Status.ONLINE, last_heartbeat=None, agent_id='agent-1'):
+def _make_agent(*, status=Worker.Status.ONLINE, last_heartbeat=None, agent_id='agent-1'):
     """Create a minimal Agent for testing."""
-    return Agent.objects.create(
+    return Worker.objects.create(
         agent_id=agent_id,
         hostname=f'host-{agent_id}',
         status=status,
@@ -2482,7 +2482,7 @@ class TestHeartbeatAgentTimeoutWiring(TestCase):
         self.stale_heartbeat = timezone.now() - timedelta(seconds=60)
         self.agent = _make_agent(
             agent_id='stale-agent',
-            status=Agent.Status.ONLINE,
+            status=Worker.Status.ONLINE,
             last_heartbeat=self.stale_heartbeat,
         )
 
@@ -2514,7 +2514,7 @@ class TestHeartbeatAgentTimeoutWiring(TestCase):
             check_agent_heartbeats()
 
         self.agent.refresh_from_db()
-        self.assertEqual(self.agent.status, Agent.Status.OFFLINE)
+        self.assertEqual(self.agent.status, Worker.Status.OFFLINE)
 
     def test_never_heartbeated_agent_marked_offline(self):
         """ONLINE agent 从未心跳 (last_heartbeat=None) 也应被标记 OFFLINE.
@@ -2526,10 +2526,10 @@ class TestHeartbeatAgentTimeoutWiring(TestCase):
         """
         # NOTE: 不能走 _make_agent — 它会把 last_heartbeat=None 兜底成当前时间。
         # 这里直接建一条真的"从未心跳"记录 (last_heartbeat IS NULL)。
-        phantom_agent = Agent.objects.create(
+        phantom_agent = Worker.objects.create(
             agent_id='phantom-agent',
             hostname='host-phantom-agent',
-            status=Agent.Status.ONLINE,
+            status=Worker.Status.ONLINE,
             last_heartbeat=None,
         )
         # Agent 离线后其管理的窗口必须联动离线 (一致性, mark_agent_devices_offline)
@@ -2552,7 +2552,7 @@ class TestHeartbeatAgentTimeoutWiring(TestCase):
         # never-heartbeated → 按最大超时处理, 不应为负或极小
         self.assertGreaterEqual(phantom_kwargs['timeout_duration_seconds'], 30)
         phantom_agent.refresh_from_db()
-        self.assertEqual(phantom_agent.status, Agent.Status.OFFLINE)
+        self.assertEqual(phantom_agent.status, Worker.Status.OFFLINE)
         # 窗口联动离线
         phantom_device.refresh_from_db()
         self.assertEqual(phantom_device.status, Device.Status.OFFLINE)
@@ -2602,7 +2602,7 @@ class TestHeartbeatAgentTimeoutWiring(TestCase):
         """ONLINE agent 心跳未超时 → 不应被处理."""
         fresh_agent = _make_agent(
             agent_id='fresh-agent',
-            status=Agent.Status.ONLINE,
+            status=Worker.Status.ONLINE,
             last_heartbeat=timezone.now(),
         )
 
@@ -2617,7 +2617,7 @@ class TestHeartbeatAgentTimeoutWiring(TestCase):
             timeout_duration_seconds=mock_handler.call_args.kwargs['timeout_duration_seconds'],
         )
         fresh_agent.refresh_from_db()
-        self.assertEqual(fresh_agent.status, Agent.Status.ONLINE)
+        self.assertEqual(fresh_agent.status, Worker.Status.ONLINE)
 
 
 # ─────────────────────────────────────────────
@@ -2630,9 +2630,9 @@ class TestExecuteRecoveryActionRealActions(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(username='action_user', password='test123')
-        self.agent = _make_agent(agent_id='action-agent', status=Agent.Status.ONLINE)
+        self.agent = _make_agent(agent_id='action-agent', status=Worker.Status.ONLINE)
         # 第二个 agent 作为 reassign 备用
-        self.backup_agent = _make_agent(agent_id='backup-agent', status=Agent.Status.ONLINE)
+        self.backup_agent = _make_agent(agent_id='backup-agent', status=Worker.Status.ONLINE)
         self.task = Task.objects.create(name='action-task')
         self.task_result = TaskExecution.objects.create(
             task=self.task,
@@ -2711,7 +2711,7 @@ class TestExecuteRecoveryActionRealActions(TestCase):
 
         self.assertTrue(result['success'])
         self.agent.refresh_from_db()
-        self.assertEqual(self.agent.status, Agent.Status.OFFLINE)
+        self.assertEqual(self.agent.status, Worker.Status.OFFLINE)
 
     def test_action_mark_offline_agent_not_found(self):
         """target_id 不存在时返回 success=False."""
@@ -2756,9 +2756,9 @@ class TestExecuteRecoveryActionRealActions(TestCase):
         """无可用 agent 时返回 success=False."""
 
         # backup_agent 设为 BUSY, 不可用
-        self.backup_agent.status = Agent.Status.BUSY
+        self.backup_agent.status = Worker.Status.BUSY
         self.backup_agent.save(update_fields=['status'])
-        self.agent.status = Agent.Status.OFFLINE
+        self.agent.status = Worker.Status.OFFLINE
         self.agent.save(update_fields=['status'])
 
         result = execute_recovery_action(

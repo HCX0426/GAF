@@ -126,7 +126,7 @@ class TestWgcRemovedFromMultiGameSafeList(TestCase):
     def test_wgc_not_in_safe_screenshot_methods(self):
         """Import via the Django app registry (agents.models, not backend.agents.models)
         so the model class resolves its app_label correctly."""
-        from agents.models import MULTI_GAME_SAFE_SCREENSHOT_METHODS
+        from workers.models import MULTI_GAME_SAFE_SCREENSHOT_METHODS
 
         self.assertNotIn('wgc', MULTI_GAME_SAFE_SCREENSHOT_METHODS)
         # Real safe methods should still be present.

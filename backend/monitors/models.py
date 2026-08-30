@@ -12,7 +12,7 @@ class SLAMetric(models.Model):
     """
 
     agent = models.ForeignKey(
-        'agents.Agent',
+        'workers.Worker',
         on_delete=models.CASCADE,
         related_name='sla_metrics',
         null=True,
@@ -159,7 +159,7 @@ class MonitorEvent(models.Model):
         help_text='事件的详细数据',
     )
     agent = models.ForeignKey(
-        'agents.Agent',
+        'workers.Worker',
         on_delete=models.SET_NULL,
         null=True,
         related_name='monitor_events',

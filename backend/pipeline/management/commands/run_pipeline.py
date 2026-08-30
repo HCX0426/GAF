@@ -29,7 +29,8 @@ class Command(BaseCommand):
         agent_id = options['agent']
         wait = options['wait']
 
-        from agents.models import Device
+        from workers.models import Device
+
         from pipeline.models import Pipeline
         from tasks.models import TaskExecution
 

@@ -25,8 +25,8 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from pipeline.models import TaskChain, TaskChainExecution
+from workers.models import Device, Worker
 
-from agents.models import Agent, Device
 from gamestate.models import GameProfile
 from scheduler.models import (
     AutoStopCondition,
@@ -71,10 +71,10 @@ def game_profile(game_chain):
 @pytest.fixture
 def online_agent(db):
     """Agent with status=ONLINE."""
-    return Agent.objects.create(
+    return Worker.objects.create(
         agent_id='hook-agent-001',
         hostname='hook-host',
-        status=Agent.Status.ONLINE,
+        status=Worker.Status.ONLINE,
     )
 
 

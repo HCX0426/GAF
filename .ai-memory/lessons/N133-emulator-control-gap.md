@@ -24,8 +24,8 @@ solution: '1. Stop the buggy find_arknights_click.py script (it iterates all con
 priority: high
 diff_keywords: ["test", "script", "loops", "clicking", "all", "emulator", "icons", "gaf", "click", "input", "apis", "only"]
 related_files:
-- backend/agents/views.py
-- backend/agents/urls.py
+- backend/workers/views.py
+- backend/workers/urls.py
 - frontend/src/api/devices.ts
 - frontend/src/components/device/DeviceOperationPanel.tsx
 cross_refs:

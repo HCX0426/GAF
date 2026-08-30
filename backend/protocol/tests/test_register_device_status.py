@@ -10,9 +10,9 @@ because register_agent_device hard-coded Device.Status.ONLINE.
 
 import pytest
 from django.test import TestCase
+from workers.factories import WorkerFactory
+from workers.models import Device
 
-from agents.factories import AgentFactory
-from agents.models import Device
 from protocol.services import register_agent_device
 
 pytestmark = pytest.mark.e2e
@@ -20,7 +20,7 @@ pytestmark = pytest.mark.e2e
 
 class TestRegisterAgentDeviceStatus(TestCase):
     def setUp(self):
-        self.agent = AgentFactory()
+        self.agent = WorkerFactory()
 
     def test_offline_status_is_respected(self):
         result = register_agent_device(

@@ -9,9 +9,9 @@ URL prefix: /api/v2/monitors/sla/
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
+from workers.models import Worker
 
 from accounts.models import User
-from agents.models import Agent
 from monitors.models import SLAMetric
 
 SLA_URL = '/api/v2/monitors/sla/'
@@ -81,7 +81,7 @@ class SLAMetricViewSetTests(TestCase):
         self.assertEqual(_unwrap(resp)['value'], 42)
 
     def test_retrieve_metric_includes_agent_name(self):
-        agent = Agent.objects.create(agent_id='s-agent-001', hostname='s-host')
+        agent = Worker.objects.create(agent_id='s-agent-001', hostname='s-host')
         metric = SLAMetric.objects.create(
             metric_name='latency', value=10, agent=agent,
         )

@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0003_device_devicegroup_device_idx_device_type_and_more'),
+        ('workers', '0003_device_devicegroup_device_idx_device_type_and_more'),
         ('tasks', '0008_task_tags_marketplaceitem_recording_and_more'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
@@ -61,7 +61,7 @@ class Migration(migrations.Migration):
                 ('metric_value', models.FloatField(verbose_name='指标值')),
                 ('tags', models.JSONField(default=dict, verbose_name='标签')),
                 ('recorded_at', models.DateTimeField(auto_now_add=True, verbose_name='记录时间')),
-                ('agent', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='sla_metrics', to='agents.agent', verbose_name='Agent')),
+                ('agent', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='sla_metrics', to='workers.Worker', verbose_name='Agent')),
             ],
             options={
                 'verbose_name': 'SLA 指标',

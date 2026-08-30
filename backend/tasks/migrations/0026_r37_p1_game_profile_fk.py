@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('accounts', '0013_r37_p1_game_profile_fk'),
-        ('agents', '0010_r37_p1_game_profile_fk'),
+        ('workers', '0010_r37_p1_game_profile_fk'),
         ('resources', '0007_r37_p1_game_profile_fk'),
         ('scheduler', '0006_delete_deviceresourcemapping'),
         ('tasks', '0025_pipeline_execution_tracking'),
@@ -746,7 +746,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='slametric',
             name='agent',
-            field=models.ForeignKey(blank=True, help_text='指标关联的 Agent', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='sla_metrics', to='agents.agent', verbose_name='Agent'),
+            field=models.ForeignKey(blank=True, help_text='指标关联的 Agent', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='sla_metrics', to='workers.Worker', verbose_name='Agent'),
         ),
         migrations.AlterField(
             model_name='slametric',
@@ -931,7 +931,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='taskdevice',
             name='device',
-            field=models.ForeignKey(help_text='关联的设备记录', on_delete=django.db.models.deletion.CASCADE, related_name='task_mappings', to='agents.device', verbose_name='关联设备'),
+            field=models.ForeignKey(help_text='关联的设备记录', on_delete=django.db.models.deletion.CASCADE, related_name='task_mappings', to='workers.Device', verbose_name='关联设备'),
         ),
         migrations.AlterField(
             model_name='taskdevice',
@@ -946,7 +946,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='taskexecution',
             name='agent',
-            field=models.ForeignKey(help_text='执行该任务的 Agent', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='executions', to='agents.agent', verbose_name='执行 Agent'),
+            field=models.ForeignKey(help_text='执行该任务的 Agent', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='executions', to='workers.Worker', verbose_name='执行 Agent'),
         ),
         migrations.AlterField(
             model_name='taskexecution',

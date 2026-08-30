@@ -34,7 +34,7 @@ from gaf_ai.tasks import (
     _verify_evidence,
     run_agent_analysis_task,
 )
-from tasks.models import Task, TaskExecution, ExecutionStep
+from tasks.models import ExecutionStep, Task, TaskExecution
 
 User = get_user_model()
 

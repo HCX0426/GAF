@@ -7,8 +7,8 @@ or str(device.id) for emulators.
 """
 
 from django.test import TestCase
+from workers.models import Device, Worker
 
-from agents.models import Agent, Device
 from protocol.consumers import AgentConsumer
 
 
@@ -113,18 +113,18 @@ class TestMapDbDeviceIdsToAgent(TestCase):
 
     # --- helpers ---
 
-    async def _create_agent(self, agent_id: str) -> Agent:
+    async def _create_agent(self, agent_id: str) -> Worker:
         from asgiref.sync import sync_to_async
 
-        return await sync_to_async(Agent.objects.create)(
+        return await sync_to_async(Worker.objects.create)(
             agent_id=agent_id,
             hostname="test-host",
-            status=Agent.Status.ONLINE,
+            status=Worker.Status.ONLINE,
         )
 
     async def _create_device(
         self,
-        agent: Agent,
+        agent: Worker,
         name: str,
         device_type: str,
         window_handle: str = "",

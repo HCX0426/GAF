@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0017_device_game_profile_account_indexes'),
+        ('workers', '0017_device_game_profile_account_indexes'),
         ('tasks', '0046_remove_taskexecution_last_error'),
     ]
 
@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='taskexecution',
             name='agent',
-            field=models.ForeignKey(blank=True, help_text='执行该任务的 Agent', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='executions', to='agents.agent', verbose_name='执行 Agent'),
+            field=models.ForeignKey(blank=True, help_text='执行该任务的 Agent', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='executions', to='workers.Worker', verbose_name='执行 Agent'),
         ),
         migrations.AlterModelTable(
             name='taskexecution',

@@ -7,8 +7,8 @@ from unittest.mock import MagicMock
 from asgiref.sync import sync_to_async
 from channels.testing import WebsocketCommunicator
 from django.test import TestCase, override_settings
+from workers.models import Worker
 
-from agents.models import Agent
 from protocol.constants import MessageType
 from protocol.consumers import AgentConsumer
 from protocol.schemas import (
@@ -437,9 +437,9 @@ class TestAgentConsumerRegistration(TestCase):
         self.assertEqual(data["payload"]["status"], "registered")
         self.assertEqual(data["payload"]["agent_id"], "test-agent-cap-001")
 
-        agent = await sync_to_async(Agent.objects.get)(agent_id="test-agent-cap-001")
+        agent = await sync_to_async(Worker.objects.get)(agent_id="test-agent-cap-001")
         self.assertEqual(agent.hostname, "test-pc")
-        self.assertEqual(agent.status, Agent.Status.ONLINE)
+        self.assertEqual(agent.status, Worker.Status.ONLINE)
         self.assertIn("screenshot_methods", agent.capabilities)
         self.assertEqual(agent.capabilities["screenshot_methods"], ["pyautogui", "dxcam"])
 
@@ -469,10 +469,10 @@ class TestAgentConsumerRegistration(TestCase):
 
     async def test_agent_register_updates_existing(self):
         """验证重复注册同一 agent_id 时更新已有记录。"""
-        await sync_to_async(Agent.objects.create)(
+        await sync_to_async(Worker.objects.create)(
             agent_id="test-agent-update-001",
             hostname="old-host",
-            status=Agent.Status.OFFLINE,
+            status=Worker.Status.OFFLINE,
         )
 
         communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
@@ -494,9 +494,9 @@ class TestAgentConsumerRegistration(TestCase):
         data = json.loads(response)
         self.assertEqual(data["payload"]["status"], "registered")
 
-        agent = await sync_to_async(Agent.objects.get)(agent_id="test-agent-update-001")
+        agent = await sync_to_async(Worker.objects.get)(agent_id="test-agent-update-001")
         self.assertEqual(agent.hostname, "new-host")
-        self.assertEqual(agent.status, Agent.Status.ONLINE)
+        self.assertEqual(agent.status, Worker.Status.ONLINE)
         self.assertEqual(agent.capabilities["screenshot_methods"], ["dxcam"])
 
         await communicator.disconnect()
@@ -508,14 +508,14 @@ class TestAgentConsumerHeartbeat(TestCase):
 
     async def test_heartbeat_updates_last_heartbeat(self):
         """验证心跳消息更新数据库中的 last_heartbeat。"""
-        agent = await sync_to_async(Agent.objects.create)(
+        agent = await sync_to_async(Worker.objects.create)(
             agent_id="test-agent-hb-001",
             hostname="hb-host",
-            status=Agent.Status.ONLINE,
+            status=Worker.Status.ONLINE,
         )
 
         communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
-        communicator.scope['agent'] = MagicMock(agent_id='test-agent-mock')
+        communicator.scope['agent'] = MagicMock(agent_id='test-agent-hb-001')
         await communicator.connect()
         await communicator.receive_from()
 
@@ -539,7 +539,7 @@ class TestAgentConsumerHeartbeat(TestCase):
 
         await sync_to_async(agent.refresh_from_db)()
         self.assertIsNotNone(agent.last_heartbeat)
-        self.assertEqual(agent.status, Agent.Status.BUSY)
+        self.assertEqual(agent.status, Worker.Status.BUSY)
 
         await communicator.disconnect()
 
@@ -667,14 +667,14 @@ class TestAgentConsumerDisconnect(TestCase):
 
     async def test_disconnect_sets_agent_offline(self):
         """验证断开连接后将 Agent 标记为离线。"""
-        agent = await sync_to_async(Agent.objects.create)(
+        agent = await sync_to_async(Worker.objects.create)(
             agent_id="test-agent-disconnect-001",
             hostname="dc-host",
-            status=Agent.Status.ONLINE,
+            status=Worker.Status.ONLINE,
         )
 
         communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
-        communicator.scope['agent'] = MagicMock(agent_id='test-agent-mock')
+        communicator.scope['agent'] = MagicMock(agent_id='test-agent-disconnect-001')
         await communicator.connect()
         await communicator.receive_from()
 
@@ -687,4 +687,4 @@ class TestAgentConsumerDisconnect(TestCase):
         await communicator.disconnect()
 
         await sync_to_async(agent.refresh_from_db)()
-        self.assertEqual(agent.status, Agent.Status.OFFLINE)
+        self.assertEqual(agent.status, Worker.Status.OFFLINE)

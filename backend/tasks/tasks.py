@@ -58,7 +58,7 @@ def _build_device_info_for_execution(execution):
     # v3 §2.8.1: resolve 'auto' fields against GameProfile defaults before
     # dispatching to agent. Agent's _derive_methods_from_control_mode does
     # not understand 'auto' control_mode, so we hand it a concrete value.
-    from agents.models import resolve_device_methods
+    from workers.models import resolve_device_methods
     resolved = resolve_device_methods(dev)
     control_mode = resolved['control_mode']
     # If control_mode is still 'auto' (no GameProfile default), fall back
@@ -118,8 +118,8 @@ def dispatch_task(self, execution_id, start_step_index=0, previous_results=None,
     # The contextvar is thread-local + asyncio-safe; Celery workers each
     # get their own context so concurrent dispatch_task calls don't collide.
     from gaf_core.tracing.context import current_execution_id, current_trace_id
+    from workers.models import Worker
 
-    from agents.models import Agent
     from tasks.agent_selector import AgentSelector
     from tasks.concurrency_controller import get_default_controller
     from tasks.models import TaskExecution
@@ -217,7 +217,7 @@ def dispatch_task(self, execution_id, start_step_index=0, previous_results=None,
     # 防御性检查: 即便 bind_game_profile 已拦截, dispatch 时仍校验,
     # 防止配置被绕过(如: 手动改 DB / 旧数据同步 / 自动绑定延迟).
     if execution.device_id is not None:
-        from agents.models import Device as _Device
+        from workers.models import Device as _Device
         _dev = _Device.objects.select_related('game_profile').filter(
             id=execution.device_id,
         ).first()
@@ -255,7 +255,7 @@ def dispatch_task(self, execution_id, start_step_index=0, previous_results=None,
     )
 
     available_agents = list(
-        Agent.objects.filter(status__in=[Agent.Status.IDLE, Agent.Status.ONLINE])
+        Worker.objects.filter(status__in=[Worker.Status.IDLE, Worker.Status.ONLINE])
     )
 
     if not available_agents:
@@ -306,11 +306,11 @@ def dispatch_task(self, execution_id, start_step_index=0, previous_results=None,
     # 跳过 AgentSelector 的能力匹配, 直接使用调用方预选的 Agent。设备忙/
     # 并发/能力检查仍在上方统一执行, chain 路径获得与普通任务相同的保障.
     if force_agent_id:
-        forced = Agent.objects.filter(agent_id=force_agent_id).first()
+        forced = Worker.objects.filter(agent_id=force_agent_id).first()
         if forced is None or forced.status not in (
-            Agent.Status.ONLINE,
-            Agent.Status.IDLE,
-            Agent.Status.BUSY,
+            Worker.Status.ONLINE,
+            Worker.Status.IDLE,
+            Worker.Status.BUSY,
         ):
             execution.status = TaskExecution.Status.FAILED
             execution.error_message = f"指定的 Agent {force_agent_id} 不存在或离线"
@@ -340,7 +340,7 @@ def dispatch_task(self, execution_id, start_step_index=0, previous_results=None,
     execution.status = TaskExecution.Status.RUNNING
     execution.save()
 
-    agent.status = Agent.Status.BUSY
+    agent.status = Worker.Status.BUSY
     agent.save()
 
     # Mark the target device as BUSY so the frontend / device list view
@@ -349,7 +349,7 @@ def dispatch_task(self, execution_id, start_step_index=0, previous_results=None,
     # back to ONLINE once the execution finalizes AND no other RUNNING
     # execution shares the device.
     if execution.device_id:
-        from agents.models import Device
+        from workers.models import Device
         Device.objects.filter(id=execution.device_id).update(status=Device.Status.BUSY)
         logger.info(
             "Device %s marked BUSY for execution %s",
@@ -549,8 +549,8 @@ def dispatch_task(self, execution_id, start_step_index=0, previous_results=None,
         execution.save()
         # 释放 agent BUSY + 设备 BUSY + 并发槽位
         try:
-            Agent.objects.filter(id=agent.id, status=Agent.Status.BUSY).update(
-                status=Agent.Status.IDLE
+            Worker.objects.filter(id=agent.id, status=Worker.Status.BUSY).update(
+                status=Worker.Status.IDLE
             )
         except Exception:  # noqa: BLE001 — best-effort cleanup
             logger.warning("dispatch fail: agent %s 状态释放失败", agent.agent_id)

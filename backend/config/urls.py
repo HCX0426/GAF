@@ -13,7 +13,7 @@ urlpatterns = [
     # agents.urls defines /agents/, /devices/, /device-groups/ resources directly.
     # Do NOT add an extra /agents/ prefix here; that would create duplicate paths
     # like /api/v2/agents/agents/ and break client expectations.
-    path(f"{API_PREFIX}/", include("agents.urls")),
+    path(f"{API_PREFIX}/", include("workers.urls")),
     path(f"{API_PREFIX}/{_R['tasks']}/", include("tasks.urls")),
     path(f"{API_PREFIX}/{_R['resources']}/", include("resources.urls")),
     path(f"{API_PREFIX}/{_R['monitors']}/", include("monitors.urls")),

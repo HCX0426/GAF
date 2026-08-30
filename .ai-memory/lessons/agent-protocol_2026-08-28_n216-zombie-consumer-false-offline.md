@@ -5,7 +5,7 @@ solution: Agent 状态 idle↔offline 抖动且日志显示"心跳超时 15161s"
 related_files:
   - backend/protocol/consumers.py
   - backend/protocol/services.py
-  - backend/agents/agent_runtime.py
+  - backend/workers/agent_runtime.py
   - agent/src/client/connection.py
 created_by: AI
 priority: high

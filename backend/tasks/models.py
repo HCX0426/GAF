@@ -194,7 +194,7 @@ class TaskDevice(models.Model):
         help_text='关联的任务记录',
     )
     device = models.ForeignKey(
-        'agents.Device',
+        'workers.Device',
         on_delete=models.CASCADE,
         related_name='task_mappings',
         verbose_name='关联设备',
@@ -244,7 +244,7 @@ class TaskExecution(models.Model):
         help_text='Pipeline 执行时关联的 Pipeline 记录（链式任务执行时为空）',
     )
     agent = models.ForeignKey(
-        'agents.Agent',
+        'workers.Worker',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -288,7 +288,7 @@ class TaskExecution(models.Model):
         help_text='Window-centric: 本次执行绑定的游戏账户，dispatch_task 从此读取 resource_pack',
     )
     device = models.ForeignKey(
-        'agents.Device',
+        'workers.Device',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

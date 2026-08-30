@@ -471,7 +471,7 @@ def get_screenshot_base64(execution_id: int, step_index: int = None, raw: bool =
         import base64
         import os
 
-        from tasks.models import TaskExecution, ExecutionStep
+        from tasks.models import ExecutionStep, TaskExecution
 
         try:
             ex = TaskExecution.objects.get(pk=execution_id)

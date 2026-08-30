@@ -434,7 +434,7 @@ class TaskChainExecution(models.Model):
     # v3: device FK (was IntegerField). FK preserves referential integrity
     # and allows ORM joins. Migration 0008 copies old device_id values.
     device = models.ForeignKey(
-        'agents.Device',
+        'workers.Device',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

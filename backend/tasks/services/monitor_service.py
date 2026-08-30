@@ -74,7 +74,8 @@ def _restore_device_status(execution):
     if execution is None or execution.device_id is None:
         return
     try:
-        from agents.models import Device
+        from workers.models import Device
+
         from tasks.models import TaskExecution
 
         # Are any other executions still RUNNING on this device? If yes,
@@ -175,9 +176,9 @@ class TaskMonitorService:
             )
 
             if execution.agent:
-                from agents.models import Agent
+                from workers.models import Worker
 
-                execution.agent.status = Agent.Status.IDLE
+                execution.agent.status = Worker.Status.IDLE
                 execution.agent.save(update_fields=["status"])
                 # Release the concurrency slot acquired at dispatch time
                 # so the agent can accept new tasks immediately.
@@ -244,9 +245,9 @@ class TaskMonitorService:
                 )
 
                 if execution.agent:
-                    from agents.models import Agent
+                    from workers.models import Worker
 
-                    execution.agent.status = Agent.Status.IDLE
+                    execution.agent.status = Worker.Status.IDLE
                     execution.agent.save(update_fields=["status"])
                     # Release the concurrency slot acquired at dispatch
                     # time — the agent is now idle and can accept new work.
@@ -319,15 +320,15 @@ class TaskMonitorService:
         (broadcast_execution_status 通知前端 + trigger_recovery_on_task_failure 触发恢复).
         """
         from gaf_core.error_codes import NodeErrorCode
+        from workers.models import Worker
 
-        from agents.models import Agent
         from tasks.models import TaskExecution
 
         heartbeat_threshold = timezone.now() - timedelta(seconds=60)
         # NULL-safe: 从未心跳 (last_heartbeat=None) 的记录也必须算作超时 —
         # Django ``__lt`` 不匹配 NULL, 单独 OR 会留下永远 ONLINE 的幻影 agent
         # (与 tasks/heartbeat.py check_agent_heartbeats 对齐, 2026-08-27).
-        offline_agents = Agent.objects.filter(
+        offline_agents = Worker.objects.filter(
             status__in=["online", "busy", "idle"],
         ).filter(
             Q(last_heartbeat__isnull=True) | Q(last_heartbeat__lt=heartbeat_threshold),
@@ -366,7 +367,7 @@ class TaskMonitorService:
                 # Restore the device to ONLINE (multi-instance aware).
                 _restore_device_status(execution)
 
-            agent.status = Agent.Status.OFFLINE
+            agent.status = Worker.Status.OFFLINE
             agent.save(update_fields=["status"])
 
             # 一致性: agent 离线 → 其窗口 (Device) 联动离线 — 与

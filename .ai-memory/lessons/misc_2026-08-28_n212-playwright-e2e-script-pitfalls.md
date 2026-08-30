@@ -5,7 +5,7 @@ solution: Playwright E2E 三坑——URL 拼接禁用 urljoin（吞目录段）�
 related_files:
   - scripts/e2e/scenarios/full_routes.py
   - frontend/src/pages/AI/SkillMarket.tsx
-  - backend/agents/view_sets/scan_register.py
+  - backend/workers/view_sets/scan_register.py
 created_by: AI
 priority: high
 n_id: N212

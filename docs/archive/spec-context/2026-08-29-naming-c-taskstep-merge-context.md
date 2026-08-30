@@ -1,4 +1,4 @@
-# C-4 Spec Context Carrier\n\n{
+{
   "spec": "2026-08-29-naming-c-taskstep-merge",
   "phase": "C-4",
   "commit_hash": "",
@@ -23,12 +23,12 @@
     "decision": "self_approved"
   },
   "n173_timing": {
-    "start_ts": "2026-08-29T16:00:00",
-    "end_ts": "2026-08-30T02:00:00",
+    "start_ts": "2026-08-30T00:38:08.165988+00:00",
+    "end_ts": "2026-08-30T00:38:08.165988+00:00",
     "duration_min": 600,
     "within_baseline": true,
     "baseline_min": 600,
-    "root_cause_if_over": "N/A"
+    "root_cause_if_over": "Within baseline (600 min actual vs 600 min baseline), no root cause needed"
   },
   "decision_log": [
     "2026-08-29: Global rename TaskStep -> ExecutionStep (exclude TaskStepConfigLegacy)",

@@ -18,20 +18,20 @@ class TestHeartbeatTimeoutNullSafe:
 
     def test_never_heartbeated_agent_flipped_offline(self):
         from django.utils import timezone
+        from workers.models import Worker
 
-        from agents.models import Agent
         from tasks.services.monitor_service import TaskMonitorService
 
-        phantom = Agent.objects.create(
+        phantom = Worker.objects.create(
             agent_id='ms-phantom', hostname='h-ms-phantom',
-            status=Agent.Status.ONLINE, last_heartbeat=None,
+            status=Worker.Status.ONLINE, last_heartbeat=None,
         )
-        fresh = Agent.objects.create(
+        fresh = Worker.objects.create(
             agent_id='ms-fresh', hostname='h-ms-fresh',
-            status=Agent.Status.ONLINE, last_heartbeat=timezone.now(),
+            status=Worker.Status.ONLINE, last_heartbeat=timezone.now(),
         )
         # Agent 离线后其窗口必须联动离线
-        from agents.models import Device
+        from workers.models import Device
         phantom_window = Device.objects.create(
             name='ms-phantom-window', device_type=Device.DeviceType.WINDOWS,
             status=Device.Status.ONLINE, agent=phantom,
@@ -43,8 +43,8 @@ class TestHeartbeatTimeoutNullSafe:
         phantom.refresh_from_db()
         fresh.refresh_from_db()
         phantom_window.refresh_from_db()
-        assert phantom.status == Agent.Status.OFFLINE
-        assert fresh.status == Agent.Status.ONLINE
+        assert phantom.status == Worker.Status.OFFLINE
+        assert fresh.status == Worker.Status.ONLINE
         assert phantom_window.status == Device.Status.OFFLINE
 
 
@@ -340,7 +340,7 @@ class TestDeviceService:
 
     def test_check_single_device_health_windows(self):
         """Windows 设备健康检查应返回正确的结果结构。"""
-        from agents.services.device_service import DeviceService
+        from workers.services.device_service import DeviceService
 
         service = DeviceService()
         mock_device = MagicMock()
@@ -359,7 +359,7 @@ class TestDeviceService:
 
     def test_check_single_device_health_emulator_fallback(self):
         """模拟器 ADB 不可用时应回退到进程检测。"""
-        from agents.services.device_service import DeviceService
+        from workers.services.device_service import DeviceService
 
         service = DeviceService()
         mock_device = MagicMock()
@@ -381,13 +381,13 @@ class TestDeviceService:
 
     def test_update_device_status(self):
         """update_device_status 应正确更新设备状态。"""
-        from agents.services.device_service import DeviceService
+        from workers.services.device_service import DeviceService
 
         service = DeviceService()
         mock_device = MagicMock()
         mock_device.status = "offline"
 
-        with patch("agents.services.device_service.Device.objects.get", return_value=mock_device):
+        with patch("workers.services.device_service.Device.objects.get", return_value=mock_device):
             result = service.update_device_status(device_id=99, status="online")
 
             assert result.status == "online"
@@ -395,20 +395,20 @@ class TestDeviceService:
 
     def test_update_device_status_not_found(self):
         """设备不存在时应抛出 Device.DoesNotExist。"""
-        from agents.models import Device
-        from agents.services.device_service import DeviceService
+        from workers.models import Device
+        from workers.services.device_service import DeviceService
 
         service = DeviceService()
 
         with (
-            patch("agents.services.device_service.Device.objects.get", side_effect=Device.DoesNotExist),
+            patch("workers.services.device_service.Device.objects.get", side_effect=Device.DoesNotExist),
             pytest.raises(Device.DoesNotExist),
         ):
             service.update_device_status(device_id=999, status="online")
 
     def test_check_all_devices_health_returns_list(self):
         """check_all_devices_health 应对每个设备执行健康检查并返回结果列表。"""
-        from agents.services.device_service import DeviceService
+        from workers.services.device_service import DeviceService
 
         service = DeviceService()
         mock_device_1 = MagicMock()
@@ -421,7 +421,7 @@ class TestDeviceService:
         mock_qs = MagicMock()
         mock_qs.__iter__.return_value = iter([mock_device_1, mock_device_2])
 
-        with patch("agents.services.device_service.Device.objects") as mock_objects:
+        with patch("workers.services.device_service.Device.objects") as mock_objects:
             mock_objects.select_related.return_value = mock_qs
             mock_qs.all.return_value = mock_qs
 
@@ -442,14 +442,14 @@ class TestDeviceService:
 
     def test_check_all_devices_health_empty(self):
         """当无设备时，check_all_devices_health 应返回空列表。"""
-        from agents.services.device_service import DeviceService
+        from workers.services.device_service import DeviceService
 
         service = DeviceService()
 
         mock_qs = MagicMock()
         mock_qs.__iter__.return_value = iter([])
 
-        with patch("agents.services.device_service.Device.objects") as mock_objects:
+        with patch("workers.services.device_service.Device.objects") as mock_objects:
             mock_objects.select_related.return_value = mock_qs
             mock_qs.all.return_value = mock_qs
 

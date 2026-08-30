@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "channels",
     "accounts",
-    "agents",
+    "workers",
     "tasks",
     "resources",
     "monitors",
@@ -244,9 +244,9 @@ SPECTACULAR_SETTINGS = {
         # [pending, running, success, failed, cancelled] — chain execution status
         "ChainExecutionStatusEnum": "pipeline.models.TaskChainExecution.Status",
         # [online, offline, busy, idle] — agent heartbeat status
-        "AgentHeartbeatStatusEnum": "agents.models.Agent.Status",
+        "AgentHeartbeatStatusEnum": "workers.models.Worker.Status",
         # [online, offline, busy, error] — device lifecycle status
-        "DeviceStatusEnum": "agents.models.Device.Status",
+        "DeviceStatusEnum": "workers.models.Device.Status",
         # [pending, running, completed, failed] — shared by ModelEvaluation
         # and AgentSession (gaf_ai); single override resolves the collision
         # since both use the same choice set.

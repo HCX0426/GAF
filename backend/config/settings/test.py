@@ -31,6 +31,6 @@ CELERY_TASK_ALWAYS_EAGER = True
 # debug/YYYYMMDD/backend/system/, 被 daemon 报错扫描当成"服务报错"污染
 # 服务管理页计数 (实测 2026-08-29: OSError disk full / heartbeat TMError 均来自测试).
 # 测试环境下 database handler 替换为 NullHandler (console 输出保留).
-LOGGING["handlers"]["database"] = {
+LOGGING["handlers"]["database"] = {  # noqa: F405
     "class": "logging.NullHandler",
 }

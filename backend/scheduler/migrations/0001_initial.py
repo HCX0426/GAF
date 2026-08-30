@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('accounts', '0005_user_oauth_totp'),
-        ('agents', '0003_device_devicegroup_device_idx_device_type_and_more'),
+        ('workers', '0003_device_devicegroup_device_idx_device_type_and_more'),
         ('resources', '0003_recognizerbenchmark_template_templateannotation'),
     ]
 
@@ -75,7 +75,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('is_default', models.BooleanField(default=False, verbose_name='是否为默认映射')),
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='创建时间')),
-                ('device', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='resource_mappings', to='agents.agent', verbose_name='设备/Agent')),
+                ('device', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='resource_mappings', to='workers.Worker', verbose_name='设备/Agent')),
                 ('resource_pack', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='resources.resourcepack', verbose_name='资源包')),
             ],
             options={

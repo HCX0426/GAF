@@ -736,10 +736,10 @@ def agent_performance_view(request):
     返回每个 Agent 的执行统计
     """
     # @api_view allowed: cross-model analytics (Agent + TaskExecution), not model CRUD
-    from agents.models import Agent
+    from workers.models import Worker
 
     # 修复: 获取所有 Agent，不过滤 status 以显示全部
-    agents = Agent.objects.all().prefetch_related('devices')[:10]
+    agents = Worker.objects.all().prefetch_related('devices')[:10]
     result = []
 
     for agent in agents:

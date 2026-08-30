@@ -694,7 +694,7 @@ def cleanup_view(request):
     import os
     from datetime import timedelta
 
-    from tasks.models import TaskExecution, ExecutionStep
+    from tasks.models import ExecutionStep, TaskExecution
 
     data = request.data
     execution_days = int(data.get('execution_retention_days', 30))

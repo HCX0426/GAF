@@ -132,11 +132,10 @@ def unattended_start_view(request):
         ChainDispatchError,
         create_chain_execution_and_dispatch,
     )
-
-    from agents.models import Agent, Device
+    from workers.models import Device, Worker
 
     # Online agent statuses match pipeline.services.create_chain_execution_and_dispatch
-    online_statuses = (Agent.Status.ONLINE, Agent.Status.IDLE)
+    online_statuses = (Worker.Status.ONLINE, Worker.Status.IDLE)
     # P-011: filter devices by game_profile_id (not all online devices)
     devices = Device.objects.filter(
         agent__status__in=online_statuses,
@@ -156,7 +155,7 @@ def unattended_start_view(request):
     # having the system silently switch it.
     from settings.feature_flags import is_multi_game_mode_enabled
     if is_multi_game_mode_enabled():
-        from agents.models import MULTI_GAME_BLOCKED_INPUT_METHODS, resolve_device_methods
+        from workers.models import MULTI_GAME_BLOCKED_INPUT_METHODS, resolve_device_methods
         unsafe_devices = []
         for device in devices:
             resolved = resolve_device_methods(device)
@@ -491,7 +490,7 @@ def unattended_preflight_view(request):
 
     def check_device_online():
         """检测 1: 设备在线 — 检查目标 profile 的设备 Agent 心跳（未指定时全量）"""
-        from agents.models import Device
+        from workers.models import Device
 
         devices = Device.objects.all()
         if game_profile_id:
@@ -576,12 +575,12 @@ def unattended_preflight_view(request):
         """检测 4: Agent 连接 — 检查 Agent 心跳是否正常"""
         from datetime import timedelta
 
-        from agents.models import Agent
+        from workers.models import Worker
 
         cutoff = timezone.now() - timedelta(seconds=PREFLIGHT_HEARTBEAT_CUTOFF_SECONDS)
         # NULL-safe: 从未心跳的 Agent 也算 stale (``__lt`` 不匹配 NULL) —
         # 与 tasks/heartbeat.py 对齐, 2026-08-27
-        stale_agents = Agent.objects.filter(
+        stale_agents = Worker.objects.filter(
             Q(last_heartbeat__isnull=True) | Q(last_heartbeat__lt=cutoff),
         )
         if stale_agents.exists():
@@ -674,9 +673,9 @@ def unattended_status_view(request):
     """
     # @api_view allowed: cross-model matrix aggregation (Device x GameAccount x TaskExecution)
     from django.utils.timezone import now
+    from workers.models import Device
 
     from accounts.models import GameAccount
-    from agents.models import Device
     from tasks.models import TaskExecution
 
     devices = list(Device.objects.all()[:12])

@@ -131,8 +131,8 @@ class GameProfileViewSet(AuditMixin, viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def devices(self, request, *args, **kwargs):
-        from agents.models import Device
-        from agents.serializers import DeviceSerializer
+        from workers.models import Device
+        from workers.serializers import DeviceSerializer
 
         profile = self.get_object()
         qs = Device.objects.filter(game_profile=profile).select_related('agent', 'locked_by', 'game_profile')
@@ -378,8 +378,7 @@ class GameProfileViewSet(AuditMixin, viewsets.ModelViewSet):
             }``
         """
         from pipeline.services import ChainDispatchError, create_chain_execution_and_dispatch
-
-        from agents.models import Agent
+        from workers.models import Worker
 
         profile = self.get_object()
         chain = profile.default_task_chain
@@ -402,7 +401,7 @@ class GameProfileViewSet(AuditMixin, viewsets.ModelViewSet):
 
         # Optional override: force all dispatches through one Agent.
         forced_agent_id = request.data.get('agent_id')
-        online_statuses = (Agent.Status.ONLINE, Agent.Status.IDLE)
+        online_statuses = (Worker.Status.ONLINE, Worker.Status.IDLE)
 
         devices = (
             profile.devices

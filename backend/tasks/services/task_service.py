@@ -60,7 +60,7 @@ def execute_task(task, agent_id, user, device_id=None, game_account_id=None,
     """Execute a task: create TaskExecution + update game_accounts + dispatch.
 
     Wraps the cross-app ``Agent`` / ``Device`` lookups (TD-265) so views.py
-    no longer needs ``from agents.models import Agent``.
+    no longer needs ``from workers.models import Worker``.
 
     Window-centric (R37): ``TaskExecution.device`` 是单 FK, 记录本次执行
     具体在哪台设备上跑。``dispatch_task`` 通过 ``execution.device`` 构造
@@ -111,7 +111,8 @@ def execute_task(task, agent_id, user, device_id=None, game_account_id=None,
             provided but no match, or device_id 不属于 task.device_mappings,
             or game_account_id 不属于 task.game_accounts.
     """
-    from agents.models import Agent, Device  # cross-app import isolated (TD-265)
+    from workers.models import Device, Worker  # cross-app import isolated (TD-265)
+
     from resources.models import ResourcePack  # cross-app import isolated
     from tasks.models import TaskExecution
     from tasks.services.agent_resolver import resolve_online_agent
@@ -120,8 +121,8 @@ def execute_task(task, agent_id, user, device_id=None, game_account_id=None,
     agent = None
     if agent_id:
         try:
-            agent = Agent.objects.get(agent_id=agent_id)
-        except Agent.DoesNotExist:
+            agent = Worker.objects.get(agent_id=agent_id)
+        except Worker.DoesNotExist:
             raise TaskBindingError(f"Agent {agent_id} 不存在", status_code=400) from None
     else:
         # 用户默认 agent (2026-08-26): 调用方未显式指定 agent 时, 默认

@@ -4,8 +4,8 @@ symptom: [black-screen, adb-crash, gpu-tdr, heartbeat-storm, ctypes-hot-loop, n1
 solution: 黑屏家族合并 (N154+N155)。后台心跳循环 >= 30s; 危险操作默认禁用 (opt-in); N146 单例修复必须覆盖 ALL 代码路径 (agent + backend); ADB 优先用模拟器自带; 不重复启动 dev server 终端 (runserver/npm run dev); backend .py 编辑不需要确认 (代码防护 _kill_stale_agent_processes + GAF_AUTO_START_AGENT=0 默认)。
 diff_keywords: ["apps", "views", "base", "adb", "screenshot", "_adb_screenshot", "health", "checker", "health_checker", "manager", "project", "rules"]
 related_files:
-  - backend/agents/apps.py
-  - backend/agents/views.py
+  - backend/workers/apps.py
+  - backend/workers/views.py
   - backend/config/settings/base.py
   - backend/device_bridge/platforms/windows/_adb_screenshot.py
   - agent/src/devices/health_checker.py

@@ -29,6 +29,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from scheduler.models import GameAccountRotation
 from scheduler.serializers import GameAccountRotationSerializer
+from workers.services import (
+    create_agent_token,
+    get_agent_for_device_check,
+    is_agent_offline,
+    list_agent_tokens,
+    revoke_agent_token,
+)
 
 from accounts import crypto
 from accounts.models import APIKey, AuditLog, GameAccount, GameAccountGroup, LoginHistory, User, UserSession
@@ -61,13 +68,6 @@ from accounts.serializers import (
     UserCreateSerializer,
     UserSerializer,
     UserSessionSerializer,
-)
-from agents.services import (
-    create_agent_token,
-    get_agent_for_device_check,
-    is_agent_offline,
-    list_agent_tokens,
-    revoke_agent_token,
 )
 from config.app_info import ADB_COMMAND_TIMEOUT, NODE_COMMAND_TIMEOUT
 

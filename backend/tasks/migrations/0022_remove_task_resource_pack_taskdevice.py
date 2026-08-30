@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0006_device_metadata_enhancement'),
+        ('workers', '0006_device_metadata_enhancement'),
         ('tasks', '0021_remove_customtask_resource_packs_and_more'),
     ]
 
@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('is_default', models.BooleanField(default=False, verbose_name='是否为默认设备')),
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='创建时间')),
-                ('device', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='task_mappings', to='agents.device', verbose_name='关联设备')),
+                ('device', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='task_mappings', to='workers.Device', verbose_name='关联设备')),
                 ('task', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='device_mappings', to='tasks.task', verbose_name='关联任务')),
             ],
             options={

@@ -1,9 +1,9 @@
 """factory_boy factories for the tasks app."""
 
 import factory
+from workers.factories import WorkerFactory
 
 from accounts.factories import UserFactory
-from agents.factories import AgentFactory
 from tasks.models import Task, TaskExecution
 
 
@@ -31,7 +31,7 @@ class TaskExecutionFactory(factory.django.DjangoModelFactory):
         skip_postgeneration_save = True
 
     task = factory.SubFactory(TaskFactory)
-    agent = factory.SubFactory(AgentFactory)
+    agent = factory.SubFactory(WorkerFactory)
     triggered_by = factory.SubFactory(UserFactory)
     status = TaskExecution.Status.PENDING
     result_data = factory.LazyFunction(dict)

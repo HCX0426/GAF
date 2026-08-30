@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('agents', '0006_device_metadata_enhancement'),
+        ('workers', '0006_device_metadata_enhancement'),
         ('tasks', '0023_taskchain_taskchainnode_chain'),
     ]
 
@@ -36,7 +36,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='slametric',
             name='agent',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='sla_metrics', to='agents.agent', verbose_name='Agent'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='sla_metrics', to='workers.Worker', verbose_name='Agent'),
         ),
         migrations.AlterField(
             model_name='templateeffectiveness',

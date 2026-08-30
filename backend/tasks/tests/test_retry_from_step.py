@@ -20,10 +20,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
+from workers.models import Worker
 
 from accounts.models import User
-from agents.models import Agent
-from tasks.models import Task, TaskExecution, ExecutionStep
+from tasks.models import ExecutionStep, Task, TaskExecution
 
 
 class TestRetryFromStepAction(TestCase):
@@ -43,10 +43,10 @@ class TestRetryFromStepAction(TestCase):
         )
         self.client.force_authenticate(user=self.admin)
 
-        self.agent = Agent.objects.create(
+        self.agent = Worker.objects.create(
             agent_id='retry-test-agent',
             hostname='retry-host',
-            status=Agent.Status.IDLE,
+            status=Worker.Status.IDLE,
             is_local=True,
             # Task 1.1: click 节点需要 windows 能力, 否则 dispatch_task
             # 选不到 agent → group_send 永远不会被调用 (test_dispatches_with_retry_params 失败).

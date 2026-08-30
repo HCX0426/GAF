@@ -69,11 +69,11 @@ def _tick_session(session):
         ChainDispatchError,
         create_chain_execution_and_dispatch,
     )
+    from workers.models import Device, Worker
 
-    from agents.models import Agent, Device
     from scheduler.engine import calculate_account_order
 
-    online_statuses = (Agent.Status.ONLINE, Agent.Status.IDLE)
+    online_statuses = (Worker.Status.ONLINE, Worker.Status.IDLE)
     # TD-112: filter both agent.status (process online) AND device.status
     # (window/emulator usable). Only ONLINE devices are candidates — BUSY
     # devices are already running something, OFFLINE/ERROR are unusable.

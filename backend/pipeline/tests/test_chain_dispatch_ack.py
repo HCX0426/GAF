@@ -12,8 +12,8 @@ from unittest.mock import patch
 
 import pytest
 from django.contrib.auth import get_user_model
+from workers.models import Worker
 
-from agents.models import Agent
 from pipeline.models import TaskChain, TaskChainExecution, TaskChainNode
 from pipeline.tasks import dispatch_chain_node
 from tasks.models import Task, TaskExecution
@@ -24,8 +24,8 @@ User = get_user_model()
 def _base(chain_status=TaskChainExecution.Status.PENDING):
     user = User.objects.create_user(username='ack_user', password='Pass123!')
     chain = TaskChain.objects.create(name='ack-chain', is_enabled=True)
-    agent = Agent.objects.create(
-        agent_id='ack-agent', hostname='h', status=Agent.Status.ONLINE,
+    agent = Worker.objects.create(
+        agent_id='ack-agent', hostname='h', status=Worker.Status.ONLINE,
     )
     chain_exec = TaskChainExecution.objects.create(
         chain=chain, triggered_by=user, agent_id=agent.agent_id,

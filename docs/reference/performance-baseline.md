@@ -850,6 +850,9 @@
 | 2026-08-30T08:43:10+08:00 | 17 | 18 | 6.77 | FAILED: spec-context carrier |
 | 2026-08-30T08:44:06+08:00 | 17 | 18 | 3.50 | FAILED: spec-context carrier |
 | 2026-08-30T08:45:54+08:00 | 17 | 18 | 3.28 | FAILED: spec-context carrier |
+| 2026-08-30T13:35:00+08:00 | 15 | 18 | 5.84 | FAILED: lessons front-matter, spec-context carrier, code rules (M1) |
+| 2026-08-30T13:39:14+08:00 | 17 | 18 | 2.22 | FAILED: lessons front-matter |
+| 2026-08-30T13:39:53+08:00 | 18 | 18 | 2.27 | all pass |
 
 ## pytest 耗时记录
 

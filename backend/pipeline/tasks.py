@@ -91,10 +91,10 @@ def _dispatch_task_node(chain_exec, node):
     chain_exec.current_node = node
     chain_exec.save(update_fields=["status", "current_node"])
 
-    from agents.models import Agent
+    from workers.models import Worker
     try:
-        agent = Agent.objects.get(agent_id=chain_exec.agent_id)
-    except Agent.DoesNotExist:
+        agent = Worker.objects.get(agent_id=chain_exec.agent_id)
+    except Worker.DoesNotExist:
         # N192: 设置 error_code 让前端能按错误码分类展示
         from gaf_core.error_codes import NodeErrorCode
         _fail_chain(chain_exec, f"Agent {chain_exec.agent_id} not found", error_code=NodeErrorCode.UNKNOWN.value)
@@ -165,10 +165,10 @@ def _dispatch_pipeline_node(chain_exec, node):
     chain_exec.current_node = node
     chain_exec.save(update_fields=["status", "current_node"])
 
-    from agents.models import Agent
+    from workers.models import Worker
     try:
-        agent = Agent.objects.get(agent_id=chain_exec.agent_id)
-    except Agent.DoesNotExist:
+        agent = Worker.objects.get(agent_id=chain_exec.agent_id)
+    except Worker.DoesNotExist:
         # N192: 设置 error_code 让前端能按错误码分类展示
         from gaf_core.error_codes import NodeErrorCode
         _fail_chain(chain_exec, f"Agent {chain_exec.agent_id} not found", error_code=NodeErrorCode.UNKNOWN.value)
@@ -219,7 +219,7 @@ def _resolve_chain_device(device_id):
     """Resolve the Device bound at chain level (chain_exec.device_id)."""
     if not device_id:
         return None
-    from agents.models import Device
+    from workers.models import Device
 
     try:
         return Device.objects.get(pk=device_id)

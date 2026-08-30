@@ -31,8 +31,7 @@ from typing import Any
 
 from django.db.models import Q
 from django.utils import timezone as django_timezone
-
-from agents.game_binding import bind_game_profile_by_title
+from workers.game_binding import bind_game_profile_by_title
 
 logger = logging.getLogger(__name__)
 
@@ -72,9 +71,9 @@ def get_agent_by_agent_id(agent_id):
     """
     if not agent_id:
         return None
-    from agents.models import Agent  # cross-app import isolated (TD-259 #29)
+    from workers.models import Worker  # cross-app import isolated (TD-259 #29)
     try:
-        return Agent.objects.filter(agent_id=agent_id).first()
+        return Worker.objects.filter(agent_id=agent_id).first()
     except Exception as exc:
         logger.warning(
             "get_agent_by_agent_id failed: agent_id=%s, err=%s",
@@ -97,10 +96,10 @@ def get_agent_by_token_hash(token_h):
     """
     if not token_h:
         return None
-    from agents.models import Agent  # cross-app import isolated (TD-259 #29)
+    from workers.models import Worker  # cross-app import isolated (TD-259 #29)
     try:
-        return Agent.objects.get(agent_token_hash=token_h)
-    except Agent.DoesNotExist:
+        return Worker.objects.get(agent_token_hash=token_h)
+    except Worker.DoesNotExist:
         return None
 
 
@@ -113,8 +112,8 @@ def get_local_agent():
     Returns:
         ``Agent`` instance or ``None`` if no local Agent exists.
     """
-    from agents.models import Agent  # cross-app import isolated (TD-259 #29)
-    return Agent.objects.filter(is_local=True).first()
+    from workers.models import Worker  # cross-app import isolated (TD-259 #29)
+    return Worker.objects.filter(is_local=True).first()
 
 
 def update_or_create_agent_with_session(agent_id, payload):
@@ -133,7 +132,7 @@ def update_or_create_agent_with_session(agent_id, payload):
     Returns:
         str: The AgentSession's UUID ``agent_id`` string.
     """
-    from agents.models import Agent  # cross-app import isolated (TD-259 #29)
+    from workers.models import Worker  # cross-app import isolated (TD-259 #29)
 
     # AgentSession is a local protocol model; imported inline alongside
     # Agent so the service function is self-contained.
@@ -147,7 +146,7 @@ def update_or_create_agent_with_session(agent_id, payload):
         "ip_address": payload.get("ip_address") or None,
         "os_info": payload.get("os_info", ""),
         "capabilities": capabilities,
-        "status": Agent.Status.ONLINE,
+        "status": Worker.Status.ONLINE,
         "last_heartbeat": django_timezone.now(),
         "is_local": payload.get("is_local", True),
     }
@@ -155,7 +154,7 @@ def update_or_create_agent_with_session(agent_id, payload):
     if resource_quota:
         agent_data["capabilities"]["resource_quota"] = resource_quota
 
-    agent, created = Agent.objects.update_or_create(
+    agent, created = Worker.objects.update_or_create(
         agent_id=agent_id,
         defaults=agent_data,
     )
@@ -191,19 +190,19 @@ def update_agent_heartbeat(agent_id, payload, channel=None):
             a ``active_channel=channel`` guard — a zombie/stale consumer whose
             channel no longer owns the agent writes 0 rows (spec P4).
     """
-    from agents.models import Agent  # cross-app import isolated (TD-259 #29)
+    from workers.models import Worker  # cross-app import isolated (TD-259 #29)
 
     agent_status = payload.get("status", "idle")
 
     status_map = {
-        "idle": Agent.Status.IDLE,
-        "busy": Agent.Status.BUSY,
-        "online": Agent.Status.ONLINE,
+        "idle": Worker.Status.IDLE,
+        "busy": Worker.Status.BUSY,
+        "online": Worker.Status.ONLINE,
     }
 
     update_fields = {
         "last_heartbeat": django_timezone.now(),
-        "status": status_map.get(agent_status, Agent.Status.IDLE),
+        "status": status_map.get(agent_status, Worker.Status.IDLE),
         "active_channel": channel,
     }
 
@@ -218,7 +217,7 @@ def update_agent_heartbeat(agent_id, payload, channel=None):
     if fps is not None and fps >= 0:
         update_fields["screenshot_fps"] = fps
 
-    qs = Agent.objects.filter(agent_id=agent_id)
+    qs = Worker.objects.filter(agent_id=agent_id)
     if channel:
         # 只允许"现任 channel"写入 — 僵尸连接此条件不满足 → 0 行, 不污染状态
         qs = qs.filter(active_channel=channel)
@@ -236,15 +235,16 @@ def set_agent_offline(agent_id, channel=None):
     Args:
         agent_id: ``Agent.agent_id`` string identifier.
     """
-    from agents.models import Agent  # cross-app import isolated (TD-259 #29)
+    from workers.models import Worker  # cross-app import isolated (TD-259 #29)
+
     from tasks.models import TaskExecution
 
     # 1. Mark agent OFFLINE (spec P4: 仅"现任 channel"可置离线; 僵尸连接 0 行)
-    agent_qs = Agent.objects.filter(agent_id=agent_id)
+    agent_qs = Worker.objects.filter(agent_id=agent_id)
     if channel:
         agent_qs = agent_qs.filter(active_channel=channel)
     offline_n = agent_qs.update(
-        status=Agent.Status.OFFLINE,
+        status=Worker.Status.OFFLINE,
         active_channel=None,
     )
     if offline_n:
@@ -294,7 +294,8 @@ def _restore_device_status(execution):
     if execution is None or execution.device_id is None:
         return
     try:
-        from agents.models import Device  # cross-app import isolated
+        from workers.models import Device  # cross-app import isolated
+
         from tasks.models import TaskExecution  # cross-app import isolated
 
         still_running = TaskExecution.objects.filter(
@@ -343,13 +344,13 @@ def lookup_device_id_by_agent(*, agent_id, agent_device_id, device_name, device_
     Returns:
         The backend ``Device.id`` (int) or ``None`` if no match is found.
     """
-    from agents.models import Agent, Device  # cross-app import isolated (TD-259 #29)
+    from workers.models import Device, Worker  # cross-app import isolated (TD-259 #29)
 
     if not agent_id:
         return None
 
     try:
-        agent = Agent.objects.filter(agent_id=agent_id).first()
+        agent = Worker.objects.filter(agent_id=agent_id).first()
         if agent is None:
             return None
 
@@ -478,12 +479,12 @@ def map_db_device_ids_to_agent_strings(agent_id, db_device_ids):
         List of agent device_id strings, or ``None`` if the agent is
         unknown / no ids could be translated.
     """
-    from agents.models import Agent, Device  # cross-app import isolated (TD-259 #29)
+    from workers.models import Device, Worker  # cross-app import isolated (TD-259 #29)
 
     if not agent_id:
         return None
 
-    agent = Agent.objects.filter(agent_id=agent_id).first()
+    agent = Worker.objects.filter(agent_id=agent_id).first()
     if agent is None:
         return None
 
@@ -528,7 +529,7 @@ def register_agent_device(agent_id, device_data):
     Returns:
         dict: ``{"id": int, "created": bool, "updated": bool}``.
     """
-    from agents.models import Agent, Device  # cross-app import isolated (TD-259 #29)
+    from workers.models import Device, Worker  # cross-app import isolated (TD-259 #29)
 
     device_type = device_data.get("device_type", "emulator")
     name = device_data.get("name", f"{device_type}-{uuid.uuid4().hex[:6]}")
@@ -556,7 +557,7 @@ def register_agent_device(agent_id, device_data):
             auto_game_profile = None
 
     try:
-        agent = Agent.objects.filter(agent_id=agent_id).first()
+        agent = Worker.objects.filter(agent_id=agent_id).first()
     except Exception:
         # spec-56 TD: Agent query failed (e.g. DB transient error). Log
         # for traceability — silent swallow would hide device-bind loss.

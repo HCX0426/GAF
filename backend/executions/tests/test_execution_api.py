@@ -15,7 +15,7 @@ from executions.views import (
     unattended_logs_view,
 )
 from resources.models import ResourcePack
-from tasks.models import Task, TaskExecution, ExecutionStep
+from tasks.models import ExecutionStep, Task, TaskExecution
 
 User = get_user_model()
 

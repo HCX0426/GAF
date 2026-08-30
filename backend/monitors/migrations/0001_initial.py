@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('agents', '0001_initial'),
+        ('workers', '0001_initial'),
         ('resources', '0001_initial'),
     ]
 
@@ -40,7 +40,7 @@ class Migration(migrations.Migration):
                 ('screenshot_path', models.CharField(blank=True, max_length=512, verbose_name='截图路径')),
                 ('event_data', models.JSONField(blank=True, default=dict, verbose_name='事件数据')),
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='创建时间')),
-                ('agent', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='monitor_events', to='agents.agent', verbose_name='关联 Agent')),
+                ('agent', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='monitor_events', to='workers.Worker', verbose_name='关联 Agent')),
                 ('resource_pack', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='monitor_events', to='resources.resourcepack', verbose_name='资源包')),
             ],
             options={
