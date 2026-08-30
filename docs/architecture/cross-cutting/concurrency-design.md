@@ -192,8 +192,10 @@ class ResourceLock:
 
 ### 3.1 缓存架构
 
+> **TTL 口径 (D21 归一)**: 两层缓存 TTL 独立——Worker 本地 `ScreenshotCache` 用**秒**（`config.cache_ttl`，N196 默认 300s，env `GAF_AGENT_CACHE_TTL`）；后端 Redis 端缓存用**毫秒**（`SCREENSHOT_CACHE_TTL`）。下文 50ms 为早期示意值，非实现常量。
+
 ```
-Agent 截图 → Redis Cache (TTL=50ms) → Server → WebSocket → Client
+Agent 截图 → 本地 ScreenshotCache (秒级, config.cache_ttl=300) → Server → Redis Cache (毫秒级) → WebSocket → Client
 ```
 
 ### 3.2 缓存实现
@@ -203,9 +205,9 @@ import time
 import threading
 
 class ScreenshotCache:
-    """截图缓存，TTL=50ms，避免重复截图"""
+    """截图缓存，TTL 由 config.cache_ttl 驱动（默认 300s），避免重复截图"""
 
-    def __init__(self, ttl: float = 0.05, max_size: int = 10):
+    def __init__(self, ttl: float = 300.0, max_size: int = 10):
         self._ttl = ttl
         self._max_size = max_size
         self._cache: dict[str, tuple[bytes, float]] = {}
@@ -239,7 +241,7 @@ class ScreenshotCache:
 
 ```python
 class RedisScreenshotCache:
-    """Redis 截图缓存"""
+    """Redis 截图缓存（毫秒级，与 Worker 本地 ScreenshotCache 秒级 TTL 独立）"""
 
     SCREENSHOT_PREFIX = "screenshot:"
     TTL = 0.1  # 100ms

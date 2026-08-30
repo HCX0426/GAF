@@ -91,7 +91,7 @@ SKIP=eslint,prettier,ruff,mypy git commit -m "..."
 > 来源: `scripts/hooks/gaf_governance_batch.py` `CHECKS` 列表 (权威顺序).
 > v2 采用 in-process import (非 subprocess), 消除 subprocess 启动开销 (N171); TD-377 进一步将 7 个独立 pre-commit Python hook (auto-archive/spec-id-collision/evidence-completeness/B2-evidence/spec-context/tier-alignment/code-rules) 折叠进本 batch, 消除其各自 interpreter 冷启动.
 >
-> **运行分流 (TD-377 option B)**: commit 热路径只跑 17 项 (24 - 7; 跳过 6 个 pure-verify 模块, 其中 promote_lessons 匹配 2 条目); 被跳过的 6 模块 (sync_skills/check_deps_sync/sync_docs_index/scan_scripts_vs_readme/promote_lessons ×2/sync_spec_index) 在 pre-push 由 `gaf-governance-batch-push` 重验 (§4.1).
+> **运行分流 (TD-377 option B)**: commit 热路径只跑 18 项 (24 − 6; 跳过 6 个 pure-verify 模块 — sync_skills/sync_docs_index/sync_spec_index/deps-sync/scan_scripts_vs_readme/promote_lessons, 其中 promote_lessons 占 2 条 CHECKS); 被跳过的 6 模块在 pre-push 由 `gaf-governance-batch-push` 重验 (§4.1).
 > **Gate-4 分级 (2026-08-26)**: 形式合规类 (session active/3-step evidence/M2 review-closure/doc-path-drift) 降级 WARN, 失败不阻塞 commit; 真防护类保持 hard.
 
 | # | 子检查 | 触发命令 | 用途 | 运行 |

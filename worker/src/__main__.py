@@ -434,7 +434,10 @@ def _report_device_status(
 
 
 async def run_worker(config: WorkerConfig, args: argparse.Namespace = None) -> None:
-    """Create and start the Agent client with full component initialization.
+    """Create and start the Worker client with full component initialization.
+
+    术语 (OQ-10, 2026-08-29): 本进程为 **Worker**（自动化执行节点，
+    原 "Agent"）。"Agent" 保留给未来 AI 智能体（backend/gaf_ai）。
 
     Initializes DeviceManager, DeviceCenter (auto-discovery),
     HealthChecker (background polling), ImageProcessor, MonitorManager,

@@ -1,7 +1,7 @@
 ---
 spec: 2026-08-29-naming-f-device-bridge
 title: 命名归一化 F 批：Device 抽象 + device_bridge 命名归一（含 AgentConsumer 位置校正）
-status: active
+status: done
 created: 2026-08-29
 estimated_effort: 1 day
 risk: medium
@@ -42,11 +42,11 @@ source: docs/analysis/concept-naming-normalization.md（三 agent 目录审计 2
 
 | 阶段 | 内容 | 状态 |
 |------|------|------|
-| P1 | F-1 `DeviceInfoView`→`DeviceDetailView` + DTO 文档 | ⏳ |
-| P2 | F-2 单一发现源 + 文档区分两层 | ⏳ |
-| P3 | F-3 `GAME_PROCESS_NAMES` 去重 / F-4 docstring | ⏳ |
-| P4 | F-5 `consumers.py`→`worker_consumers.py` + 路由(app改名随 G) + E-6 校正(WorkerConsumer 属 protocol) | ⏳ |
-| P5 | F-6/F-7/F-8/F-9 一致性清理 + 文档 | ⏳ |
+| P1 | F-1 `DeviceInfoView`→`DeviceDetailView` + DTO 文档 | ✅ 2026-08-30（view+views/urls 引用；URL 不变；DTO 文档在 schema_types.py） |
+| P2 | F-2 单一发现源 + 文档区分两层 | ✅ 2026-08-30（`discovery/__init__.py` 标单一来源 + bridge/center 两层边界，OQ-9 引用） |
+| P3 | F-3 `GAME_PROCESS_NAMES` 去重 / F-4 docstring | ✅ 2026-08-30（platforms 单一来源，discovery 导入；device_bridge package docstring 重写） |
+| P4 | F-5 `consumers.py`→`worker_consumers.py` + 路由(app改名随 G) + E-6 校正(WorkerConsumer 属 protocol) | ✅ 2026-08-30（git mv + routing.py import；WorkerConsumer 已在 protocol/consumers.py，E-6 已校正） |
+| P5 | F-6/F-7/F-8/F-9 一致性清理 + 文档 | ✅ 2026-08-30（F-6 services/__init__ 形态说明；F-7 worker_runtime 从 DeviceViewSet._check_single_device 迁 DeviceService（原私有方法不存在，dead call 修复）；F-8 capability.py docstring；F-9 schema_types.py docstring） |
 
 （各任务代码映射见审计 file:line；F-10 单独立项。）
 

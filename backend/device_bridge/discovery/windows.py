@@ -1,6 +1,10 @@
 import logging
 from dataclasses import dataclass, field
 
+# F-3: single source of truth — 游戏进程名列表与平台层共用一份
+# (device_bridge/platforms/windows/discovery.py)，避免两份漂移。
+from device_bridge.platforms.windows.discovery import GAME_PROCESS_NAMES  # noqa: F401
+
 logger = logging.getLogger(__name__)
 
 
@@ -12,23 +16,6 @@ class WindowInfo:
     hwnd: str
     resolution: dict = field(default_factory=lambda: {'width': 0, 'height': 0})
     is_game: bool = False
-
-
-GAME_PROCESS_NAMES = [
-    'BlueArchive.exe',
-    'Arknights.exe',
-    'GenshinImpact.exe',
-    'StarRail.exe',
-    'NIKKE.exe',
-    'AzurLane.exe',
-    'GirlsFrontline.exe',
-    'PunishingGrayRaven.exe',
-    'FateGrandOrder.exe',
-    'HonkaiImpact3.exe',
-    # R37-P0: BrownDust II support
-    'BrownDust2.exe',
-    'browndust2.exe',
-]
 
 
 def enum_windows() -> list[WindowInfo]:
@@ -49,9 +36,3 @@ def enum_windows() -> list[WindowInfo]:
     except Exception as e:
         logger.warning('窗口枚举失败: %s', e)
         return []
-
-
-def set_game_process_names(names: list[str]) -> None:
-    """设置游戏进程名列表"""
-    global GAME_PROCESS_NAMES
-    GAME_PROCESS_NAMES = names

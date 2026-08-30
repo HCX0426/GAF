@@ -1,7 +1,7 @@
 from django.urls import re_path
 
 from config.app_info import WS_DEVICES_PATH
-from workers.consumers import AdbLogStreamConsumer
+from workers.worker_consumers import AdbLogStreamConsumer
 
 # spec-35 Phase 4.2 (2026-07-19): ScreenshotStreamConsumer + the
 # /ws/devices/{id}/screenshot-stream/ route removed — the frontend

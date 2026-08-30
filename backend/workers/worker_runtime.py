@@ -1,17 +1,17 @@
-"""Agent runtime: process supervision, heartbeat, and platform helpers.
+"""Worker runtime: process supervision, heartbeat, and platform helpers.
 
-This module owns the agent subprocess lifecycle and the device heartbeat
+This module owns the worker subprocess lifecycle and the device heartbeat
 background thread, plus the singleton cross-process manager lock that
 gates auto-start. Module-level state (threads, events, lock handle)
-lives here so that ``agents.apps.AgentsConfig.ready()`` stays a thin
+lives here so that ``workers.apps.WorkersConfig.ready()`` stays a thin
 orchestrator.
 
-External callers (e.g. ``agents.views``) MUST use the public
+External callers (e.g. ``workers.views``) MUST use the public
 ``is_xxx_alive()`` / ``is_xxx_started()`` helpers instead of touching
 the private globals directly, so the encapsulation is preserved across
 future refactors.
 
-Split out of ``agents/apps.py`` (TD-217): the original apps.py grew to
+Split out of ``workers/apps.py`` (TD-217): the original apps.py grew to
 ~520 lines mixing Django AppConfig plumbing with subprocess management;
 this module holds the runtime, apps.py holds only the ready() hook.
 """
@@ -433,16 +433,15 @@ def _device_heartbeat_loop():
     from django.db import connection
 
     from workers.models import Device
-    from workers.views import DeviceViewSet
+    from workers.services.device_service import DeviceService
 
     interval = getattr(django_settings, 'GAF_HEARTBEAT_INTERVAL', 30)
     logger.info('Device heartbeat loop: starting (interval=%ds)', interval)
     try:
-        checker = DeviceViewSet()
-        checker.request = None
-        logger.info('Device heartbeat loop: DeviceViewSet created')
+        health_service = DeviceService()
+        logger.info('Device heartbeat loop: DeviceService created')
     except Exception as e:
-        logger.error('Device heartbeat loop: failed to create DeviceViewSet: %s', e)
+        logger.error('Device heartbeat loop: failed to create DeviceService: %s', e)
         return
 
     while not _heartbeat_stop_event.is_set():
@@ -455,7 +454,9 @@ def _device_heartbeat_loop():
                 if _heartbeat_stop_event.is_set():
                     break
                 try:
-                    checker._check_single_device(device)
+                    # F-7: delegate to DeviceService instead of the removed
+                    # DeviceViewSet._check_single_device private method.
+                    health_service.check_single_device_health(device)
                 except Exception as e:
                     logger.debug('Heartbeat error for device %s: %s', device.id, e)
 

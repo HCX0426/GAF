@@ -1,7 +1,7 @@
 ---
 spec: 2026-08-29-naming-d-docs
 title: 命名归一化 D 批：纯文档收口（overview/features/子文档修正 + 概念速查 + 三健康面 + 三层节点）
-status: active
+status: done
 created: 2026-08-29
 estimated_effort: 1 day
 risk: low
@@ -42,7 +42,7 @@ D 批为**纯文档**修正（零代码/零 API/零迁移），收口评估稿 �
 | 阶段 | 内容 | 状态 |
 |------|------|------|
 | P1 | overview/features 纠正（D4/D7/D12） | ✅ |
-| P2 | 子文档矛盾修正（D20–D24/X1） | ⏳ |
+| P2 | 子文档矛盾修正（D20–D24/X1） | ✅ 2026-08-30：D20 debug-logging §8.1 `<task_name>`；D21 concurrency §3 TTL 口径；D22 deployment §4.2 SQLite+WAL（PG 仅 DB_ENGINE）；D23② 已在 P4 说明；D24 pre-commit-stages hot-path 18（24−6）+ batch docstring；X1 代码确证成立（归档冻结） |
 | P3 | 概念速查 + 三健康面（OQ-7/OQ-8） | ✅ |
 | P4 | 三层节点 + D23② 说明 | ✅ |
 | P5 | Worker / Agent(AI) 术语区分章（OQ-10） | ✅ |

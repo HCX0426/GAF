@@ -153,12 +153,12 @@ verified_baseline: >
 | D17 | overview:744 "models.py:454" | accounts/models.py:450 | 数字过时 | P2 |
 | D18 | concurrency-design:70 "TaskDispatcher" 框 | 框存在；无类，真实 `dispatch_task` | 幽灵符号 | P0 |
 | D19 | overview "GafDaemon" / gaf_daemon.py / gaf_services.ps1 | 三渲染（GafDaemon 权威/.py 实现/.ps1 兼容） | 命名不一 | P1 |
-| D20 | debug-logging S1-S4 | 死 hour-bucket(✓)/chain-mode 路径(✓跨废弃文档)/路径 key task_name vs safe_pipeline(部分✓)/`_status`(✗架构树无) | 内部矛盾（4 中 3 有据） | P2 |
-| D21 | concurrency-design **§3**（非 S7） | ScreenshotCache 50ms vs RedisScreenshotCache 100ms | TTL 不一致 | P2 |
-| D22 | deployment-design **§4.2**（非 S8） | SQLite 配置带 Postgres 字段 | 内部矛盾 | P2 |
+| D20 | debug-logging S1-S4 | 死 hour-bucket(✓)/chain-mode 路径(✓跨废弃文档)/路径 key task_name vs safe_pipeline(§8.1 已统一为 `<task_name>` ✅ 2026-08-30 D 批 P2)/`_status`(✗架构树无) | 内部矛盾（4 中 3 有据） | P2 ✅ |
+| D21 | concurrency-design **§3**（非 S7） | ScreenshotCache 50ms vs RedisScreenshotCache 100ms | TTL 口径已归一（本地秒级 config.cache_ttl=300 vs Redis 毫秒级，50ms 标示意）✅ 2026-08-30 D 批 P2 | P2 |
+| D22 | deployment-design **§4.2**（非 S8） | SQLite 配置带 Postgres 字段 | 已改默认 SQLite+WAL（base.py 实参），PG 字段仅 DB_ENGINE 切换时 ✅ 2026-08-30 D 批 P2 | P2 |
 | D23 | coordinate-transform / WS 帧 | ① `task.assign`(WS 帧) vs `handle_task_assign`(方法) = **代码级协议命名漂移**（见 §1）；② `get_unified_logical_rect`(方法) vs `step=publish_match_pos`(trace 值) = **异物，仅文档澄清** | 命名不一(①)/文档精度(②) | P2 |
-| D24 | pre-commit-stages **§1/§4.2/§3.1**（非 S5/S6） | post-commit 1 vs 2 hook；"24" vs "17" | 计数矛盾（§3.1 已解释分流） | P2 |
-| X1 | docs/specs/archived/2026-08/architechure-debt-refactor.md 写 `TaskService.dispatch_task(...)` | 该 spec 与现行 concurrency-design 均写 `dispatch_task`（tasks.py 模块函数）；"实际为 dispatch" 在架构文档内无佐证，需查代码确证 | 旧 spec 表述存疑 | P2 |
+| D24 | pre-commit-stages **§1/§4.2/§3.1**（非 S5/S6） | post-commit 1 vs 2 hook；"24" vs "17" | 计数已归一：24 总 / commit 热路径 18（6 模块）✅ 2026-08-30 D 批 P2（含 batch docstring） | P2 |
+| X1 | docs/specs/archived/2026-08/architechure-debt-refactor.md 写 `TaskService.dispatch_task(...)` | 代码确证（D 批 P2，2026-08-30）：`TaskService.execute_task` 经 `tasks.tasks.dispatch_task` 模块函数派发（B1 收敛 2026-08-27，`worker_resolver.py`/`dispatch-flow.md`）；归档 spec 表述成立，归档文件冻结不改 | 旧 spec 表述存疑 | P2 ✅ 已确证 |
 
 > 子文档内部不一致 S1–S11 明细已并入 D20–D24。
 
@@ -244,7 +244,7 @@ verified_baseline: >
 | P3 | 高危 | `C-taskstep-merge` | 高 | `TaskStep` 合并入 `ExecutionStep` | ✅ 已完成 2026-08-30 |
 | P3 | 高危 | `C-task-assign` | 高 | `task.assign` 帧名统一 + alias | ✅ 已完成 2026-08-29 |
 | P4 | 最高危（Agent→Worker 全量） | `G`（含 `C-agentsession` 的 `WorkerSession` 改名 + `E` 概念落地） | 高 | `Agent` 模型/`backend/agents`→`backend/workers`/`agent/`→`worker/` + 全部 `Agent*` 符号 + 前端类型重生成 | ✅ 已完成 2026-08-30（架构文档 sync 并入 D/OQ-10 章） |
-| P5 | 文档收口（反映最终命名） | `D`, `F`（可并行） | 中/低 | D: overview/features/子文档修正 + Worker/Agent 术语章；F: device_bridge + Device 抽象命名 |
+| P5 | 文档收口（反映最终命名） | `D`, `F`（可并行） | 中/低 | D: overview/features/子文档修正 + Worker/Agent 术语章；F: device_bridge + Device 抽象命名 | ✅ 已完成 2026-08-30 |
 
 **依赖与合并说明**：
 - `G` depends_on `C-agentsession` + `E`（序列中已满足）。

@@ -1,11 +1,11 @@
 """
-Agent 和设备管理视图 — re-export 兼容层 (s34 拆分).
+Worker 和设备管理视图 — re-export 兼容层 (s34 拆分).
 
 拆分前: 单文件 3983 行; 拆分后: view_sets/ 包 8 个模块.
 引用方 (workers/urls.py, monitors/views.py, worker_runtime.py)
-继续从 agents.views 导入, 此层转发到具体模块.
+继续从 workers.views 导入, 此层转发到具体模块.
 """
-from workers.view_sets.app_info import DeviceAppView, DeviceInfoView
+from workers.view_sets.app_info import DeviceAppView, DeviceDetailView
 from workers.view_sets.capability import (
     DeviceCompatibilityCheckView,
     EmulatorLifecycleView,
@@ -42,5 +42,5 @@ __all__ = [
     "DeviceTemplateMatchView",
     "DeviceColorDetectView",
     "DeviceAppView",
-    "DeviceInfoView",
+    "DeviceDetailView",
 ]

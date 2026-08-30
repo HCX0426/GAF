@@ -56,7 +56,13 @@ MULTI_GAME_BLOCKED_INPUT_METHODS = frozenset({
 
 
 class Worker(models.Model):
-    """Worker 模型，管理远程/本地 Worker 的注册、心跳和能力信息。"""
+    """Worker 模型，管理远程/本地 Worker 的注册、心跳和能力信息。
+
+    术语 (OQ-10, 2026-08-29): **Worker** = 自动化执行节点/进程（原 "Agent"）；
+    **Agent** 一词保留给未来 AI 智能体（`backend/gaf_ai` LangGraph agent，
+    其会话 `gaf_ai.agent.AgentSession`）。本 app 之 `agent_id` 为 wire 字段
+    （Worker 注册标识），非 AI 概念。
+    """
 
     class Status(models.TextChoices):
         ONLINE = 'online', 'Online'

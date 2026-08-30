@@ -6,8 +6,8 @@ from workers.views import (
     DeviceClickView,
     DeviceColorDetectView,
     DeviceCompatibilityCheckView,
+    DeviceDetailView,
     DeviceGroupViewSet,
-    DeviceInfoView,
     DeviceInputView,
     DeviceLockView,
     DeviceRegisterView,
@@ -120,7 +120,7 @@ urlpatterns = [
     ),
     path(
         'devices/<int:id>/info/',
-        DeviceInfoView.as_view(),
+        DeviceDetailView.as_view(),
         name='device-info',
     ),
     path('', include(router.urls)),

@@ -401,6 +401,9 @@ class PlatformCapabilitiesView(APIView):
 class EmulatorLifecycleView(APIView):
     """模拟器生命周期控制视图
     提供列出实例、启动/停止/重启/创建/删除、ADB命令执行功能
+
+    F-8: 与 `device_bridge/discovery/emulator_lifecycle.py` 同名但不同物——
+    本视图为 HTTP 入口，后者为后端模拟器生命周期实现模块。
     """
 
     permission_classes = [IsAuthenticated, RoleBasedPermission]

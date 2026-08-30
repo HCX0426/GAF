@@ -316,22 +316,21 @@ volumes:
 
 ### 4.2 Server 端配置
 
+> **默认 (2026-08-03 spec)**: dev/prod 统一 SQLite + WAL（单机部署 < 100 并发）；`config/settings/base.py` 已配置 SQLite + WAL + busy_timeout + `synchronous=NORMAL`。如下 `USER/PASSWORD/HOST/PORT` 字段仅当 `DB_ENGINE` 切换为 PG/MySQL 时生效（建议不切换）。
+
 ```python
-# config/settings/prod.py
+# config/settings/base.py — 默认 SQLite + WAL
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",  # 或通过 DB_ENGINE 环境变量切换
-        "NAME": os.environ.get("DB_NAME", "gaf"),
-        "USER": os.environ.get("DB_USER", "gaf"),
-        "PASSWORD": os.environ.get("DB_PASSWORD"),
-        "HOST": os.environ.get("DB_HOST", "localhost"),
-        "PORT": os.environ.get("DB_PORT", "5432"),
-        "CONN_MAX_AGE": 60,
-        "OPTIONS": {
-            "connect_timeout": 10,
+        "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
+        "NAME": os.getenv("DB_NAME", BASE_DIR / "db.sqlite3"),
+        "OPTIONS": {  # WAL + busy_timeout + synchronous=NORMAL
+            # ...
         },
     }
 }
+
+# 仅当 DB_ENGINE 非空时启用 PG/MySQL 字段（USER/PASSWORD/HOST/PORT/CONN_MAX_AGE），prod.py 不再默认 PG
 
 CHANNEL_LAYERS = {
     "default": {

@@ -1,7 +1,7 @@
 ---
 spec: 2026-08-29-naming-e-agent-concepts
 title: 命名归一化 E 批：Agent 词族消歧（Worker / Agent 术语拆分）
-status: active
+status: done
 created: 2026-08-29
 estimated_effort: 0.5 day
 risk: medium
@@ -40,9 +40,9 @@ source: docs/analysis/concept-naming-normalization.md §1(Agent→Worker 多行)
 
 | 阶段 | 内容 | 状态 |
 |------|------|------|
-| P1 | 评估稿 E-2 冗余误判修订（Worker 令牌 vs AI 会话令牌 不同物） | ⏳ |
-| P2 | 全仓概念术语注释对齐（Worker / Agent(AI)） | ⏳ |
-| P3 | 批 G 实施 E-1~E-6 符号改名（派生 spec） | ⏳(依赖 G) |
+| P1 | 评估稿 E-2 冗余误判修订（Worker 令牌 vs AI 会话令牌 不同物） | ✅（评估稿 §1/§3 已改"不同物"，无"双重存储冗余"残留） |
+| P2 | 全仓概念术语注释对齐（Worker / Agent(AI)） | ✅ 2026-08-30：`workers/models.py`(Worker 类 docstring)、`worker/src/__main__.py`(run_worker)、`protocol/consumers.py`(WorkerConsumer) 加 OQ-10 术语注释 |
+| P3 | 批 G 实施 E-1~E-6 符号改名（派生 spec） | ✅（naming-g 完成 2026-08-30，E-1~E-6 全部落地，Agent 仅 AI 域保留） |
 
 #### Task P1.1: E-2 修订
 

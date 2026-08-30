@@ -533,11 +533,13 @@ cv2.imshow("debug", img)
 ### 8.1 文件路径
 
 ```
-debug/<YYYYMMDD>/backend/tasks/<safe_pipeline>/HH/execution.jsonl
+debug/<YYYYMMDD>/backend/tasks/<task_name>/HH/execution.jsonl
 ```
 
-- `<safe_pipeline>`：pipeline_name 经 `_sanitize_pipeline_name` 处理（最长 40 字符，路径分隔符替换为 `_`）
+- `<task_name>`：任务名经 `_sanitize_task_name`（`gaf_core/debug_path.py` 镜像）处理（最长 40 字符，路径分隔符替换为 `_`）
 - `HH`：本地时区小时桶，小时切换自动创建新文件
+
+> **D20**: 已于 2026-08-24 由 `execution_mode` 改为 `<task_name>`（按任务名分组）；本节 `<safe_pipeline>` 旧称随之弃用。
 
 **实现**：[backend/gaf_core/task_logger.py](../../../backend/gaf_core/task_logger.py) `BackendTaskLogger`
 

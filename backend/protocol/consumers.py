@@ -121,7 +121,11 @@ def _create_frame_log(*, message_type: str, direction: str, trace_id: Any, paylo
 
 
 class WorkerConsumer(AsyncWebsocketConsumer):
-    """Agent WebSocket 连接消费者（异步），解析消息帧并按类型分发到对应处理器。
+    """Worker WebSocket 连接消费者（异步），解析消息帧并按类型分发到对应处理器。
+
+    术语 (OQ-10, 2026-08-29): 本消费者服务 **Worker**（执行节点/进程，原
+    "Agent"）；"Agent" 保留给 AI 智能体（`backend/gaf_ai`）。帧携带的
+    `agent_id` 为 wire 字段（Worker 注册标识）。
 
     连接生命周期：
       connect → 接收消息帧 → 类型路由 → stub handler (echo/log) → disconnect

@@ -62,6 +62,11 @@ class ResolvedDeviceMethodsSchema(serializers.Serializer):
 class DeviceStatsSchema(serializers.Serializer):
     """Schema for `DeviceSerializer.device_stats` return value.
 
+    F-9 三义区分: OpenAPI schema (`DeviceStatsSchema`) / 端点
+    `DeviceStatsView`(`workers/view_sets/lock_stats.py`) / 模型字段
+    `Device.device_stats`(JSONField)。三者同名不同物：schema 描述 device_stats
+    字段的 JSON 结构；view 提供统计查询端点。
+
     spec-29k (TD-259 #7 Phase 2d): `device_stats` is a `JSONField` whose
     value is a dynamic dict written by `Device.update_screenshot_stats`
     (screenshot_latency_avg_ms / screenshot_fps / screenshot_method /

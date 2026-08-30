@@ -403,8 +403,8 @@ class DeviceAppView(APIView):
         return {"success": False, "action": action, "error": f"Unknown action: {action}"}
 
 
-class DeviceInfoView(APIView):
-    """Device info query endpoint (R10-D)
+class DeviceDetailView(APIView):
+    """Device detail query endpoint (R10-D, F-1: was DeviceInfoView)
     POST /api/v2/devices/{id}/info/
 
     Query device information: battery, screen size, OS version, model, etc.

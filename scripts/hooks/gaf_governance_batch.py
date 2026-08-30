@@ -30,10 +30,11 @@ What it runs — two tiers (TD-377 option B split, 2026-08-23)
 ------------------------------------------------------------
   COMMIT hot-path = all CHECKS except 6 heavy pure-verify modules
   (sync_skills, check_deps_sync, sync_docs_index, scan_scripts_vs_readme,
-  promote_lessons, sync_spec_index) -> 17 checks, ~1.3-2s warm. PRE-PUSH
-  cold-path = those 6 modules (7 entries; promote_lessons x2) -> 7 checks,
-  ~1.4s. Tree-modifying regen (sync_ai_memory, auto_archive_specs) stays on
-  COMMIT. Authoritative ordered list is the CHECKS tuple below.
+  promote_lessons, sync_spec_index) -> 18 checks, ~1.3-2s warm (D24: 6
+  modules counted, not 7 entries). PRE-PUSH cold-path = those 6 modules
+  (7 entries; promote_lessons x2) -> 7 checks, ~1.4s. Tree-modifying regen
+  (sync_ai_memory, auto_archive_specs) stays on COMMIT. Authoritative
+  ordered list is the CHECKS tuple below.
     1. check_session_active.py --check       (session active guard)
     2. sync_ai_memory.py                      (regenerates auto-files)
     3. check_3step_evidence.py                (evidence trail validator)
