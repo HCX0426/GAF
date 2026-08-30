@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time
 from pathlib import Path
 
 from asgiref.sync import async_to_sync
@@ -431,7 +432,7 @@ def system_status_view(request):
 _DEBUG_ROOT = Path(__file__).resolve().parents[2] / "debug"
 _DAEMON_PID_FILE = _DEBUG_ROOT / "gaf_daemon.pid"
 
-SERVICE_ORDER = ["redis", "backend", "agent", "frontend"]
+SERVICE_ORDER = ["redis", "backend", "worker", "frontend"]
 
 
 @extend_schema(
@@ -514,6 +515,48 @@ def services_view(request):
         'daemon': {'running': daemon_running, 'pid': daemon_pid},
         'services': services,
     })
+
+
+@extend_schema(
+    tags=['monitors'],
+    summary='Restart a single service or all services (daemon control)',
+    responses={202: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 500: OpenApiTypes.OBJECT},
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, RoleBasedPermission])
+def service_restart_view(request):
+    """
+    服务重启控制 API (spec 2026-08-30-services-restart-control).
+
+    POST /api/v2/monitors/services/restart/
+    body: {"service": "backend"|"agent"|"frontend"|"redis"|"all"} (默认 all)
+    写入 daemon 控制文件 (debug/daemon-ctl.json), daemon 看门狗下一轮消费执行.
+    返回 202 (已受理), 实际重启由 daemon 异步完成, 状态经 services/ 轮询可见.
+    """
+    service = (request.data.get('service') or 'all').strip().lower()
+    if service != 'all' and service not in SERVICE_ORDER:
+        return Response(
+            {'detail': f"未知服务: {service}, 可选: {', '.join(SERVICE_ORDER)} 或 all"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    ctl_file = _DEBUG_ROOT / 'daemon-ctl.json'
+    try:
+        ctl_file.write_text(json.dumps({
+            'action': 'restart',
+            'service': service,
+            'ts': int(time.time()),
+        }, ensure_ascii=False), encoding='utf-8')
+    except OSError as exc:
+        logger.warning("写入 daemon 控制文件失败 (%s): %s", ctl_file, exc)
+        return Response({'detail': '控制文件写入失败, daemon 未消费指令'},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    logger.info("[restart-ctl] 已下发服务重启指令: %s", service)
+    return Response({
+        'detail': f"服务 {service} 重启指令已下发 (daemon 异步执行)",
+        'service': service,
+    }, status=status.HTTP_202_ACCEPTED)
 
 
 @extend_schema(

@@ -19,7 +19,9 @@ PID 文件: debug/gaf_daemon.pid — 单例检测 + stop 定位
     python scripts/gaf_daemon.py daemon     # 前台模式 (调试)
 """
 
+import contextlib
 import json
+import logging
 import os
 import re
 import signal
@@ -27,10 +29,8 @@ import socket
 import subprocess
 import sys
 import time
-import logging
-from datetime import datetime, timedelta
 from pathlib import Path
-from typing import BinaryIO, Optional
+from typing import BinaryIO
 
 # N205 (2026-08-21): 日志轮转 handler 唯一来源 = worker/src/utils/log_rotation.py.
 # scripts 端不再维护 _log_rotation.py 副本 (已删除), 统一从 agent 包导入,
@@ -45,8 +45,7 @@ from log_rotation import DateRotatingFileHandler  # noqa: E402
 _SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
-from services.health import (
-    HEALTH_STATUS_FILE,
+from services.health import (  # noqa: E402
     check_all,
     scan_log_errors,
     write_health_snapshot,
@@ -87,12 +86,17 @@ STOP_TIMEOUT = 5         # 等待进程退出的最大时间 (秒)
 # spec 2026-08-29 P2: 健康探针周期 (每轮看门狗循环内执行, 与 WATCHDOG_INTERVAL 对齐)
 HEALTH_CHECK_INTERVAL = WATCHDOG_INTERVAL
 
+# 外部控制契约 — backend monitors API 写本文件, daemon 每轮看门狗循环消费执行.
+# 格式: {"action": "restart"|"start"|"stop", "service": "<name>|all", "ts": ...}
+# 执行完成后删除 (消费即焚), 避免重复执行.
+DAEMON_CTL_FILE = DEBUG_DIR / "daemon-ctl.json"
+
 
 # =============================================================================
 # PID 文件管理
 # =============================================================================
 
-def _read_pid_file() -> Optional[int]:
+def _read_pid_file() -> int | None:
     """读取 PID 文件, 返回 PID 或 None."""
     try:
         if PID_FILE.exists():
@@ -154,17 +158,15 @@ def _is_process_alive(pid: int) -> bool:
             return False
 
 
-def check_daemon_running() -> Optional[int]:
+def check_daemon_running() -> int | None:
     """检查 daemon 是否已在运行, 返回 PID 或 None."""
     pid = _read_pid_file()
     if pid is not None and _is_process_alive(pid):
         return pid
     # PID 文件存在但进程已死, 清理
     if PID_FILE.exists():
-        try:
+        with contextlib.suppress(OSError):
             PID_FILE.unlink()
-        except OSError:
-            pass
     return None
 
 
@@ -310,7 +312,7 @@ def build_services(cfg: dict) -> dict:
                 "PYTHONUNBUFFERED": "1",
             },
         },
-        "agent": {
+        "worker": {
             "cmd": [str(PYTHON_EXE), "-m", "src", "--log-level", "INFO"],
             "cwd": str(WORKER_DIR),
             "port": None,
@@ -393,7 +395,7 @@ def _port_listening(port: int, host: str = "127.0.0.1") -> bool:
     try:
         with socket.create_connection((host, port), timeout=2):
             return True
-    except (OSError, socket.timeout):
+    except (TimeoutError, OSError):
         return False
 
 
@@ -434,30 +436,28 @@ class ServiceInfo:
     def __init__(self, name: str, config: dict):
         self.name = name
         self.config = config
-        self.process: Optional[subprocess.Popen] = None
+        self.process: subprocess.Popen | None = None
         self.restart_times: list[float] = []  # 重启时间戳列表
         self.restart_count = 0  # 当前窗口内重启次数
-        self.log_fh: Optional[BinaryIO] = None  # 服务终端输出文件句柄 (P1)
+        self.log_fh: BinaryIO | None = None  # 服务终端输出文件句柄 (P1)
 
     @property
     def is_running(self) -> bool:
         return self.process is not None and self.process.poll() is None
 
     @property
-    def pid(self) -> Optional[int]:
+    def pid(self) -> int | None:
         return self.process.pid if self.process else None
 
     @property
-    def returncode(self) -> Optional[int]:
+    def returncode(self) -> int | None:
         return self.process.poll() if self.process else None
 
     def close_log(self):
         """关闭终端输出句柄 (停止/进程退出时调用)."""
         if self.log_fh is not None:
-            try:
+            with contextlib.suppress(OSError):
                 self.log_fh.close()
-            except OSError:
-                pass
             self.log_fh = None
 
     def clean_restart_history(self):
@@ -725,6 +725,57 @@ class DaemonRunner:
             )
             self.manager.restart_service(name)
 
+    def _consume_daemon_ctl(self):
+        """消费外部控制文件指令 (backend monitors API 下发).
+
+        支持 restart/start/stop 单个服务或 all; 执行完成后删除控制文件
+        (消费即焚, 避免重复执行). 与健康快照文件共享同一 debug/ 目录,
+        保持外部契约文件与进程管理解耦.
+        """
+        ctl_file = DAEMON_CTL_FILE
+        try:
+            if not ctl_file.exists():
+                return
+            data = json.loads(ctl_file.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            logger.warning("[ctl] 控制文件解析失败 (删除): %s", exc)
+            with contextlib.suppress(OSError):
+                ctl_file.unlink()
+            return
+
+        action = str(data.get("action", ""))
+        service = str(data.get("service", "all"))
+        if action not in ("restart", "start", "stop"):
+            logger.warning("[ctl] 未知指令 action=%s, 忽略并删除", action)
+            with contextlib.suppress(OSError):
+                ctl_file.unlink()
+            return
+
+        if service == "all":
+            logger.info("[ctl] 执行 %s all", action)
+            if action == "restart":
+                self.manager.restart_all()
+            elif action == "stop":
+                self.manager.stop_all()
+            else:
+                self.manager.start_all()
+        else:
+            info = self.manager.services.get(service)
+            if info is None:
+                logger.warning("[ctl] 未知服务 %s, 忽略", service)
+            elif action == "restart":
+                logger.info("[ctl] 执行 restart %s", service)
+                self.manager.restart_service(service)
+            elif action == "stop":
+                logger.info("[ctl] 执行 stop %s", service)
+                self.manager.stop_service(service)
+            else:
+                logger.info("[ctl] 执行 start %s", service)
+                self.manager.start_service(service)
+
+        with contextlib.suppress(OSError):
+            ctl_file.unlink()
+
     def run(self):
         """进入看门狗模式."""
         self._running = True
@@ -746,6 +797,13 @@ class DaemonRunner:
 
                 if self._shutdown_requested:
                     break
+
+                # 外部控制指令 (backend monitors API 下发 restart/start/stop)
+                # 优先于健康检查消费, 避免健康感知重启与控制指令相互干扰
+                try:
+                    self._consume_daemon_ctl()
+                except Exception as exc:
+                    logger.warning("[ctl] 消费控制指令异常 (忽略本轮): %s", exc)
 
                 # spec 2026-08-29 P2: 每轮执行健康探针并写快照 (供 monitors/status 读取)
                 self._run_health_checks()
@@ -815,9 +873,8 @@ def launch_detached():
 
     # 用 CREATE_NEW_PROCESS_GROUP + DETACHED_PROCESS 启动子进程
     # 这样子进程不会随父进程退出
-    import ctypes
-    DETACHED_PROCESS = 0x00000008
-    CREATE_NEW_PROCESS_GROUP = 0x00000200
+    DETACHED_PROCESS = 0x00000008  # noqa: N806 (Win32 API constant)
+    CREATE_NEW_PROCESS_GROUP = 0x00000200  # noqa: N806 (Win32 API constant)
 
     creationflags = DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
 
@@ -852,7 +909,7 @@ def stop_daemon_process(pid: int):
             )
             out = result.stdout or b""
             # taskkill 成功输出可能为中文本地化 (GBK), bytes 匹配两种编码的"成功"
-            if b"SUCCESS" in out or "成功".encode("utf-8") in out or "成功".encode("gbk") in out:
+            if b"SUCCESS" in out or "成功".encode() in out or "成功".encode("gbk") in out:
                 logger.info("daemon 进程树已终止 (PID=%d)", pid)
                 return True
             else:

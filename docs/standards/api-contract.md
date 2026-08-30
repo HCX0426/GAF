@@ -594,7 +594,7 @@ class TaskViewSet(AuditMixin, viewsets.ModelViewSet):
 | accounts | 7 | 13 | 6 | 16 |
 | settings | 3 | 3 | 0 | 6 |
 | tasks | 6 | 6 | 3 | 6 |
-| agents | 3 | 4 | 3 | 12 |
+| workers (原 agents) | 3 | 4 | 3 | 12 |
 | pipeline | 3 | 1 | 6 | 4 |
 | resources | 4 | 2 | 6 | 多个 GET |
 | plugins | 0 | 6 | 0 | 1 |
@@ -652,7 +652,7 @@ POST /api/v2/logs/frontend-errors/    # 接收浏览器端崩溃报告 (匿名, 
 
 ### 18.1 `GET /api/v2/monitors/services/` — 服务状态列表
 
-返回 5 项服务（redis/backend/agent/frontend/daemon）的健康/进程/报错信息：
+返回 5 项服务（redis/backend/worker/frontend/daemon；原 `agent` 已归一为 `worker`，OQ-10）的健康/进程/报错信息：
 
 ```json
 {
@@ -712,6 +712,33 @@ Query：`service`（必填）、`lines`（默认 300，上限 2000）、`filter`
 - `last_escalated_at` / `escalation_count` / `next_escalation_in_seconds`：P-024 升级任务（每 300s）运行痕迹
 - 供通知中心区分"无告警" vs "告警链路断了"
 
+### 18.5 `POST /api/v2/monitors/services/restart/` — 服务重启控制（daemon-ctl）
+
+> 服务管理监控的**写控制**延续（2026-08-30 实现）：前端"重启"按钮调用此端点，
+> 后端写入 `debug/daemon-ctl.json`，GafDaemon 看门狗下一轮消费并异步执行 restart/start/stop。
+> 需鉴权（`IsAuthenticated + RoleBasedPermission(view)`）。
+
+```http
+POST /api/v2/monitors/services/restart/
+Content-Type: application/json
+Authorization: Bearer <access_token>
+
+{ "service": "worker" }        # 单服务：redis|backend|worker|frontend
+{ "service": "all" }           # 全部（默认，省略 service 时）
+```
+
+响应（202 Accepted，daemon 异步执行，状态经 §18.1 轮询可见）：
+
+```json
+{ "detail": "服务 worker 重启指令已下发 (daemon 异步执行)", "service": "worker" }
+```
+
+**规则**：
+- `service` 省略 → `all`；非法值 → 400 `{ "detail": "未知服务: <name>, 可选: redis, backend, worker, frontend 或 all" }`
+- 控制文件 `debug/daemon-ctl.json`：`{ "action": "restart"|"start"|"stop", "service": "<name>|all", "ts": <epoch> }`
+- 消费即焚：daemon 执行完成后删除控制文件，避免重复执行
+- 未认证 → 401 / 403（与 §18.1/18.2 一致）
+
 ---
 
 ## 19. 统一文件日志检索（logs — spec 2026-08-29-logging-system-consolidation P2-1）
@@ -721,7 +748,7 @@ Query：`service`（必填）、`lines`（默认 300，上限 2000）、`filter`
 
 ### 19.1 `GET /api/v2/logs/files/`
 
-Query：`service`（必填，redis/backend/agent/frontend/daemon）、`date`（YYYY-MM-DD 可选，
+Query：`service`（必填，redis/backend/worker/frontend/daemon；原 `agent` 已归一 `worker`）、`date`（YYYY-MM-DD 可选，
 仅原生日志生效）、`lines`（默认 300 上限 2000）、`filter`（all | error 默认 all）
 
 - `filter=all`：主捕获文件尾部（`debug/system/services/<name>.log` 优先，原生日志 fallback）

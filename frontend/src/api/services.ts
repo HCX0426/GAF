@@ -49,3 +49,12 @@ export async function fetchServiceLogs(params: {
   const res = await client.get<ServiceLogsResponse>('/monitors/services/logs/', { params });
   return res.data;
 }
+
+/** POST /monitors/services/restart/ — 重启单个服务或全部服务 (daemon 异步执行). */
+export async function restartService(service: string): Promise<{ detail?: string; service?: string }> {
+  const res = await client.post<{ detail?: string; service?: string }>(
+    '/monitors/services/restart/',
+    { service },
+  );
+  return res.data;
+}

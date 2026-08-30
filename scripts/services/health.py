@@ -7,7 +7,7 @@
 
 - redis:    redis-cli PING → PONG
 - backend:  ``/api/v2/accounts/init/health/`` (SystemHealthView, 无认证) → HTTP 200 且 db/redis pass
-- agent:    DB 查询 Agent.last_heartbeat 距今 < 30s 且 status ∈ {idle, online}
+- worker:   DB 查询 Worker.last_heartbeat 距今 < 30s 且 status ∈ {idle, online}
 - frontend: ``http://127.0.0.1:<port>`` HTTP 200 (vite dev server)
 
 用法:
@@ -34,7 +34,7 @@ from pathlib import Path
 _SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
-from services.log_scan import is_error_line, parse_line_ts
+from services.log_scan import is_error_line, parse_line_ts  # noqa: E402
 
 # ---- 路径常量 (与 gaf_daemon.py 保持一致) ------------------------------------
 GAF_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -63,8 +63,8 @@ DEFAULT_BACKEND_PORT = 8000
 DEFAULT_FRONTEND_PORT = 5173
 
 # Agent 心跳新鲜度阈值 (与 backend workers/worker_runtime _is_agent_connected_via_db 对齐)
-AGENT_HEARTBEAT_STALE_SECONDS = 30
-AGENT_HEALTHY_STATUSES = {"idle", "online"}
+WORKER_HEARTBEAT_STALE_SECONDS = 30
+WORKER_HEALTHY_STATUSES = {"idle", "online"}
 
 
 @dataclass
@@ -178,8 +178,8 @@ def check_backend(ports: dict) -> Health:
         return Health(service="backend", healthy=False, detail=f"healthz 解析失败: {exc}", ts=time.time())
 
 
-def check_agent(ports: dict) -> Health:
-    """DB 查询 Agent.last_heartbeat 新鲜度 + status.
+def check_worker(ports: dict) -> Health:
+    """DB 查询 Worker.last_heartbeat 新鲜度 + status.
 
     通过 Django ORM (reuse backend models), 仅查询不写库.
     """
@@ -194,26 +194,25 @@ def check_agent(ports: dict) -> Health:
         django.setup()
 
         from django.utils import timezone
+        from workers.models import Worker
 
-        from agents.models import Agent
-
-        agent = Agent.objects.filter(is_local=True).first() or Agent.objects.first()
-        if agent is None:
-            return Health(service="agent", healthy=False, detail="DB 无 Agent 记录", ts=time.time())
+        worker = Worker.objects.filter(is_local=True).first() or Worker.objects.first()
+        if worker is None:
+            return Health(service="worker", healthy=False, detail="DB 无 Worker 记录", ts=time.time())
 
         fresh = False
-        if agent.last_heartbeat is not None:
-            age = (timezone.now() - agent.last_heartbeat).total_seconds()
-            fresh = age < AGENT_HEARTBEAT_STALE_SECONDS
-        healthy = agent.status in AGENT_HEALTHY_STATUSES and fresh
+        if worker.last_heartbeat is not None:
+            age = (timezone.now() - worker.last_heartbeat).total_seconds()
+            fresh = age < WORKER_HEARTBEAT_STALE_SECONDS
+        healthy = worker.status in WORKER_HEALTHY_STATUSES and fresh
         return Health(
-            service="agent",
+            service="worker",
             healthy=healthy,
-            detail=f"status={agent.status} hb_age={(timezone.now() - agent.last_heartbeat).total_seconds() if agent.last_heartbeat else 'N/A'}s",
+            detail=f"status={worker.status} hb_age={(timezone.now() - worker.last_heartbeat).total_seconds() if worker.last_heartbeat else 'N/A'}s",
             ts=time.time(),
         )
     except Exception as exc:
-        return Health(service="agent", healthy=False, detail=f"DB 查询失败: {exc}", ts=time.time())
+        return Health(service="worker", healthy=False, detail=f"DB 查询失败: {exc}", ts=time.time())
 
 
 def check_frontend(ports: dict) -> Health:
@@ -253,11 +252,11 @@ def _native_log_paths(name: str) -> list[Path]:
             return []
         logs = sorted(day.rglob("*.log"), key=lambda p: p.stat().st_mtime, reverse=True)
         return logs[:4]
-    if name == "agent":
-        day = _latest_day_dir("agent/system")
+    if name == "worker":
+        day = _latest_day_dir("worker/system")
         if day is None:
             return []
-        f = day / "agent.log"
+        f = day / "worker.log"
         return [f] if f.exists() else []
     if name == "daemon":
         day = _latest_day_dir("backend/system")
@@ -322,7 +321,7 @@ def scan_log_errors(name: str, window_seconds: int | None = None) -> dict:
 CHECKERS: dict[str, Callable[[dict], Health]] = {
     "redis": check_redis,
     "backend": check_backend,
-    "agent": check_agent,
+    "worker": check_worker,
     "frontend": check_frontend,
 }
 

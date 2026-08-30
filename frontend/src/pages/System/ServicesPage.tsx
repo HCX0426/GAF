@@ -2,7 +2,7 @@
  * Services Management page (系统页签) — 监控各服务健康/进程/报错 + 统一查看终端日志.
  *
  * spec 2026-08-29-services-management-monitor P4.
- * - 服务状态卡片: redis / backend / agent / frontend / daemon
+ * - 服务状态卡片: redis / backend / worker / frontend / daemon
  * - 15s 自动轮询; 每服务可打开日志 Drawer (tail + ERROR 过滤 + 高亮)
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -13,6 +13,7 @@ import {
   Col,
   Drawer,
   Empty,
+  Popconfirm,
   Row,
   Select,
   Space,
@@ -26,12 +27,14 @@ import {
   CheckCircleFilled,
   CloseCircleFilled,
   EyeOutlined,
+  RedoOutlined,
   ReloadOutlined,
   MinusCircleFilled,
 } from '@ant-design/icons';
 import {
   fetchServiceLogs,
   fetchSystemServices,
+  restartService,
   type ServiceInfo,
   type SystemServicesResponse,
 } from '@/api/services';
@@ -68,6 +71,7 @@ export function ServicesPage() {
   const [status, setStatus] = useState<SystemServicesResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [restartingName, setRestartingName] = useState<string | null>(null);
 
   const [logService, setLogService] = useState<ServiceInfo | null>(null);
   const [logFilter, setLogFilter] = useState<'all' | 'error'>('all');
@@ -93,6 +97,24 @@ export function ServicesPage() {
     const timer = setInterval(load, POLL_MS);
     return () => clearInterval(timer);
   }, [load]);
+
+  const handleRestart = useCallback(
+    async (service: string) => {
+      setRestartingName(service);
+      setError(null);
+      try {
+        await restartService(service);
+        setRestartingName(null);
+        void load();
+      } catch (e) {
+        setRestartingName(null);
+        setError(e instanceof Error ? e.message : String(e));
+      }
+    },
+    [load],
+  );
+
+  const restartAll = useCallback(() => handleRestart('all'), [handleRestart]);
 
   const loadLogs = useCallback(
     async (service: ServiceInfo, filter: 'all' | 'error' = logFilter) => {
@@ -165,6 +187,23 @@ export function ServicesPage() {
         <Button size="small" icon={<ReloadOutlined />} loading={loading} onClick={() => load()}>
           {t('servicesManage.btn_refresh')}
         </Button>
+        <Popconfirm
+          title={t('servicesManage.restart_all_confirm')}
+          onConfirm={restartAll}
+          disabled={restartingName !== null}
+          okText={t('common.confirm')}
+          cancelText={t('common.cancel')}
+        >
+          <Button
+            type="primary"
+            size="small"
+            icon={<RedoOutlined />}
+            loading={restartingName === 'all'}
+            disabled={restartingName !== null && restartingName !== 'all'}
+          >
+            {t('servicesManage.btn_restart_all')}
+          </Button>
+        </Popconfirm>
       </Space>
 
       {!daemonRunning && (
@@ -185,7 +224,12 @@ export function ServicesPage() {
         <Row gutter={[16, 16]}>
           {services.map((svc) => (
             <Col key={svc.name} xs={24} sm={12} md={8} lg={8} xl={8}>
-              <ServiceCard svc={svc} onViewLog={openLogDrawer} />
+              <ServiceCard
+                svc={svc}
+                onViewLog={openLogDrawer}
+                onRestart={handleRestart}
+                restarting={restartingName === svc.name}
+              />
             </Col>
           ))}
         </Row>
@@ -267,10 +311,12 @@ export function ServicesPage() {
 interface ServiceCardProps {
   svc: ServiceInfo;
   onViewLog: (svc: ServiceInfo) => void;
+  onRestart: (name: string) => void;
+  restarting?: boolean;
 }
 
 /** 单服务状态卡片 */
-function ServiceCard({ svc, onViewLog }: ServiceCardProps) {
+function ServiceCard({ svc, onViewLog, onRestart, restarting = false }: ServiceCardProps) {
   const t = useTranslation();
   const { token } = theme.useToken();
   const hasErrors = (svc.error_count ?? 0) > 0;
@@ -330,11 +376,40 @@ function ServiceCard({ svc, onViewLog }: ServiceCardProps) {
         </div>
       )}
 
-      <Tooltip title={t('servicesManage.view_log_tip')}>
-        <Button size="small" icon={<EyeOutlined />} onClick={() => onViewLog(svc)} block>
-          {t('servicesManage.btn_view_log')}
-        </Button>
-      </Tooltip>
+      {svc.name === 'daemon' ? (
+        <Tooltip title={t('servicesManage.view_log_tip')}>
+          <Button size="small" icon={<EyeOutlined />} onClick={() => onViewLog(svc)} block>
+            {t('servicesManage.btn_view_log')}
+          </Button>
+        </Tooltip>
+      ) : (
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Tooltip title={t('servicesManage.view_log_tip')}>
+            <Button size="small" icon={<EyeOutlined />} onClick={() => onViewLog(svc)} block>
+              {t('servicesManage.btn_view_log')}
+            </Button>
+          </Tooltip>
+          <Popconfirm
+            title={t('servicesManage.restart_confirm', {
+              name: svc.name,
+            })}
+            okText={t('common.ok')}
+            cancelText={t('common.cancel')}
+            onConfirm={() => onRestart(svc.name)}
+            disabled={restarting}
+          >
+            <Button
+              size="small"
+              icon={<RedoOutlined />}
+              danger
+              loading={restarting}
+              style={{ width: 88, flexShrink: 0 }}
+            >
+              {t('servicesManage.btn_restart')}
+            </Button>
+          </Popconfirm>
+        </div>
+      )}
     </Card>
   );
 }

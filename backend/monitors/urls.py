@@ -12,6 +12,7 @@ from monitors.views import (
     diagnose_view,
     notification_chain_health_view,
     service_logs_view,
+    service_restart_view,
     services_view,
     system_status_view,
 )
@@ -27,6 +28,7 @@ urlpatterns = [
     path('chain-health/', notification_chain_health_view, name='notification-chain-health'),
     path('services/', services_view, name='system-services'),
     path('services/logs/', service_logs_view, name='system-services-logs'),
+    path('services/restart/', service_restart_view, name='system-services-restart'),
     path('alerts/', alerts_summary_view, name='alerts-summary'),
     path('alerts/history/', alert_history_view, name='alert-history'),
     path('device-health/', device_health_view, name='device-health'),

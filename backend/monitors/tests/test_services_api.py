@@ -78,7 +78,7 @@ class TestServicesListAPI(ServiceApiBase):
         self.assertFalse(body['daemon']['running'])
         self.assertEqual(len(body['services']), 5)
         names = [s['name'] for s in body['services']]
-        self.assertEqual(names, ['redis', 'backend', 'agent', 'frontend', 'daemon'])
+        self.assertEqual(names, ['redis', 'backend', 'worker', 'frontend', 'daemon'])
 
     def test_returns_snapshot_fields_when_present(self):
         """快照存在时返回 healthy/detail/process/log_errors 数据。"""
@@ -171,3 +171,54 @@ class TestServiceLogsAPI(ServiceApiBase):
         res = self.client.get('/api/v2/monitors/services/logs/?service=frontend&lines=5000')
         body = _unwrap(res)
         self.assertLessEqual(len(body['lines']), 2000)
+
+
+class TestServiceRestartAPI(ServiceApiBase):
+    """POST /api/v2/monitors/services/restart/ — 下发 daemon 重启指令."""
+
+    def test_restart_single_service_writes_ctl(self):
+        """指定单服务 → 写 daemon-ctl.json (action=restart, service=<name>)."""
+        res = self.client.post(
+            '/api/v2/monitors/services/restart/',
+            {'service': 'worker'},
+            format='json',
+        )
+        self.assertEqual(res.status_code, status.HTTP_202_ACCEPTED)
+        body = _unwrap(res)
+        self.assertEqual(body['service'], 'worker')
+        ctl = json.loads((self.debug_root / 'daemon-ctl.json').read_text(encoding='utf-8'))
+        self.assertEqual(ctl['action'], 'restart')
+        self.assertEqual(ctl['service'], 'worker')
+        self.assertIn('ts', ctl)
+
+    def test_restart_all_writes_ctl(self):
+        """service=all → daemon-ctl.json service=all."""
+        res = self.client.post(
+            '/api/v2/monitors/services/restart/',
+            {'service': 'all'},
+            format='json',
+        )
+        self.assertEqual(res.status_code, status.HTTP_202_ACCEPTED)
+        ctl = json.loads((self.debug_root / 'daemon-ctl.json').read_text(encoding='utf-8'))
+        self.assertEqual(ctl['action'], 'restart')
+        self.assertEqual(ctl['service'], 'all')
+
+    def test_restart_defaults_to_all(self):
+        """未传 service → 默认 all."""
+        res = self.client.post('/api/v2/monitors/services/restart/', {}, format='json')
+        self.assertEqual(res.status_code, status.HTTP_202_ACCEPTED)
+        ctl = json.loads((self.debug_root / 'daemon-ctl.json').read_text(encoding='utf-8'))
+        self.assertEqual(ctl['service'], 'all')
+
+    def test_unknown_service_400(self):
+        res = self.client.post(
+            '/api/v2/monitors/services/restart/',
+            {'service': 'bogus'},
+            format='json',
+        )
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_restart_requires_auth(self):
+        anon = APIClient()
+        res = anon.post('/api/v2/monitors/services/restart/', {'service': 'all'}, format='json')
+        self.assertIn(res.status_code, (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN))

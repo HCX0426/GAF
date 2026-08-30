@@ -694,8 +694,8 @@ def main() -> None:
             # N197: 日期分桶 + 轮转 handler
             file_handler = DateRotatingFileHandler(
                 debug_root=str(debug_path),
-                app_name="agent",
-                log_name="agent",
+                app_name="worker",
+                log_name="worker",
                 retention_days=30,
             )
             handlers.append(file_handler)
