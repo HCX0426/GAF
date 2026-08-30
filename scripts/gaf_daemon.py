@@ -641,14 +641,22 @@ class ServiceManager:
     # ── 重启 ──────────────────────────────────────────────────────────
 
     def restart_service(self, name: str) -> bool:
-        """重启单个服务."""
+        """重启单个服务 (手动/ctl 路径, 计入 restart_count 展示).
+
+        restart_count 语义 = 窗口内实际发生的重启次数 (手动 + 自动兜底共享);
+        手动重启不受 can_restart 防抖限制 (用户显式操作有控制权), 但计数照记.
+        """
+        info = self.services.get(name)
         self.stop_service(name)
         # 短暂等待确保端口释放
         time.sleep(1)
-        return self.start_service(name)
+        ok = self.start_service(name)
+        if ok and info is not None and info.is_running:
+            info.record_restart()
+        return ok
 
     def restart_all(self) -> bool:
-        """重启所有服务."""
+        """重启所有服务 (计入 restart_count 展示)."""
         logger.info("=" * 48)
         logger.info("  重启所有服务")
         logger.info("=" * 48)
@@ -657,7 +665,12 @@ class ServiceManager:
         logger.info("--- 等待 3 秒后启动 ---")
         logger.info("")
         time.sleep(3)
-        return self.start_all()
+        ok = self.start_all()
+        if ok:
+            for info in self.services.values():
+                if info.is_running:
+                    info.record_restart()
+        return ok
 
 
 # =============================================================================
