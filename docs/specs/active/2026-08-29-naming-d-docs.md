@@ -41,11 +41,11 @@ D 批为**纯文档**修正（零代码/零 API/零迁移），收口评估稿 �
 
 | 阶段 | 内容 | 状态 |
 |------|------|------|
-| P1 | overview/features 纠正（D4/D7/D12） | ⏳ |
+| P1 | overview/features 纠正（D4/D7/D12） | ✅ |
 | P2 | 子文档矛盾修正（D20–D24/X1） | ⏳ |
-| P3 | 概念速查 + 三健康面（OQ-7/OQ-8） | ⏳ |
-| P4 | 三层节点 + D23② 说明 | ⏳ |
-| P5 | Worker / Agent(AI) 术语区分章（OQ-10） | ⏳ |
+| P3 | 概念速查 + 三健康面（OQ-7/OQ-8） | ✅ |
+| P4 | 三层节点 + D23② 说明 | ✅ |
+| P5 | Worker / Agent(AI) 术语区分章（OQ-10） | ✅ |
 
 #### Task P1.1: overview/features
 
