@@ -11,7 +11,7 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from client.connection import OUTBOX_MAX_SIZE, AgentConnection
+from client.connection import OUTBOX_MAX_SIZE, WorkerConnection
 from core.config import AgentConfig
 
 pytestmark = pytest.mark.unit
@@ -32,7 +32,7 @@ def _make_connection(**kwargs):
     monitor = MagicMock()
     monitor.get_stats.return_value = {"cpu": 1.0, "memory": 50.0, "fps": 30.0}
     outbox_store = kwargs.pop("outbox_store", None)
-    conn = AgentConnection(_make_config(), resource_monitor=monitor, outbox_store=outbox_store)
+    conn = WorkerConnection(_make_config(), resource_monitor=monitor, outbox_store=outbox_store)
     for k, v in kwargs.items():
         setattr(conn, k, v)
     return conn

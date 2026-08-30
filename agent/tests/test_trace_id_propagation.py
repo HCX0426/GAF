@@ -35,7 +35,7 @@ import pytest  # noqa: E402 - after sys.path setup above
 
 pytestmark = pytest.mark.unit  # noqa: E402
 
-from client.connection import AgentConnection  # noqa: E402
+from client.connection import WorkerConnection  # noqa: E402
 from client.handler import MessageHandler  # noqa: E402
 from core.context_vars import (  # noqa: E402
     clear_current_execution,
@@ -122,7 +122,7 @@ class TestDispatchToHandlerPassesTraceId:
         config.server_url = "ws://localhost:8765"
         config.agent_token = "tok"
         config.heartbeat_interval = 30
-        conn = AgentConnection(config)
+        conn = WorkerConnection(config)
 
         captured: dict = {}
 
@@ -147,7 +147,7 @@ class TestDispatchToHandlerPassesTraceId:
         config.server_url = "ws://localhost:8765"
         config.agent_token = "tok"
         config.heartbeat_interval = 30
-        conn = AgentConnection(config)
+        conn = WorkerConnection(config)
 
         captured: dict = {}
 
@@ -177,7 +177,7 @@ class TestDispatchToHandlerPassesTraceId:
         config.server_url = "ws://localhost:8765"
         config.agent_token = "tok"
         config.heartbeat_interval = 30
-        conn = AgentConnection(config)
+        conn = WorkerConnection(config)
 
         captured: dict = {}
 

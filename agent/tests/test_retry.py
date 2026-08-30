@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from client.connection import AgentConnection
+from client.connection import WorkerConnection
 from core.config import AgentConfig
 from core.retry import (
     retry,
@@ -619,7 +619,7 @@ class TestRetryWebSocketIntegration:
     def test_send_message_retries_connection_closed(self):
         """send_message retries when the WebSocket raises ConnectionClosed."""
         config = AgentConfig(server_url="ws://localhost:8000/ws")
-        conn = AgentConnection(config, resource_monitor=MagicMock())
+        conn = WorkerConnection(config, resource_monitor=MagicMock())
         mock_ws = MagicMock()
         conn._ws = mock_ws
         conn._connected = True
@@ -643,7 +643,7 @@ class TestRetryWebSocketIntegration:
     def test_send_message_retries_then_exhausts(self):
         """send_message re-raises the last exception after retries are exhausted."""
         config = AgentConfig(server_url="ws://localhost:8000/ws")
-        conn = AgentConnection(config, resource_monitor=MagicMock())
+        conn = WorkerConnection(config, resource_monitor=MagicMock())
         mock_ws = MagicMock()
         conn._ws = mock_ws
         conn._connected = True

@@ -25,7 +25,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from core.constants import AgentStatus
+from core.constants import WorkerStatus
 
 logger = logging.getLogger(__name__)
 
@@ -541,7 +541,7 @@ class DeviceHealthChecker:
                     if parts[1] == 'device':
                         serial_online = True
                         reasons.append(f"ADB 在线({config.adb_serial})")
-                    elif parts[1] == AgentStatus.OFFLINE.value:
+                    elif parts[1] == WorkerStatus.OFFLINE.value:
                         reasons.append(f"ADB 离线({config.adb_serial}={parts[1]})")
                     else:
                         reasons.append(f"ADB 异常状态({config.adb_serial}={parts[1]})")

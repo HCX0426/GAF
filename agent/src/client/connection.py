@@ -150,7 +150,7 @@ def _build_ws_url(base_url: str, token: str) -> str:
     return urlunparse(parsed._replace(query=new_query))
 
 
-class AgentConnection:
+class WorkerConnection:
     """管理 Agent 与 Server 之间的 WebSocket 连接，支持自动重连和心跳"""
 
     def __init__(

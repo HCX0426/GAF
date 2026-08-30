@@ -12,7 +12,7 @@ import zlib
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from client.connection import AgentConnection
+from client.connection import WorkerConnection
 from core.config import AgentConfig
 from utils.message_compressor import (
     COMPRESSION_ALGORITHM_MSGPACK_ZLIB,
@@ -72,8 +72,8 @@ def mock_resource_monitor():
 
 @pytest.fixture
 def connection(mock_resource_monitor):
-    """An AgentConnection wired with a test config and mock monitor."""
-    return AgentConnection(_make_config(), resource_monitor=mock_resource_monitor)
+    """An WorkerConnection wired with a test config and mock monitor."""
+    return WorkerConnection(_make_config(), resource_monitor=mock_resource_monitor)
 
 
 def _decode_sent_frame(send_call):
@@ -515,7 +515,7 @@ class TestNegotiationRoundTrip:
 
 
 # ===========================================================================
-# AgentConnection compression negotiation tests (原 test_compression_negotiation.py)
+# WorkerConnection compression negotiation tests (原 test_compression_negotiation.py)
 # ===========================================================================
 
 

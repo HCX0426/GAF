@@ -138,10 +138,10 @@ class EventType(StrEnum):
     LONG_PRESS = "long_press"
 
 
-class AgentStatus(StrEnum):
-    """Agent status values (health_checker.py:535 etc.).
+class WorkerStatus(StrEnum):
+    """Worker status values (health_checker.py:535 etc.).
 
-    Mirrors backend Agent.Status choices (agents.models.Agent.Status).
+    Mirrors backend workers.models.Worker.Status choices.
     Used by agent health checker to parse ADB device state strings.
     """
     ONLINE = "online"

@@ -129,11 +129,11 @@ class TestLLMWebsocketRPC:
         if agent_src not in sys.path:
             sys.path.insert(0, agent_src)
 
-        from ai.llm_client import AgentLLMClient
+        from ai.llm_client import WorkerLlmClient
 
-        assert hasattr(AgentLLMClient, "stream_chat")
-        assert hasattr(AgentLLMClient, "diagnose_failure")
-        assert hasattr(AgentLLMClient, "is_available")
+        assert hasattr(WorkerLlmClient, "stream_chat")
+        assert hasattr(WorkerLlmClient, "diagnose_failure")
+        assert hasattr(WorkerLlmClient, "is_available")
 
     def test_consumer_handles_llm_call(self):
         """验证 WebSocket Consumer 能处理 llm.call 消息类型。"""

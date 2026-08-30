@@ -1,4 +1,4 @@
-"""Agent entry point: parse CLI args, create AgentClient, start connection
+"""Worker entry point: parse CLI args, create WorkerConnection, start connection
 
 Integrates DeviceCenter (auto-discovery), HealthChecker (background polling),
 and TaskOrchestrator (task execution) into a unified lifecycle.
@@ -13,7 +13,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from client.connection import AgentConnection
+from client.connection import WorkerConnection
 from client.handler import MessageHandler
 from core.config import AgentConfig
 from core.constants import EventType
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 _health_checker: DeviceHealthChecker | None = None
 _device_center: DeviceCenter | None = None
 
-# Injected after the WebSocket connection is established (see run_agent). The
+# Injected after the WebSocket connection is established (see run_worker). The
 # health-checker thread (plain threading) calls this from its poll loop to
 # asynchronously report a device's current health status to the backend via a
 # `device.sync` frame. Guarantees devices that disappear from ADB/windows are
@@ -433,7 +433,7 @@ def _report_device_status(
         logger.exception("上报设备状态失败: device_id=%s", device_id)
 
 
-async def run_agent(config: AgentConfig, args: argparse.Namespace = None) -> None:
+async def run_worker(config: AgentConfig, args: argparse.Namespace = None) -> None:
     """Create and start the Agent client with full component initialization.
 
     Initializes DeviceManager, DeviceCenter (auto-discovery),
@@ -509,7 +509,7 @@ async def run_agent(config: AgentConfig, args: argparse.Namespace = None) -> Non
             logger.warning("MonitorManager stop failed (local mode): %s", exc)
         return
 
-    connection = AgentConnection(config=config, resource_monitor=resource_monitor)
+    connection = WorkerConnection(config=config, resource_monitor=resource_monitor)
     await connection.connect()
 
     # Inject the device-status sender used by the health-checker thread (plain
@@ -693,7 +693,7 @@ def main() -> None:
     config = build_config(args)
 
     try:
-        asyncio.run(run_agent(config, args))
+        asyncio.run(run_worker(config, args))
     except KeyboardInterrupt:
         logger.info("Agent 已停止")
     finally:

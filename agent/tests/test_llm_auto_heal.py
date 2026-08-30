@@ -1,9 +1,9 @@
 """Tests for LLM auto-heal integration (spec S2 / P0-2).
 
-Verifies the ``AgentLLMClient`` activation per spec S2 / P0-2
+Verifies the ``WorkerLlmClient`` activation per spec S2 / P0-2
 (archived: ai-architecture-defects spec):
 
-1. ``AgentLLMClient.diagnose_failure()`` — prompt construction, response
+1. ``WorkerLlmClient.diagnose_failure()`` — prompt construction, response
    parsing, error fallbacks (network / config-missing / malformed reply).
 2. ``TemplateMatchNode._llm_diagnose_match_failure()`` — non-blocking
    when ``context.llm_client`` is None; delegates when set; attaches
@@ -28,7 +28,7 @@ import pytest
 from engine.context import PipelineContext
 
 # Agent tests run with agent/src on sys.path (see agent/conftest.py).
-from ai.llm_client import AgentLLMClient
+from ai.llm_client import WorkerLlmClient
 
 pytestmark = pytest.mark.e2e
 
@@ -37,7 +37,7 @@ pytestmark = pytest.mark.e2e
 # ============================================================
 
 class FakeResponse:
-    """Minimal urllib response stub for AgentLLMClient.chat()."""
+    """Minimal urllib response stub for WorkerLlmClient.chat()."""
 
     def __init__(self, payload: bytes, status: int = 200):
         self._payload = payload
@@ -54,16 +54,16 @@ class FakeResponse:
         return self._payload
 
 
-def make_client() -> AgentLLMClient:
-    """Construct an AgentLLMClient with a fake server URL + token."""
-    return AgentLLMClient(
+def make_client() -> WorkerLlmClient:
+    """Construct an WorkerLlmClient with a fake server URL + token."""
+    return WorkerLlmClient(
         server_url="ws://127.0.0.1:8000/ws/protocol/agents/",
         token="test-token-abc",
     )
 
 
 # ============================================================
-# 1. AgentLLMClient.diagnose_failure() — response parsing
+# 1. WorkerLlmClient.diagnose_failure() — response parsing
 # ============================================================
 
 class TestDiagnoseFailureParsing:
@@ -165,7 +165,7 @@ class TestDiagnoseFailureParsing:
 
 
 # ============================================================
-# 2. AgentLLMClient.diagnose_failure() — error fallbacks
+# 2. WorkerLlmClient.diagnose_failure() — error fallbacks
 # ============================================================
 
 class TestDiagnoseFailureErrorFallbacks:
@@ -582,23 +582,23 @@ class TestPipelineEngineLoadLLMClient:
 # 7. Dead code activation — Grep verification
 # ============================================================
 
-class TestAgentLLMClientActivated:
-    """Verify AgentLLMClient is no longer dead code (P0-2 closure).
+class TestWorkerLlmClientActivated:
+    """Verify WorkerLlmClient is no longer dead code (P0-2 closure).
 
-    These tests assert that AgentLLMClient has at least one real caller
+    These tests assert that WorkerLlmClient has at least one real caller
     in the agent source tree. They use subprocess grep because pytest
     can't directly assert "file X imports from module Y" — but we can
     check the source text.
     """
 
     def test_orchestrator_imports_agent_llm_client(self):
-        """orchestrator.py imports AgentLLMClient (lazy import in execute_pipeline)."""
+        """orchestrator.py imports WorkerLlmClient (lazy import in execute_pipeline)."""
         from pathlib import Path
 
         orch_path = Path(__file__).resolve().parent.parent / "src" / "core" / "orchestrator.py"
         content = orch_path.read_text(encoding="utf-8")
-        assert "from ai.llm_client import AgentLLMClient" in content
-        assert "AgentLLMClient(" in content
+        assert "from ai.llm_client import WorkerLlmClient" in content
+        assert "WorkerLlmClient(" in content
 
     def test_template_match_uses_llm_client_via_context(self):
         """template_match.py reads context.llm_client and calls diagnose_failure."""
@@ -613,7 +613,7 @@ class TestAgentLLMClientActivated:
         assert "diagnose_failure" in content
 
     def test_llm_client_has_diagnose_failure_method(self):
-        """AgentLLMClient class defines diagnose_failure method."""
+        """WorkerLlmClient class defines diagnose_failure method."""
         from pathlib import Path
 
         client_path = Path(__file__).resolve().parent.parent / "src" / "ai" / "llm_client.py"

@@ -898,18 +898,18 @@ class TaskOrchestrator:
         llm_client = None
         if effective_debug_mode and self._config.server_url:
             try:
-                from ai.llm_client import AgentLLMClient
-                llm_client = AgentLLMClient(
+                from ai.llm_client import WorkerLlmClient
+                llm_client = WorkerLlmClient(
                     server_url=self._config.server_url,
                     token=self._config.agent_token,
                 )
                 logger.info(
-                    "execute_pipeline: AgentLLMClient built for auto-heal (server=%s)",
+                    "execute_pipeline: WorkerLlmClient built for auto-heal (server=%s)",
                     self._config.server_url,
                 )
             except Exception as exc:
                 logger.warning(
-                    "execute_pipeline: AgentLLMClient init failed (continuing without LLM auto-heal): %s",
+                    "execute_pipeline: WorkerLlmClient init failed (continuing without LLM auto-heal): %s",
                     exc,
                 )
                 llm_client = None
@@ -1231,14 +1231,14 @@ class TaskOrchestrator:
         pipeline fails, the agent must consult the LLM for a diagnosis
         before notifying the user. This method builds a structured error
         context from the pipeline result + structured log path and
-        delegates to ``AgentLLMClient.diagnose_failure()``.
+        delegates to ``WorkerLlmClient.diagnose_failure()``.
 
         Non-blocking: on any error (LLM unavailable, network, malformed
         response), returns ``None`` so the caller falls back to the
         original error message unchanged.
 
         Args:
-            llm_client: AgentLLMClient instance (already constructed).
+            llm_client: WorkerLlmClient instance (already constructed).
             result: Failed AutoResult from engine.execute().
             pipeline_json: The pipeline definition that was executed.
             structured_log_path: Path to the JSONL structured log

@@ -1,6 +1,6 @@
 """WebSocket client reconnect / heartbeat / send-receive unit tests (Phase 4.8).
 
-Covers ``client.connection.AgentConnection``:
+Covers ``client.connection.WorkerConnection``:
 - Initial connection establishment (connect / register)
 - Disconnect behavior
 - Exponential backoff reconnection (_try_reconnect)
@@ -24,7 +24,7 @@ from client.connection import (
     MAX_BACKOFF,
     PING_INTERVAL,
     PING_TIMEOUT,
-    AgentConnection,
+    WorkerConnection,
     _build_ws_url,
 )
 from core.config import AgentConfig
@@ -66,8 +66,8 @@ def mock_resource_monitor():
 
 @pytest.fixture
 def connection(mock_resource_monitor):
-    """An AgentConnection wired with a test config and mock monitor."""
-    return AgentConnection(_make_config(), resource_monitor=mock_resource_monitor)
+    """An WorkerConnection wired with a test config and mock monitor."""
+    return WorkerConnection(_make_config(), resource_monitor=mock_resource_monitor)
 
 
 # ============================================================
@@ -687,7 +687,7 @@ class TestHeadersAndSsl:
 
     def test_build_headers_without_token(self, mock_resource_monitor):
         config = _make_config(agent_token="")
-        conn = AgentConnection(config, resource_monitor=mock_resource_monitor)
+        conn = WorkerConnection(config, resource_monitor=mock_resource_monitor)
         assert conn._build_headers() == {}
 
     def test_build_ssl_context_no_tls(self, connection):
@@ -696,7 +696,7 @@ class TestHeadersAndSsl:
 
     def test_build_ssl_context_wss_enables_tls(self, mock_resource_monitor):
         config = _make_config(server_url="wss://127.0.0.1:8000/ws/protocol/agents/")
-        conn = AgentConnection(config, resource_monitor=mock_resource_monitor)
+        conn = WorkerConnection(config, resource_monitor=mock_resource_monitor)
         ctx = conn._build_ssl_context()
         assert ctx is not None
         assert isinstance(ctx, ssl.SSLContext)
@@ -706,7 +706,7 @@ class TestHeadersAndSsl:
             server_url="wss://127.0.0.1:8000/ws/protocol/agents/",
             ssl_verify=False,
         )
-        conn = AgentConnection(config, resource_monitor=mock_resource_monitor)
+        conn = WorkerConnection(config, resource_monitor=mock_resource_monitor)
         ctx = conn._build_ssl_context()
         assert ctx.check_hostname is False
         assert ctx.verify_mode == ssl.CERT_NONE

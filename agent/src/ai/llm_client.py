@@ -89,12 +89,12 @@ def _derive_http_base(server_url: str) -> str:
     return f"{scheme}://{parsed.hostname}"
 
 
-class AgentLLMClient:
+class WorkerLlmClient:
     """HTTP client wrapping backend AI chat endpoint (path from GAF_API_PREFIX).
 
     Example::
 
-        client = AgentLLMClient(server_url=config.server_url,
+        client = WorkerLlmClient(server_url=config.server_url,
                                 token=config.agent_token)
         result = client.chat("Why did the click step fail?")
         if result.get("reply"):
@@ -185,7 +185,7 @@ class AgentLLMClient:
             except (ValueError, OSError):
                 err_data = {}
             logger.warning(
-                "AgentLLMClient HTTP %d from %s: %s",
+                "WorkerLlmClient HTTP %d from %s: %s",
                 exc.code, self._chat_url, err_data,
             )
             return {
@@ -196,7 +196,7 @@ class AgentLLMClient:
         except urllib_error.URLError as exc:
             # Network-level failure (backend unreachable, DNS, etc.)
             logger.warning(
-                "AgentLLMClient network error contacting %s: %s",
+                "WorkerLlmClient network error contacting %s: %s",
                 self._chat_url, exc.reason,
             )
             return {
@@ -207,7 +207,7 @@ class AgentLLMClient:
         except Exception as exc:
             # Unexpected error — log and return error dict (never raise)
             logger.exception(
-                "AgentLLMClient unexpected error contacting %s: %s",
+                "WorkerLlmClient unexpected error contacting %s: %s",
                 self._chat_url, exc,
             )
             return {
