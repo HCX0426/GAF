@@ -1,6 +1,6 @@
 """P-048 (2026-07-29): device.action_result 恢复动作分支测试.
 
-验证 ``AgentConsumer._handle_device_action_result`` 在 payload 含 ``command``
+验证 ``WorkerConsumer._handle_device_action_result`` 在 payload 含 ``command``
 字段时正确路由到 ``_handle_device_command_result``:
 
 1. 写入 / 更新 RecoveryLog (N191 schema 归一化: command vs action 字段区分)
@@ -18,14 +18,14 @@ from channels.testing import WebsocketCommunicator
 from django.test import TestCase, override_settings
 
 from protocol.constants import MessageType
-from protocol.consumers import AgentConsumer
+from protocol.consumers import WorkerConsumer
 from protocol.serializers import serialize_frame
 from protocol.tests import TEST_WS_PATH
 
 
 @override_settings(CHANNEL_LAYERS={"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}})
 class TestDeviceCommandResultHandler(TestCase):
-    """AgentConsumer._handle_device_command_result (P-048 新增分支).
+    """WorkerConsumer._handle_device_command_result (P-048 新增分支).
 
     Uses ``TestCase`` (savepoint isolation). The consumer's
     ``_handle_device_command_result`` uses ``database_sync_to_async`` to
@@ -41,7 +41,7 @@ class TestDeviceCommandResultHandler(TestCase):
     async def _connect(self):
         """Helper: 建立一个 mock agent WS 连接."""
         communicator = WebsocketCommunicator(
-            AgentConsumer.as_asgi(), TEST_WS_PATH,
+            WorkerConsumer.as_asgi(), TEST_WS_PATH,
         )
         communicator.scope['agent'] = MagicMock(agent_id='test-p048-agent')
         await communicator.connect()
@@ -195,7 +195,7 @@ class TestDeviceCommandResultHandler(TestCase):
         communicator = await self._connect()
         try:
             with patch.object(
-                AgentConsumer, '_db_register_device',
+                WorkerConsumer, '_db_register_device',
                 new=AsyncMock(return_value={'created': True, 'id': 99}),
             ):
                 result_frame = serialize_frame(
@@ -217,13 +217,13 @@ class TestDeviceCommandResultHandler(TestCase):
 
     def test_recovery_level_mapping(self):
         """_recovery_level_for_command 静态方法映射正确."""
-        self.assertEqual(AgentConsumer._recovery_level_for_command('restart_app'), 'app')
-        self.assertEqual(AgentConsumer._recovery_level_for_command('relogin'), 'app')
-        self.assertEqual(AgentConsumer._recovery_level_for_command('notify_only'), 'app')
-        self.assertEqual(AgentConsumer._recovery_level_for_command('restart_emulator'), 'device')
-        self.assertEqual(AgentConsumer._recovery_level_for_command('reconnect_adb'), 'device')
-        self.assertEqual(AgentConsumer._recovery_level_for_command('switch_backup'), 'device')
-        self.assertEqual(AgentConsumer._recovery_level_for_command('unknown_cmd'), 'device')
+        self.assertEqual(WorkerConsumer._recovery_level_for_command('restart_app'), 'app')
+        self.assertEqual(WorkerConsumer._recovery_level_for_command('relogin'), 'app')
+        self.assertEqual(WorkerConsumer._recovery_level_for_command('notify_only'), 'app')
+        self.assertEqual(WorkerConsumer._recovery_level_for_command('restart_emulator'), 'device')
+        self.assertEqual(WorkerConsumer._recovery_level_for_command('reconnect_adb'), 'device')
+        self.assertEqual(WorkerConsumer._recovery_level_for_command('switch_backup'), 'device')
+        self.assertEqual(WorkerConsumer._recovery_level_for_command('unknown_cmd'), 'device')
 
 
 @override_settings(CHANNEL_LAYERS={"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}})
@@ -239,7 +239,7 @@ class TestDeviceCommandForwarding(TestCase):
 
     async def _connect(self):
         communicator = WebsocketCommunicator(
-            AgentConsumer.as_asgi(), TEST_WS_PATH,
+            WorkerConsumer.as_asgi(), TEST_WS_PATH,
         )
         communicator.scope['agent'] = MagicMock(agent_id='test-s2-fwd')
         await communicator.connect()
@@ -257,7 +257,7 @@ class TestDeviceCommandForwarding(TestCase):
         import json
 
         communicator = WebsocketCommunicator(
-            AgentConsumer.as_asgi(), TEST_WS_PATH,
+            WorkerConsumer.as_asgi(), TEST_WS_PATH,
         )
         communicator.scope['agent'] = MagicMock(agent_id='test-s2-fwd')
         await communicator.connect()

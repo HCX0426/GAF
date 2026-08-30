@@ -12,18 +12,18 @@ DEFAULT_MAX_CONCURRENT_TASKS = 5
 def check_agent_quota(agent_session) -> tuple[bool, str]:
     """检查 Agent 是否超出资源配额，决定是否允许分配新任务。
 
-    从 AgentSession.resource_quota 读取配置，检查 CPU/内存/并发任务数是否超限。
+    从 WorkerSession.resource_quota 读取配置，检查 CPU/内存/并发任务数是否超限。
     若 resource_quota 未配置相关字段，使用默认阈值。
 
     Args:
-        agent_session: AgentSession 实例，需包含 resource_quota、cpu_usage、
+        agent_session: WorkerSession 实例，需包含 resource_quota、cpu_usage、
                        memory_usage 等字段
 
     Returns:
         Tuple[bool, str]: (是否允许分配新任务, 原因说明)
     """
     if agent_session is None:
-        return False, "AgentSession 不存在"
+        return False, "WorkerSession 不存在"
 
     quota = agent_session.resource_quota or {}
     cpu_threshold = quota.get("cpu_threshold", DEFAULT_CPU_THRESHOLD)

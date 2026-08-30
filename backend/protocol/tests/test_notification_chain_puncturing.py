@@ -15,14 +15,14 @@ from asgiref.sync import sync_to_async
 from django.test import TransactionTestCase, override_settings
 
 from monitors.models import MonitorEvent
-from protocol.consumers import AgentConsumer
+from protocol.consumers import WorkerConsumer
 from tasks.factories import TaskExecutionFactory
 from tasks.models import TaskExecution
 
 
-def _make_consumer(agent_id: str = "test-alert-agent") -> AgentConsumer:
-    """构造最小可用的 AgentConsumer 实例 (不连接 WS, 直接调方法)."""
-    consumer = AgentConsumer.__new__(AgentConsumer)
+def _make_consumer(agent_id: str = "test-alert-agent") -> WorkerConsumer:
+    """构造最小可用的 WorkerConsumer 实例 (不连接 WS, 直接调方法)."""
+    consumer = WorkerConsumer.__new__(WorkerConsumer)
     consumer.agent_id = agent_id
     return consumer
 

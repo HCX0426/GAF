@@ -96,7 +96,7 @@ class MonitorRuleViewSet(AuditMixin, viewsets.ModelViewSet):
         Body (optional): {"agent_id": "<agent_id>"} — omit to broadcast to
         all online agents.
 
-        Triggers ``AgentConsumer.monitor_rule_update`` via the channel layer
+        Triggers ``WorkerConsumer.monitor_rule_update`` via the channel layer
         (``group_send({"type": "monitor.rule.update", ...})``). The agent
         receives the frame and calls ``MonitorManager.update_rules(rules)``
         to hot-swap the active rule set without restarting the process.

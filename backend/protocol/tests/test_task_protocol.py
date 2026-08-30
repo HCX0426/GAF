@@ -10,7 +10,7 @@ from django.test import TestCase, override_settings
 from workers.models import Worker
 
 from protocol.constants import MessageType
-from protocol.consumers import AgentConsumer
+from protocol.consumers import WorkerConsumer
 from protocol.schemas import (
     AGENT_HEARTBEAT_PAYLOAD_SCHEMA,
     AGENT_REGISTER_PAYLOAD_SCHEMA,
@@ -403,12 +403,12 @@ class TestValidatePayload(TestCase):
 
 
 @override_settings(CHANNEL_LAYERS={"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}})
-class TestAgentConsumerRegistration(TestCase):
-    """测试 AgentConsumer 注册流程集成测试。"""
+class TestWorkerConsumerRegistration(TestCase):
+    """测试 WorkerConsumer 注册流程集成测试。"""
 
     async def test_agent_register_with_capabilities(self):
         """验证带能力声明的注册消息正确创建 Agent 记录。"""
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-mock')
         await communicator.connect()
         await communicator.receive_from()
@@ -447,7 +447,7 @@ class TestAgentConsumerRegistration(TestCase):
 
     async def test_agent_register_missing_agent_id(self):
         """验证缺少 agent_id 的注册消息返回错误。"""
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         # Use empty agent_id so connect succeeds but register frame has no
         # agent_id to fall back on. Consumer should return status=error.
         communicator.scope['agent'] = MagicMock(agent_id='')
@@ -475,7 +475,7 @@ class TestAgentConsumerRegistration(TestCase):
             status=Worker.Status.OFFLINE,
         )
 
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-mock')
         await communicator.connect()
         await communicator.receive_from()
@@ -503,8 +503,8 @@ class TestAgentConsumerRegistration(TestCase):
 
 
 @override_settings(CHANNEL_LAYERS={"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}})
-class TestAgentConsumerHeartbeat(TestCase):
-    """测试 AgentConsumer 心跳处理集成测试。"""
+class TestWorkerConsumerHeartbeat(TestCase):
+    """测试 WorkerConsumer 心跳处理集成测试。"""
 
     async def test_heartbeat_updates_last_heartbeat(self):
         """验证心跳消息更新数据库中的 last_heartbeat。"""
@@ -514,7 +514,7 @@ class TestAgentConsumerHeartbeat(TestCase):
             status=Worker.Status.ONLINE,
         )
 
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-hb-001')
         await communicator.connect()
         await communicator.receive_from()
@@ -545,7 +545,7 @@ class TestAgentConsumerHeartbeat(TestCase):
 
     async def test_heartbeat_without_registration_returns_ack(self):
         """验证未注册 Agent 的心跳仍返回 ACK。"""
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-mock')
         await communicator.connect()
         await communicator.receive_from()
@@ -562,12 +562,12 @@ class TestAgentConsumerHeartbeat(TestCase):
 
 
 @override_settings(CHANNEL_LAYERS={"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}})
-class TestAgentConsumerTaskDispatch(TestCase):
-    """测试 AgentConsumer 任务分发相关集成测试。"""
+class TestWorkerConsumerTaskDispatch(TestCase):
+    """测试 WorkerConsumer 任务分发相关集成测试。"""
 
     async def test_task_dispatch_returns_ack(self):
         """验证 task.dispatch 消息收到 ACK 确认。"""
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-mock')
         await communicator.connect()
         await communicator.receive_from()
@@ -595,7 +595,7 @@ class TestAgentConsumerTaskDispatch(TestCase):
 
     async def test_task_cancel_returns_ack(self):
         """验证 task.cancel 消息收到 ACK 确认。"""
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-mock')
         await communicator.connect()
         await communicator.receive_from()
@@ -616,7 +616,7 @@ class TestAgentConsumerTaskDispatch(TestCase):
 
     async def test_task_result_returns_ack(self):
         """验证 task.result 消息收到 ACK 确认。"""
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-mock')
         await communicator.connect()
         await communicator.receive_from()
@@ -642,7 +642,7 @@ class TestAgentConsumerTaskDispatch(TestCase):
 
     async def test_task_progress_no_response(self):
         """验证 task.progress 不发送响应帧（仅日志）。"""
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-mock')
         await communicator.connect()
         await communicator.receive_from()
@@ -662,8 +662,8 @@ class TestAgentConsumerTaskDispatch(TestCase):
 
 
 @override_settings(CHANNEL_LAYERS={"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}})
-class TestAgentConsumerDisconnect(TestCase):
-    """测试 AgentConsumer 断开连接时标记离线。"""
+class TestWorkerConsumerDisconnect(TestCase):
+    """测试 WorkerConsumer 断开连接时标记离线。"""
 
     async def test_disconnect_sets_agent_offline(self):
         """验证断开连接后将 Agent 标记为离线。"""
@@ -673,7 +673,7 @@ class TestAgentConsumerDisconnect(TestCase):
             status=Worker.Status.ONLINE,
         )
 
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-disconnect-001')
         await communicator.connect()
         await communicator.receive_from()

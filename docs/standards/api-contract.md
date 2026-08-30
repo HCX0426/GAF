@@ -282,7 +282,7 @@ POST /api/v2/devices/batch_update/
 ### 9.1 端点 (5 active, 见 `backend/config/asgi.py` + 各 app `routing.py`)
 
 ```
-/ws/protocol/agents/                          # AgentConsumer (protocol/routing.py) — Agent ↔ 后端控制信令 (C-048 后唯一 agent 信令通道)
+/ws/protocol/agents/                          # WorkerConsumer (protocol/routing.py) — Worker ↔ 后端控制信令 (C-048 后唯一 worker 信令通道)
 /ws/dashboard/                                # FrontendConsumer (protocol/routing.py) — 后端推送任务/截图/执行步骤事件给前端 (C-063 后接管 screenshot_frame + execution_step_update)
 /ws/logs/                                     # LogStreamConsumer (protocol/routing.py) — 全局日志流 (LogEntry 实时推送, 配合 gaf_core/handlers.DatabaseLogHandler)
 /ws/notifications/                            # NotificationConsumer (notifications/routing.py) — 全局通知 (TD-200 2026-07-18 从 executions/routing.py 迁入)

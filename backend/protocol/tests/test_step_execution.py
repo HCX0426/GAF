@@ -15,7 +15,7 @@ from channels.testing import WebsocketCommunicator
 from django.test import TestCase, override_settings
 
 from protocol.constants import MessageType
-from protocol.consumers import AgentConsumer
+from protocol.consumers import WorkerConsumer
 from protocol.serializers import serialize_frame
 from protocol.tests import TEST_WS_PATH
 from tasks.factories import TaskExecutionFactory
@@ -31,7 +31,7 @@ class TestStepProgressPersistence(TestCase):
 
     async def _connect_communicator(self):
         """Helper: connect a WS communicator with a stubbed agent scope."""
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-p010')
         await communicator.connect()
         # Drain the initial connect frame (event_ack / welcome).
@@ -226,7 +226,7 @@ class TestStepFailureE2E(TestCase):
     async def _connect_communicator(self):
         """Helper: connect a WS communicator with a stubbed agent scope."""
         communicator = WebsocketCommunicator(
-            AgentConsumer.as_asgi(), TEST_WS_PATH
+            WorkerConsumer.as_asgi(), TEST_WS_PATH
         )
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-e2e')
         await communicator.connect()

@@ -1,6 +1,6 @@
-"""Integration tests for AgentConsumer._handle_task_result DB side effects.
+"""Integration tests for WorkerConsumer._handle_task_result DB side effects.
 
-Covers the protocol AgentConsumer's task.result handler end-to-end via
+Covers the protocol WorkerConsumer's task.result handler end-to-end via
 WebsocketCommunicator: agent sends task.result frame → consumer calls
 _db_update_execution_result → TaskExecution DB row updated.
 
@@ -17,8 +17,8 @@ Out of scope (covered by other TD-261 files):
   - ConcurrencyController slot release → test_concurrency_wiring_via_protocol_consumer.py
   - Device.status restore → test_device_status_lifecycle_via_protocol_consumer.py
 
-Note: spec-29c (commit 8f184734) deleted the legacy agents/consumers.py:AgentConsumer
-(1151 lines) and replaced it with protocol/consumers.py:AgentConsumer. The legacy
+Note: spec-29c (commit 8f184734) deleted the legacy agents/consumers.py:WorkerConsumer
+(1151 lines) and replaced it with protocol/consumers.py:WorkerConsumer. The legacy
 consumer called _release_concurrency_slot + _restore_device_status on task.result;
 the new consumer does NOT (tracked as TD-267). These tests deliberately assert
 the current (buggy) behavior for slot/device as regression baselines so the
@@ -36,7 +36,7 @@ from channels.testing import WebsocketCommunicator
 from django.test import TestCase, override_settings
 
 from protocol.constants import MessageType
-from protocol.consumers import AgentConsumer
+from protocol.consumers import WorkerConsumer
 from protocol.serializers import serialize_frame
 from protocol.tests import TEST_WS_PATH
 from tasks.factories import TaskExecutionFactory
@@ -45,7 +45,7 @@ from tasks.models import TaskExecution
 
 @override_settings(CHANNEL_LAYERS={"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}})
 class TestTaskResultDbSideEffects(TestCase):
-    """End-to-end DB side-effect coverage for AgentConsumer._handle_task_result."""
+    """End-to-end DB side-effect coverage for WorkerConsumer._handle_task_result."""
 
     async def _connect_communicator(self):
         """Connect a WS communicator with a stubbed agent scope.
@@ -55,7 +55,7 @@ class TestTaskResultDbSideEffects(TestCase):
         frame we actually want to assert on.
         """
         communicator = WebsocketCommunicator(
-            AgentConsumer.as_asgi(), TEST_WS_PATH
+            WorkerConsumer.as_asgi(), TEST_WS_PATH
         )
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-result')
         await communicator.connect()

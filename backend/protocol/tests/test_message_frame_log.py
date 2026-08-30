@@ -1,7 +1,7 @@
 """Tests for message frame logging (spec 2026-08-29-logging-system-consolidation P1-1).
 
 覆盖分层 (规避 channels DatabaseSyncToAsync 在 async TestCase 的建连限制):
-1. 接线: AgentConsumer.receive/send 确实调用 _log_frame (mock 断言, WS 集成)
+1. 接线: WorkerConsumer.receive/send 确实调用 _log_frame (mock 断言, WS 集成)
 2. 逻辑: _normalize_frame_payload 纯函数 (skip-body / 截断 / 透传)
 3. 模型: MessageFrameLog sync 直写可用 (TestTransaction)
 """
@@ -15,7 +15,7 @@ from asgiref.sync import sync_to_async
 from channels.testing import WebsocketCommunicator
 from django.test import TestCase, override_settings
 
-from protocol.consumers import AgentConsumer, _normalize_frame_payload
+from protocol.consumers import WorkerConsumer, _normalize_frame_payload
 from protocol.models import MessageFrameLog
 from protocol.serializers import serialize_frame
 from protocol.tests import TEST_WS_PATH
@@ -29,7 +29,7 @@ class TestMessageFrameLogWiring(TestCase):
 
     async def _connect_communicator(self):
         communicator = WebsocketCommunicator(
-            AgentConsumer.as_asgi(), TEST_WS_PATH
+            WorkerConsumer.as_asgi(), TEST_WS_PATH
         )
         communicator.scope['agent'] = MagicMock(agent_id='test-frame-log')
         await communicator.connect()
@@ -41,7 +41,7 @@ class TestMessageFrameLogWiring(TestCase):
         execution = await sync_to_async(TaskExecutionFactory.create)(status=TaskExecution.Status.RUNNING)
         communicator = await self._connect_communicator()
         try:
-            with patch.object(AgentConsumer, '_log_frame', new=AsyncMock(return_value=None)) as mock_log:
+            with patch.object(WorkerConsumer, '_log_frame', new=AsyncMock(return_value=None)) as mock_log:
                 frame = serialize_frame(msg_type='task.result', payload={
                     'execution_id': str(execution.id), 'success': True,
                     'elapsed_time': 0.5, 'error_msg': '', 'data': {},
@@ -59,7 +59,7 @@ class TestMessageFrameLogWiring(TestCase):
         execution = await sync_to_async(TaskExecutionFactory.create)(status=TaskExecution.Status.RUNNING)
         communicator = await self._connect_communicator()
         try:
-            with patch.object(AgentConsumer, '_log_frame', new=AsyncMock(return_value=None)) as mock_log:
+            with patch.object(WorkerConsumer, '_log_frame', new=AsyncMock(return_value=None)) as mock_log:
                 frame = serialize_frame(msg_type='task.result', payload={
                     'execution_id': str(execution.id), 'success': True,
                     'elapsed_time': 0.5, 'error_msg': '', 'data': {},
@@ -78,7 +78,7 @@ class TestMessageFrameLogWiring(TestCase):
         communicator = await self._connect_communicator()
         try:
             with patch('protocol.consumers.PROTOCOL_FRAME_LOG_ENABLED', False), \
-                    patch.object(AgentConsumer, '_log_frame', new=AsyncMock(return_value=None)) as mock_log:
+                    patch.object(WorkerConsumer, '_log_frame', new=AsyncMock(return_value=None)) as mock_log:
                     frame = serialize_frame(msg_type='task.result', payload={
                         'execution_id': str(execution.id), 'success': True,
                         'elapsed_time': 0.5, 'error_msg': '', 'data': {},

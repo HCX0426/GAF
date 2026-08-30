@@ -3,7 +3,7 @@ import uuid
 from django.db import models
 
 
-class AgentSession(models.Model):
+class WorkerSession(models.Model):
     """Agent 会话模型，记录 Agent 的连接会话和运行状态。"""
 
     class Status(models.TextChoices):
@@ -98,7 +98,7 @@ class AgentSession(models.Model):
     )
 
     class Meta:
-        db_table = 'protocol_agentsession'
+        db_table = 'protocol_workersession'
         ordering = ['-id']
         verbose_name = 'Agent 会话'
         verbose_name_plural = 'Agent 会话'
@@ -135,7 +135,7 @@ class MessageFrameLog(models.Model):
         verbose_name='消息体',
     )
     agent_session = models.ForeignKey(
-        AgentSession,
+        WorkerSession,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

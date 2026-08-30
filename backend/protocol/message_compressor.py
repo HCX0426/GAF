@@ -1,7 +1,7 @@
 """WebSocket payload compressor: MessagePack + zlib for >1KB frames.
 
 ✅ Status (spec-42, TD-287): helper implemented + Hello/Hello.ack
-negotiation protocol added. AgentConsumer.send() hot path and agent
+negotiation protocol added. WorkerConsumer.send() hot path and agent
 ws_client are wired via the negotiation flow — see ``build_hello_frame``
 / ``build_hello_ack_frame`` below. Legacy agents/backends that don't
 participate in the negotiation fall back to JSON text_data.

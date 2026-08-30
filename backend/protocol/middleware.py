@@ -94,7 +94,7 @@ class TokenAuthMiddleware(BaseMiddleware):
 
             # C1 fix: localhost without a registered local Agent must NOT
             # silently pass through with scope['agent'] = None — that allowed
-            # any local process to bypass auth and reach AgentConsumer.
+            # any local process to bypass auth and reach WorkerConsumer.
             logger.warning("localhost 来源无 Token 且无本地 Agent 记录，拒绝连接 (C1)")
             await send({
                 'type': 'websocket.close',

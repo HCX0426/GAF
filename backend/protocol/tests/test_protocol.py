@@ -5,7 +5,7 @@
 Merged test suite covering:
   - Message frame serialization / deserialization / validation
   - Compression algorithms, negotiation, and E2E
-  - AgentConsumer and FrontendConsumer WebSocket behavior
+  - WorkerConsumer and FrontendConsumer WebSocket behavior
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from gaf_core.tracing.context import current_trace_id
 from rest_framework import serializers
 
 from protocol.constants import MESSAGE_FRAME_SCHEMA, MessageType
-from protocol.consumers import AgentConsumer, FrontendConsumer
+from protocol.consumers import FrontendConsumer, WorkerConsumer
 from protocol.message_compressor import (
     COMPRESSION_ALGORITHM_MSGPACK_ZLIB,
     DEFAULT_COMPRESS_THRESHOLD,
@@ -399,12 +399,12 @@ class TestConstants(TestCase):
 
 
 @override_settings(CHANNEL_LAYERS={"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}})
-class TestAgentConsumer(TestCase):
-    """测试 AgentConsumer WebSocket 连接行为。"""
+class TestWorkerConsumer(TestCase):
+    """测试 WorkerConsumer WebSocket 连接行为。"""
 
     async def test_connect_receives_status_frame(self):
         """验证连接成功后收到 AGENT_STATUS 确认帧。"""
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-mock')
         connected, _ = await communicator.connect()
         self.assertTrue(connected)
@@ -418,7 +418,7 @@ class TestAgentConsumer(TestCase):
 
     async def test_agent_register(self):
         """验证 agent.register 消息被正确处理并返回注册确认。"""
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-mock')
         await communicator.connect()
         await communicator.receive_from()
@@ -439,7 +439,7 @@ class TestAgentConsumer(TestCase):
 
     async def test_agent_heartbeat(self):
         """验证 agent.heartbeat 消息被正确处理并返回 ACK。"""
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-mock')
         await communicator.connect()
         await communicator.receive_from()
@@ -457,7 +457,7 @@ class TestAgentConsumer(TestCase):
     async def test_unknown_message_type(self):
         """验证未知消息类型返回错误帧（_handle_unknown 走不到因为 Schema 会先拒绝）。
         改为测试非法 JSON 返回错误帧。"""
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-mock')
         await communicator.connect()
         await communicator.receive_from()
@@ -473,7 +473,7 @@ class TestAgentConsumer(TestCase):
 
     async def test_task_progress_stub(self):
         """验证 task.progress stub handler 不回送帧（只打 log）。"""
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-mock')
         await communicator.connect()
         await communicator.receive_from()
@@ -488,7 +488,7 @@ class TestAgentConsumer(TestCase):
 
     async def test_screenshot_frame_stub(self):
         """验证 screenshot.frame stub handler 处理正常。"""
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-mock')
         await communicator.connect()
         await communicator.receive_from()
@@ -503,7 +503,7 @@ class TestAgentConsumer(TestCase):
 
     async def test_device_action_result_stub(self):
         """验证 device.action_result stub handler 处理正常。"""
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-mock')
         await communicator.connect()
         await communicator.receive_from()
@@ -518,7 +518,7 @@ class TestAgentConsumer(TestCase):
 
     async def test_event_alert_stub(self):
         """验证 event.alert stub handler 处理正常。"""
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-mock')
         await communicator.connect()
         await communicator.receive_from()
@@ -533,7 +533,7 @@ class TestAgentConsumer(TestCase):
 
     async def test_task_result_stub(self):
         """验证 task.result stub handler 处理正常。"""
-        communicator = WebsocketCommunicator(AgentConsumer.as_asgi(), TEST_WS_PATH)
+        communicator = WebsocketCommunicator(WorkerConsumer.as_asgi(), TEST_WS_PATH)
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-mock')
         await communicator.connect()
         await communicator.receive_from()
@@ -1283,7 +1283,7 @@ class TestCompressionNegotiation(TestCase):
         calls return the frame we actually want to assert on.
         """
         communicator = WebsocketCommunicator(
-            AgentConsumer.as_asgi(), TEST_WS_PATH,
+            WorkerConsumer.as_asgi(), TEST_WS_PATH,
         )
         communicator.scope["agent"] = MagicMock(agent_id=agent_id)
         await communicator.connect()
@@ -1409,7 +1409,7 @@ class TestCompressionNegotiation(TestCase):
     CHANNEL_LAYERS={"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}},
 )
 class TestSendCompressionPath(TestCase):
-    """Verify AgentConsumer.send() switches to bytes_data post-negotiation."""
+    """Verify WorkerConsumer.send() switches to bytes_data post-negotiation."""
 
     async def _connect_and_negotiate(
         self,
@@ -1418,7 +1418,7 @@ class TestSendCompressionPath(TestCase):
     ):
         """Connect + negotiate compression; return (communicator, consumer)."""
         communicator = WebsocketCommunicator(
-            AgentConsumer.as_asgi(), TEST_WS_PATH,
+            WorkerConsumer.as_asgi(), TEST_WS_PATH,
         )
         communicator.scope["agent"] = MagicMock(agent_id="test-agent-send")
         await communicator.connect()
@@ -1481,7 +1481,7 @@ class TestSendCompressionPath(TestCase):
     CHANNEL_LAYERS={"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}},
 )
 class TestReceiveCompressionPath(TestCase):
-    """Verify AgentConsumer.receive() handles compressed bytes_data post-negotiation."""
+    """Verify WorkerConsumer.receive() handles compressed bytes_data post-negotiation."""
 
     async def _connect_and_negotiate(
         self,
@@ -1491,7 +1491,7 @@ class TestReceiveCompressionPath(TestCase):
     ):
         """Connect + negotiate compression; return communicator."""
         communicator = WebsocketCommunicator(
-            AgentConsumer.as_asgi(), TEST_WS_PATH,
+            WorkerConsumer.as_asgi(), TEST_WS_PATH,
         )
         communicator.scope["agent"] = MagicMock(agent_id=agent_id)
         await communicator.connect()
@@ -1614,7 +1614,7 @@ class TestCompressionE2E(TestCase):
     ):
         """Connect + send Hello + drain Hello.ack. Returns (communicator, ack_frame)."""
         communicator = WebsocketCommunicator(
-            AgentConsumer.as_asgi(), TEST_WS_PATH,
+            WorkerConsumer.as_asgi(), TEST_WS_PATH,
         )
         communicator.scope["agent"] = MagicMock(agent_id=agent_id)
         await communicator.connect()
@@ -1737,7 +1737,7 @@ class TestCompressionE2E(TestCase):
     async def test_legacy_agent_stays_json_end_to_end(self):
         """Agent that never sends Hello keeps the connection on JSON text."""
         communicator = WebsocketCommunicator(
-            AgentConsumer.as_asgi(), TEST_WS_PATH,
+            WorkerConsumer.as_asgi(), TEST_WS_PATH,
         )
         communicator.scope["agent"] = MagicMock(agent_id="legacy-agent")
         await communicator.connect()

@@ -14,7 +14,7 @@ function bodies (inline imports, loaded at call time). Consumers /
 middleware call these service functions instead of touching
 ``agents.models`` / ``tasks.models`` directly.
 
-Local protocol models (``AgentSession``, ``MessageFrameLog``) stay
+Local protocol models (``WorkerSession``, ``MessageFrameLog``) stay
 imported at the top of consumers.py — same-app imports are not a
 coupling concern.
 
@@ -117,12 +117,12 @@ def get_local_agent():
 
 
 def update_or_create_agent_with_session(agent_id, payload):
-    """Create or update Agent + AgentSession records on agent.register.
+    """Create or update Agent + WorkerSession records on agent.register.
 
-    Mirrors the legacy ``AgentConsumer._db_create_or_update_agent``
+    Mirrors the legacy ``WorkerConsumer._db_create_or_update_agent``
     behavior: upserts the Agent row (hostname, IP, OS info, capabilities,
     status=ONLINE, last_heartbeat, is_local), then upserts an
-    AgentSession keyed by hostname.
+    WorkerSession keyed by hostname.
 
     Args:
         agent_id: ``Agent.agent_id`` string identifier.
@@ -130,13 +130,13 @@ def update_or_create_agent_with_session(agent_id, payload):
             os_info / capabilities / resource_quota / is_local).
 
     Returns:
-        str: The AgentSession's UUID ``agent_id`` string.
+        str: The WorkerSession's UUID ``agent_id`` string.
     """
     from workers.models import Worker  # cross-app import isolated (TD-259 #29)
 
-    # AgentSession is a local protocol model; imported inline alongside
+    # WorkerSession is a local protocol model; imported inline alongside
     # Agent so the service function is self-contained.
-    from protocol.models import AgentSession
+    from protocol.models import WorkerSession
 
     capabilities = payload.get("capabilities", {})
     resource_quota = payload.get("resource_quota", {})
@@ -168,12 +168,12 @@ def update_or_create_agent_with_session(agent_id, payload):
         "ip_address": agent_data.get("ip_address"),
         "capabilities": capabilities,
         "resource_quota": resource_quota,
-        "status": AgentSession.Status.ONLINE,
+        "status": WorkerSession.Status.ONLINE,
         "last_heartbeat": django_timezone.now(),
         "connected_at": django_timezone.now(),
     }
 
-    session, _ = AgentSession.objects.update_or_create(
+    session, _ = WorkerSession.objects.update_or_create(
         name=hostname,
         defaults=session_defaults,
     )
@@ -331,7 +331,7 @@ def lookup_device_id_by_agent(*, agent_id, agent_device_id, device_name, device_
 
     Performs up to 7 lookup strategies (exact id, window_handle, hwnd
     prefix, device_name, window_title prefix, ADB serial, type-only).
-    Mirrors the legacy ``AgentConsumer._lookup_agent_device_id_uncached``
+    Mirrors the legacy ``WorkerConsumer._lookup_agent_device_id_uncached``
     implementation (TD-259 #22 process-local cache wraps this call).
 
     Args:
@@ -466,7 +466,7 @@ def lookup_device_id_by_agent(*, agent_id, agent_device_id, device_name, device_
 def map_db_device_ids_to_agent_strings(agent_id, db_device_ids):
     """Translate DB ``Device.id`` values to agent-side device_id strings.
 
-    Mirrors the legacy ``AgentConsumer._map_db_device_ids_to_agent``
+    Mirrors the legacy ``WorkerConsumer._map_db_device_ids_to_agent``
     implementation. Used by the screenshot stream control path so the
     frontend's numeric Device.ids become agent-meaningful identifiers
     (``windows-hwnd-{hwnd}`` / ``windows-title-{name}`` / ``{id}``).
@@ -515,7 +515,7 @@ def map_db_device_ids_to_agent_strings(agent_id, db_device_ids):
 def register_agent_device(agent_id, device_data):
     """Create or update a Device record from agent-reported device data.
 
-    Mirrors the legacy ``AgentConsumer._db_register_device``
+    Mirrors the legacy ``WorkerConsumer._db_register_device``
     implementation. Priority: adb_serial > window_handle > window_title
     > name prefix. Auto-binds GameProfile by window_title (R37-P1)
     without overwriting an existing FK.
@@ -695,7 +695,7 @@ def get_task_execution(execution_id):
 def upsert_execution_step(payload):
     """Persist or update an ExecutionStep row from a task.progress payload.
 
-    Mirrors the legacy ``AgentConsumer._persist_execution_step``
+    Mirrors the legacy ``WorkerConsumer._persist_execution_step``
     implementation (P-010 Phase 2). ``update_or_create`` on
     ``(task_result, step_index)`` so re-sends (retry) upsert instead of
     duplicating.
@@ -798,7 +798,7 @@ def upsert_execution_step(payload):
 def update_task_execution_result(*, execution_id, success, elapsed_time, error_msg, result_data, structured_log_path="", error_code=""):
     """Update a TaskExecution row with the final result (N145 L1 fix).
 
-    Mirrors the legacy ``AgentConsumer._db_update_execution_result``
+    Mirrors the legacy ``WorkerConsumer._db_update_execution_result``
     implementation. Sets status (SUCCESS/FAILED), completed_at, duration,
     result_data/error_message, backfills started_at if missing.
 

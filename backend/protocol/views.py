@@ -14,16 +14,16 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from accounts.permissions import RoleBasedPermission
-from protocol.models import AgentSession, MessageFrameLog
+from protocol.models import MessageFrameLog, WorkerSession
 from protocol.serializers import (
     AgentRegisterPayloadSerializer,
 )
 
 
-class AgentSessionViewSet(AuditMixin, viewsets.ModelViewSet):
+class WorkerSessionViewSet(AuditMixin, viewsets.ModelViewSet):
     """Agent 会话管理视图集，支持列表查询、详情查看和心跳更新。"""
 
-    queryset = AgentSession.objects.all()
+    queryset = WorkerSession.objects.all()
     permission_classes = [IsAuthenticated, RoleBasedPermission]
     required_permission = 'view'
     filter_backends = [DjangoFilterBackend, SearchFilter]
@@ -37,10 +37,10 @@ class AgentSessionViewSet(AuditMixin, viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         """根据操作返回对应序列化器（动态导入避免循环引用）。"""
-        from protocol.serializers import AgentSessionListSerializer, AgentSessionSerializer
+        from protocol.serializers import WorkerSessionListSerializer, WorkerSessionSerializer
         if self.action == 'list':
-            return AgentSessionListSerializer
-        return AgentSessionSerializer
+            return WorkerSessionListSerializer
+        return WorkerSessionSerializer
 
     def get_permissions(self):
         """生成 Token 需要 manage 权限。"""
@@ -84,7 +84,7 @@ class AgentSessionViewSet(AuditMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='generate-token')
     @audit_action(AuditAction.EXECUTE, AuditResourceType.AGENT_SESSION)
     def generate_token(self, request, pk=None):
-        """为 AgentSession 生成新的连接 Token。
+        """为 WorkerSession 生成新的连接 Token。
 
         Note: the actual token value is returned in the response but
         deliberately not written to ``AuditLog.details`` — only the
@@ -116,25 +116,25 @@ class AgentSessionViewSet(AuditMixin, viewsets.ModelViewSet):
         session.cpu_usage = resource_stats.get('cpu_percent')
         session.memory_usage = resource_stats.get('memory_percent')
         # M1: use enum constant instead of hardcoded string.
-        session.status = AgentSession.Status.ONLINE
+        session.status = WorkerSession.Status.ONLINE
         session.save()
         return Response({'status': 'ok'}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'], url_path='online')
     def online(self, request):
-        """获取所有在线 AgentSession 列表。"""
+        """获取所有在线 WorkerSession 列表。"""
         # M1: use enum constant instead of hardcoded string.
-        online_sessions = self.get_queryset().filter(status=AgentSession.Status.ONLINE)
-        from protocol.serializers import AgentSessionListSerializer
-        serializer = AgentSessionListSerializer(online_sessions, many=True)
+        online_sessions = self.get_queryset().filter(status=WorkerSession.Status.ONLINE)
+        from protocol.serializers import WorkerSessionListSerializer
+        serializer = WorkerSessionListSerializer(online_sessions, many=True)
         return Response({'items': serializer.data}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'], url_path='stats')
     def stats(self, request):
         """获取 Agent 汇总统计信息。"""
-        total = AgentSession.objects.count()
+        total = WorkerSession.objects.count()
         # M1: use enum constant instead of hardcoded string.
-        online_count = AgentSession.objects.filter(status=AgentSession.Status.ONLINE).count()
+        online_count = WorkerSession.objects.filter(status=WorkerSession.Status.ONLINE).count()
         offline_count = total - online_count
         return Response({
             'total': total,

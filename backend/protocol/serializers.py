@@ -186,14 +186,14 @@ def validate_payload(msg_type, payload):
     return serializer.validated_data
 
 
-from protocol.models import AgentSession, MessageFrameLog  # noqa: E402
+from protocol.models import MessageFrameLog, WorkerSession  # noqa: E402
 
 
-class AgentSessionSerializer(serializers.ModelSerializer):
+class WorkerSessionSerializer(serializers.ModelSerializer):
     """Agent 会话详情序列化器。"""
 
     class Meta:
-        model = AgentSession
+        model = WorkerSession
         fields = [
             'id', 'agent_id', 'name', 'hostname', 'ip_address',
             'capabilities', 'resource_quota', 'status',
@@ -203,11 +203,11 @@ class AgentSessionSerializer(serializers.ModelSerializer):
         read_only_fields = ['agent_id', 'connected_at']
 
 
-class AgentSessionListSerializer(serializers.ModelSerializer):
+class WorkerSessionListSerializer(serializers.ModelSerializer):
     """Agent 会话列表序列化器（轻量版）。"""
 
     class Meta:
-        model = AgentSession
+        model = WorkerSession
         fields = [
             'id', 'agent_id', 'name', 'hostname', 'status',
             'last_heartbeat', 'cpu_usage', 'memory_usage', 'connected_at',

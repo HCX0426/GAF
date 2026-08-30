@@ -1,6 +1,6 @@
 """Unit tests for per-device screenshot stream control (TD-014).
 
-Covers `AgentConsumer._map_db_device_ids_to_agent` which translates DB
+Covers `WorkerConsumer._map_db_device_ids_to_agent` which translates DB
 Device.id values to agent-side device_id strings. Frontend sends DB ids;
 the agent expects strings like "windows-hwnd-{hwnd}", "windows-title-{name}",
 or str(device.id) for emulators.
@@ -9,14 +9,14 @@ or str(device.id) for emulators.
 from django.test import TestCase
 from workers.models import Device, Worker
 
-from protocol.consumers import AgentConsumer
+from protocol.consumers import WorkerConsumer
 
 
 class TestMapDbDeviceIdsToAgent(TestCase):
     """Verify DB Device.id -> agent device_id string translation (TD-014)."""
 
-    async def _make_consumer(self, agent_id: str | None) -> AgentConsumer:
-        consumer = AgentConsumer()
+    async def _make_consumer(self, agent_id: str | None) -> WorkerConsumer:
+        consumer = WorkerConsumer()
         consumer.agent_id = agent_id
         return consumer
 

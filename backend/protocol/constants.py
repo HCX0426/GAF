@@ -76,7 +76,7 @@ class MessageType:
     # ---- Legacy back-compat (TD-208 修复 2026-07-18, spec-29c 2026-07-19 partial cleanup) ----
     # Only TASK_ASSIGN remains as a back-compat alias; backend senders
     # (tasks/tasks.py + pipeline/tasks.py) still send "task.assign" type via
-    # group_send and protocol AgentConsumer.task_assign handler forwards it
+    # group_send and protocol WorkerConsumer.task_assign handler forwards it
     # to the agent. worker/src/client/connection.py handler_map accepts
     # "task.assign" as alias for "task.dispatch".
     # AGENT_CONNECTED / AGENT_REGISTERED / ERROR were removed in spec-29c

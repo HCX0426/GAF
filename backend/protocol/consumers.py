@@ -29,7 +29,7 @@ from protocol.message_compressor import (
     build_hello_ack_frame,
     parse_hello_capabilities,
 )
-from protocol.models import AgentSession
+from protocol.models import WorkerSession
 from protocol.quota import check_agent_quota
 from protocol.serializers import build_error_frame, deserialize_frame, serialize_frame
 from protocol.services import (
@@ -100,15 +100,15 @@ def _normalize_frame_payload(message_type: str, frame: dict) -> dict:
 def _create_frame_log(*, message_type: str, direction: str, trace_id: Any, payload: dict, agent_id: Any) -> None:
     """sync DB insert for 消息帧日志 (由 _log_frame 经 sync_to_async 调用).
 
-    agent_id 是 AgentSession.agent_id (UUID), 需先解析出 PK 再关联 FK —
+    agent_id 是 WorkerSession.agent_id (UUID), 需先解析出 PK 再关联 FK —
     不能直接当作 agent_session_id (PK int) 使用 (否则 'Field id expected number').
     """
     try:
-        from protocol.models import AgentSession, MessageFrameLog
+        from protocol.models import MessageFrameLog, WorkerSession
 
         session = None
         if agent_id:
-            session = AgentSession.objects.filter(agent_id=agent_id).order_by("-id").first()
+            session = WorkerSession.objects.filter(agent_id=agent_id).order_by("-id").first()
         MessageFrameLog.objects.create(
             message_type=message_type,
             direction=direction,
@@ -120,7 +120,7 @@ def _create_frame_log(*, message_type: str, direction: str, trace_id: Any, paylo
         logger.warning("消息帧日志写入失败 (%s/%s): %s", message_type, direction, exc)
 
 
-class AgentConsumer(AsyncWebsocketConsumer):
+class WorkerConsumer(AsyncWebsocketConsumer):
     """Agent WebSocket 连接消费者（异步），解析消息帧并按类型分发到对应处理器。
 
     连接生命周期：
@@ -337,7 +337,7 @@ class AgentConsumer(AsyncWebsocketConsumer):
         return handler_map.get(msg_type, self._handle_unknown)
 
     async def _handle_agent_register(self, frame):
-        """处理 Agent 注册消息：创建/更新 Agent 与 AgentSession 记录，声明能力，分配资源配额。
+        """处理 Agent 注册消息：创建/更新 Agent 与 WorkerSession 记录，声明能力，分配资源配额。
         注册成功后加入 agent_{id} Channel group 以接收 Celery 下发的任务。
 
         Args:
@@ -375,7 +375,7 @@ class AgentConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=ack)
 
     async def _handle_agent_heartbeat(self, frame):
-        """处理 Agent 心跳消息：更新心跳时间、资源统计及 AgentSession 资源字段。
+        """处理 Agent 心跳消息：更新心跳时间、资源统计及 WorkerSession 资源字段。
 
         Args:
             frame: 已校验的消息帧，payload 包含 stats / status 等
@@ -618,7 +618,7 @@ class AgentConsumer(AsyncWebsocketConsumer):
                 await self._publish_task_failure_event(execution_id, error_msg, error_code, frame)
             # TD-267 fix: release ConcurrencyController slot + restore
             # Device.status to ONLINE. The wiring was lost in spec-29c
-            # (commit 8f184734) when the legacy agents/consumers.py:AgentConsumer
+            # (commit 8f184734) when the legacy agents/consumers.py:WorkerConsumer
             # was deleted. Without these calls, slots leak (agent eventually
             # permanently "full") and Device.status stays BUSY forever.
             await self._release_resources_for_execution(execution_id, payload)
@@ -771,7 +771,7 @@ class AgentConsumer(AsyncWebsocketConsumer):
         """Release ConcurrencyController slot + restore Device.status (TD-267 fix).
 
         Wraps the two helpers in ``tasks.services`` that were previously
-        called by the legacy ``agents/consumers.py:AgentConsumer`` but lost
+        called by the legacy ``agents/consumers.py:WorkerConsumer`` but lost
         in spec-29c. Sync ORM work is wrapped for async consumer (mirrors
         ``_db_update_execution_result`` pattern).
 
@@ -1765,18 +1765,18 @@ class AgentConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def _db_create_or_update_agent(self, payload):
-        """在数据库中创建或更新 Agent 与 AgentSession 记录，含能力声明与资源配额。
+        """在数据库中创建或更新 Agent 与 WorkerSession 记录，含能力声明与资源配额。
 
         Delegates to ``protocol.services.update_or_create_agent_with_session``
         (TD-259 #29: cross-app Agent model import isolated in service;
-        AgentSession is a local protocol model imported inline inside
+        WorkerSession is a local protocol model imported inline inside
         the service for cohesion).
 
         Args:
             payload: 注册消息负载，包含 agent_id / capabilities / resource_quota 等
 
         Returns:
-            str: AgentSession 的 UUID 字符串
+            str: WorkerSession 的 UUID 字符串
         """
         return update_or_create_agent_with_session(self.agent_id, payload)
 
@@ -1831,10 +1831,10 @@ class AgentConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def _db_update_agent_session_resource(self, session_id, stats):
-        """更新 AgentSession 的资源使用字段（cpu_usage / memory_usage / screenshot_fps）。
+        """更新 WorkerSession 的资源使用字段（cpu_usage / memory_usage / screenshot_fps）。
 
         Args:
-            session_id: AgentSession 的 UUID 字符串
+            session_id: WorkerSession 的 UUID 字符串
             stats: 资源统计数据，包含 cpu / memory / fps 键
         """
         cpu = stats.get("cpu")
@@ -1852,24 +1852,24 @@ class AgentConsumer(AsyncWebsocketConsumer):
             update_fields["screenshot_fps"] = fps
 
         try:
-            AgentSession.objects.filter(agent_id=session_id).update(**update_fields)
+            WorkerSession.objects.filter(agent_id=session_id).update(**update_fields)
         except Exception as exc:
-            logger.warning("更新 AgentSession 资源字段失败: session_id=%s, err=%s", session_id, exc)
+            logger.warning("更新 WorkerSession 资源字段失败: session_id=%s, err=%s", session_id, exc)
 
     @database_sync_to_async
     def _db_get_agent_session(self, session_id):
-        """从数据库获取 AgentSession 实例。
+        """从数据库获取 WorkerSession 实例。
 
         Args:
-            session_id: AgentSession 的 UUID 字符串
+            session_id: WorkerSession 的 UUID 字符串
 
         Returns:
-            AgentSession 实例，若不存在返回 None
+            WorkerSession 实例，若不存在返回 None
         """
         try:
-            return AgentSession.objects.filter(agent_id=session_id).first()
+            return WorkerSession.objects.filter(agent_id=session_id).first()
         except Exception as exc:
-            logger.warning("获取 AgentSession 失败: session_id=%s, err=%s", session_id, exc)
+            logger.warning("获取 WorkerSession 失败: session_id=%s, err=%s", session_id, exc)
             return None
 
     @database_sync_to_async
@@ -2086,7 +2086,7 @@ class FrontendConsumer(JWTAuthMixin, AsyncWebsocketConsumer):
     async def execution_log(self, event):
         """Forward real-time execution logs to the frontend.
 
-        AgentConsumer converts task.progress / task.result / log_stream
+        WorkerConsumer converts task.progress / task.result / log_stream
         frames into execution_log group messages; FrontendConsumer echoes
         them to browser clients so the ExecutionMonitorPanel log terminal
         is populated.
@@ -2218,7 +2218,7 @@ class LogStreamConsumer(JWTAuthMixin, AsyncWebsocketConsumer):
 
         Channels routes ``group_send({'type': 'log.entry'})`` to this method.
         The payload is the LogEntry dict produced by
-        ``AgentConsumer._db_write_log_entry``.
+        ``WorkerConsumer._db_write_log_entry``.
         """
         payload = event.get("payload") or {}
         await self.send(

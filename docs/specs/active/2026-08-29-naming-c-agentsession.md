@@ -35,9 +35,9 @@ source: docs/analysis/concept-naming-normalization.md §1(WorkerSession/AgentSes
 
 | 阶段 | 内容 | 状态 |
 |------|------|------|
-| P1 | backend `protocol.AgentSession`→`WorkerSession`（模型+迁移+serializer） | ⏳ |
+| P1 | backend `protocol.AgentSession`→`WorkerSession`（模型+迁移+serializer） | ✅ |
 | P2 | 前端 `api.generated.ts` / `models/*.ts` 重生成 + import 改写 | ⏳ |
-| P3 | gaf_ai `AgentSession` 保留确认 + 文档注明 AI 归属（OQ-10） | ⏳ |
+| P3 | gaf_ai `AgentSession` 保留确认 + 文档注明 AI 归属（OQ-10） | ✅ |
 
 #### Task P1.1: backend 改名
 

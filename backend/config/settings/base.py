@@ -251,8 +251,8 @@ SPECTACULAR_SETTINGS = {
         # and AgentSession (gaf_ai); single override resolves the collision
         # since both use the same choice set.
         "AgentSessionStatusEnum": "gaf_ai.agent.models.AgentSession.Status",
-        # [online, offline] — protocol AgentSession (WebSocket connection state)
-        "ProtocolAgentSessionStatusEnum": "protocol.models.AgentSession.Status",
+        # [online, offline] — protocol WorkerSession (WebSocket connection state)
+        "WorkerSessionStatusEnum": "protocol.models.WorkerSession.Status",
         # [pending, running, paused, success, failed, cancelled, force_terminated]
         "TaskExecutionStatusEnum": "tasks.models.TaskExecution.Status",
         # [pending, running, success, failed, skipped]

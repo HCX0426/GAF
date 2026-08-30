@@ -1,4 +1,4 @@
-"""Integration tests for protocol AgentConsumer lifecycle (TD-261).
+"""Integration tests for protocol WorkerConsumer lifecycle (TD-261).
 
 Merged from:
   - test_concurrency_wiring_via_protocol_consumer.py
@@ -7,7 +7,7 @@ Merged from:
 Covers:
   - ConcurrencyController in-memory backend unit behavior
   - dispatch_task acquire wiring (controller.assign called on dispatch)
-  - AgentConsumer._handle_task_result release wiring (TD-267 fix)
+  - WorkerConsumer._handle_task_result release wiring (TD-267 fix)
   - Device.status ONLINE → BUSY transition on task dispatch
   - Device.status BUSY → ONLINE restoration on task completion
   - _restore_device_status multi-instance aware behavior
@@ -25,7 +25,7 @@ from workers.factories import DeviceFactory
 from workers.models import Device
 
 from protocol.constants import MessageType
-from protocol.consumers import AgentConsumer
+from protocol.consumers import WorkerConsumer
 from protocol.serializers import serialize_frame
 from protocol.tests import TEST_WS_PATH
 from tasks.concurrency_controller import ConcurrencyController
@@ -162,10 +162,10 @@ class TestConcurrencyControllerUnit(TestCase):
 
 @override_settings(CHANNEL_LAYERS={"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}})
 class TestConcurrencyWiringViaProtocolConsumer(TestCase):
-    """Integration: protocol AgentConsumer + ConcurrencyController slot lifecycle.
+    """Integration: protocol WorkerConsumer + ConcurrencyController slot lifecycle.
 
     Acquire is wired via ``tasks.tasks.dispatch_task`` (calls controller.assign).
-    Release SHOULD be wired via ``AgentConsumer._handle_task_result`` calling
+    Release SHOULD be wired via ``WorkerConsumer._handle_task_result`` calling
     ``_release_concurrency_slot``, but spec-29c deleted that wiring (TD-267).
 
     These tests pin the current behavior:
@@ -200,7 +200,7 @@ class TestConcurrencyWiringViaProtocolConsumer(TestCase):
                 find the right slot.
         """
         communicator = WebsocketCommunicator(
-            AgentConsumer.as_asgi(), TEST_WS_PATH
+            WorkerConsumer.as_asgi(), TEST_WS_PATH
         )
         communicator.scope['agent'] = MagicMock(agent_id=agent_id)
         await communicator.connect()
@@ -285,7 +285,7 @@ class TestConcurrencyWiringViaProtocolConsumer(TestCase):
     # --- TD-267 fix verified: consumer releases slot on task.result ---
 
     async def test_task_result_releases_concurrency_slot(self):
-        """TD-267 fixed: AgentConsumer._handle_task_result releases the slot.
+        """TD-267 fixed: WorkerConsumer._handle_task_result releases the slot.
 
         After the consumer processes a task.result frame, the slot acquired
         during dispatch_task should be released (load returns to 0).
@@ -423,12 +423,12 @@ class TestConcurrencyWiringViaProtocolConsumer(TestCase):
 
 @override_settings(CHANNEL_LAYERS={"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}})
 class TestDeviceStatusLifecycleViaProtocolConsumer(TestCase):
-    """End-to-end Device.status lifecycle coverage for AgentConsumer._handle_task_result."""
+    """End-to-end Device.status lifecycle coverage for WorkerConsumer._handle_task_result."""
 
     async def _connect_communicator(self):
         """Connect a WS communicator with a stubbed agent scope (drain ack)."""
         communicator = WebsocketCommunicator(
-            AgentConsumer.as_asgi(), TEST_WS_PATH
+            WorkerConsumer.as_asgi(), TEST_WS_PATH
         )
         communicator.scope['agent'] = MagicMock(agent_id='test-agent-device')
         await communicator.connect()
@@ -484,7 +484,7 @@ class TestDeviceStatusLifecycleViaProtocolConsumer(TestCase):
     # --- TD-267 fix verified: consumer restores Device.status on task.result ---
 
     async def test_task_result_restores_device_status(self):
-        """TD-267 fixed: AgentConsumer._handle_task_result restores Device.status to ONLINE.
+        """TD-267 fixed: WorkerConsumer._handle_task_result restores Device.status to ONLINE.
 
         After the consumer processes a task.result frame, the device that
         was marked BUSY during dispatch should be restored to ONLINE.

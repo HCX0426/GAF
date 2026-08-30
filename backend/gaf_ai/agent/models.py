@@ -4,7 +4,12 @@ from django.db import models
 
 
 class AgentSession(models.Model):
-    """Agent session, storing multi-turn reasoning process and message history."""
+    """Agent (AI 智能体) session, storing multi-turn reasoning history.
+
+    OQ-10: this is the AI-agent session — distinct from ``protocol.WorkerSession``
+    (execution-node WS connection state). The Worker module's WS session is
+    named ``WorkerSession``, never ``AgentSession``.
+    """
 
     class SessionType(models.TextChoices):
         LOG_ANALYSIS = 'log_analysis', 'Log Analysis'

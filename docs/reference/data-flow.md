@@ -71,7 +71,7 @@ skills, notifications, debug, qa, plugins, protocol, metrics, gamestate, pipelin
 scheduler, executions (+ analytics_urls), settings, search, gaf_ai, i18n, tracing, gaf_core
 
 **5 active WebSocket routes** (backend/config/asgi.py):
-- `ws/protocol/agents/` — AgentConsumer (backend ↔ agent 双向通信)
+- `ws/protocol/agents/` — WorkerConsumer (backend ↔ agent 双向通信)
 - `ws/dashboard/` — FrontendConsumer (后端推送任务/截图/执行步骤事件给前端)
 - `ws/logs/` — LogStreamConsumer (统一日志中心实时推送)
 - `ws/notifications/` — NotificationConsumer (告警/通知推送)
@@ -96,7 +96,7 @@ Celery Worker (dispatch_task 统一入口)
   │   （TaskChain 节点用 force_agent_id 固定链 Agent, B1 2026-08-27）
   │ → 写 S1 dispatch_sent_at 快照 → group_send task.assign
   ▼
-Backend AgentConsumer.send() → Agent
+Backend WorkerConsumer.send() → Agent
   │ 14 字段 task.dispatch frame (+ device_info / resource_pack)
   │ ws://host/ws/protocol/agents/
   ▼
@@ -113,7 +113,7 @@ Frontend /ws/dashboard/ 收 execution_step_update + screenshot_frame
 **关键文件**:
 - `backend/tasks/views.py: TaskViewSet`
 - `backend/scheduler/engine.py`
-- `backend/protocol/consumers.py: AgentConsumer.send`
+- `backend/protocol/consumers.py: WorkerConsumer.send`
 - `backend/gaf_core/mixins/audit.py: AuditMixin` (C-045, 114 接入点)
 - `worker/src/engine/pipeline_engine.py: PipelineEngine.execute`
 - `worker/src/client/handler.py: handle_task_dispatch`
@@ -126,7 +126,7 @@ User (Frontend 设备中心页)
   ▼
 Backend (agents app)
   │ DeviceClickView → 选对应 Agent 的 channel_name
-  │ AgentConsumer.send(device.action)
+  │ WorkerConsumer.send(device.action)
   ▼
 Agent
   │ handler.py: handle_device_action
@@ -192,7 +192,7 @@ Backend (protocol/middleware.py)
   │ → AgentGroupMiddleware 加入 agent_<id> group
   │ → QuotaGuardMiddleware 检查超额
   ▼
-AgentConsumer.connect()
+WorkerConsumer.connect()
   │ agent_id 绑定到 self.agent_id
   │ → 后续消息走 message routing
 ```
@@ -208,7 +208,7 @@ tasks/beat.py                                                        │
 Django signals (model 变更)           Celery                        tasks.tasks
 accounts/signals.py → 邮件/Webhook                                     │
                                                                        │
-WebSocket (实时)                       Channels (in-memory)         AgentConsumer
+WebSocket (实时)                       Channels (in-memory)         WorkerConsumer
 protocol/consumers.py                                                 │
                                                                        │
 SSE 推送 (进度)                        StreamingHttpResponse       Frontend hook

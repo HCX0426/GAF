@@ -1,10 +1,10 @@
 from django.contrib import admin
 
-from .models import AgentSession, MessageFrameLog
+from .models import MessageFrameLog, WorkerSession
 
 
-@admin.register(AgentSession)
-class AgentSessionAdmin(admin.ModelAdmin):
+@admin.register(WorkerSession)
+class WorkerSessionAdmin(admin.ModelAdmin):
     """Agent 会话管理后台配置。"""
 
     list_display = ('id', 'agent_id', 'name', 'hostname', 'ip_address', 'status', 'last_heartbeat', 'connected_at')

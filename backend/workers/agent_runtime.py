@@ -282,7 +282,7 @@ def _is_agent_connected_via_db():
     and making Pipeline group_send messages land in a disconnected window.
 
     The DB is the source of truth for "is an agent connected right now":
-    AgentConsumer._db_update_heartbeat updates ``status`` and
+    WorkerConsumer._db_update_heartbeat updates ``status`` and
     ``last_heartbeat`` on every heartbeat frame, and disconnect() marks the
     agent OFFLINE. So if any Agent row is ONLINE/IDLE with a heartbeat
     younger than 30s, a live consumer is bound to it.
