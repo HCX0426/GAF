@@ -106,7 +106,7 @@ def dispatch_task(self, execution_id, start_step_index=0, previous_results=None,
             显式传递的 trace_id, 由调用方从 HTTP 请求 ContextVar 捕获后传入.
             Celery worker 线程中 ContextVar 不会从 HTTP 请求线程传播, 需显式传递.
         force_agent_id: B1 (2026-08-27). TaskChain 固定 Agent 语义 —
-            非 None 时跳过 AgentSelector 的能力匹配选择, 直接派发给该
+            非 None 时跳过 WorkerSelector 的能力匹配选择, 直接派发给该
             Agent (execution.agent 已由调用方绑定). 用于 chain 节点串行
             派发, 保证整条链在同一个 Agent 上执行.
     """
@@ -120,9 +120,9 @@ def dispatch_task(self, execution_id, start_step_index=0, previous_results=None,
     from gaf_core.tracing.context import current_execution_id, current_trace_id
     from workers.models import Worker
 
-    from tasks.agent_selector import AgentSelector
     from tasks.concurrency_controller import get_default_controller
     from tasks.models import TaskExecution
+    from tasks.worker_selector import WorkerSelector
     token_exec = current_execution_id.set(str(execution_id))
 
     # F21: 如果调用方显式传了 trace_id, 设到 ContextVar 中.
@@ -247,7 +247,7 @@ def dispatch_task(self, execution_id, start_step_index=0, previous_results=None,
                 current_trace_id.reset(token_trace)
             return
 
-    selector = AgentSelector()
+    selector = WorkerSelector()
     # N197 fix: 使用本地 task_definition 变量而非 execution.task.task_definition，
     # 因为 pipeline-only 执行（task=None）时 execution.task 为 None。
     required_capabilities = selector.get_required_capabilities(
@@ -303,7 +303,7 @@ def dispatch_task(self, execution_id, start_step_index=0, previous_results=None,
         assignable_agents = available_agents
 
     # B1 (2026-08-27): force_agent_id 固定 Agent 语义 (TaskChain 串行派发) —
-    # 跳过 AgentSelector 的能力匹配, 直接使用调用方预选的 Agent。设备忙/
+    # 跳过 WorkerSelector 的能力匹配, 直接使用调用方预选的 Agent。设备忙/
     # 并发/能力检查仍在上方统一执行, chain 路径获得与普通任务相同的保障.
     if force_agent_id:
         forced = Worker.objects.filter(agent_id=force_agent_id).first()

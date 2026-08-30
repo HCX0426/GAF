@@ -160,14 +160,14 @@ class DeviceViewSet(AuditMixin, viewsets.ModelViewSet):
         results = service.check_all_devices_health()
         hb_info: dict[str, Any]
         try:
-            from workers.agent_runtime import is_heartbeat_alive, is_heartbeat_started
+            from workers.worker_runtime import is_heartbeat_alive, is_heartbeat_started
 
             hb_info = {
                 "thread_alive": is_heartbeat_alive(),
                 "thread_exists": is_heartbeat_started(),
             }
         except Exception:
-            logger.warning("heartbeat_info: agent_runtime import failed", exc_info=True)
+            logger.warning("heartbeat_info: worker_runtime import failed", exc_info=True)
             hb_info = {"thread_alive": False, "thread_exists": False, "error": "import failed"}
         return Response(
             {

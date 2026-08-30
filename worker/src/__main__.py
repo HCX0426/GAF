@@ -42,7 +42,7 @@ _device_status_sender: DeviceStatusSender | None = None
 
 # TD-339 (2026-07-23): Agent standalone process singleton lock.
 # Prevents multiple agent processes from running simultaneously when launched
-# manually (python -m src) — backend's agent_runtime.py only protects the
+# manually (python -m src) — backend's worker_runtime.py only protects the
 # backend-auto-start path. Uses a PID file under %TEMP%\gaf_agent_lock\
 # mirroring backend's manager.lock + agent.pid design.
 _AGENT_LOCK_DIR = os.path.join(tempfile.gettempdir(), 'gaf_agent_lock')
@@ -88,7 +88,7 @@ def acquire_singleton_lock() -> bool:
     reclaimed automatically.
 
     TD-339: This protects the standalone agent process itself, distinct from
-    backend/agents/agent_runtime.py which protects the backend-auto-start
+    backend/workers/worker_runtime.py which protects the backend-auto-start
     path (TD-217). Both use the same lock directory for consistency.
     """
     os.makedirs(_AGENT_LOCK_DIR, exist_ok=True)

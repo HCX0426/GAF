@@ -14,7 +14,7 @@ related_files:
   - frontend/src/types/models/
   - frontend/src/pages/Tasks/index.tsx
   - backend/tasks/resource_views.py
-  - backend/tasks/agent_selector.py
+  - backend/tasks/worker_selector.py
   - backend/tasks/migrations/0049_chain_to_pipeline_unification.py
   - backend/gaf_ai/tests/test_agent.py
   - worker/src/engine/parser.py
@@ -53,7 +53,7 @@ related_files:
 | 1 | [frontend/src/pages/Tasks/Editor.tsx](file:///d:/code/GAF/frontend/src/pages/Tasks/Editor.tsx) | 输出端 | `task_definition: { steps: steps.map(...) }` 输出 chain schema, 用 `action_type` 而非 `node_type` |
 | 2 | [frontend/src/types/models.ts](file:///d:/code/GAF/frontend/src/types/models.ts) | 类型定义 | `TaskStepConfig` 接口含 `action_type/retry_interval/fallback_action/next_step` 等 chain 字段, 无归一化注释 |
 | 3 | [backend/tasks/resource_views.py](file:///d:/code/GAF/backend/tasks/resource_views.py) | 读取端/校验 | `validate()` 强制要求 `steps` + `action` 字段, 拒绝 pipeline schema 的 `nodes` + `node_type` |
-| 4 | [backend/tasks/agent_selector.py](file:///d:/code/GAF/backend/tasks/agent_selector.py) | 读取端/推断 | `_get_required_capabilities()` 读 `step.get("type")`, 不识别 `node_type` |
+| 4 | [backend/tasks/worker_selector.py](file:///d:/code/GAF/backend/tasks/worker_selector.py) | 读取端/推断 | `_get_required_capabilities()` 读 `step.get("type")`, 不识别 `node_type` |
 | 5 | [backend/gaf_ai/tests/test_agent.py](file:///d:/code/GAF/backend/gaf_ai/tests/test_agent.py) | 测试数据 | `task_definition={'steps': [{'name': 'step1'}]}` 用 chain schema |
 
 **数据流断点**: 前端输出 `{steps: [{action_type}]}` → backend 原样存储 → agent parser 读 steps, 但 `action_type` 不在归一化白名单 (`type`/`action`) → `node_type` 空 → `PipelineNode.create()` 报 "节点数据中缺少 'node_type' 字段" → 任务失败。

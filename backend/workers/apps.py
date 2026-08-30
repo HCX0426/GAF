@@ -55,8 +55,8 @@ class WorkersConfig(AppConfig):
         #    agent lifecycle via systemd / supervisor, not from a random
         #    gunicorn worker.
         if is_gunicorn:
-            from . import agent_runtime
-            agent_runtime.start_heartbeat_loop()
+            from . import worker_runtime
+            worker_runtime.start_heartbeat_loop()
             return
 
         # 5) runserver (Django's WSGI dev server) and Daphne (ASGI prod/
@@ -77,8 +77,8 @@ class WorkersConfig(AppConfig):
         # Device heartbeat thread: always started (low frequency, 30s default).
         # This is safe because it only calls `adb devices` once per cycle and
         # the interval is controlled by GAF_HEARTBEAT_INTERVAL.
-        from . import agent_runtime
-        agent_runtime.start_heartbeat_loop()
+        from . import worker_runtime
+        worker_runtime.start_heartbeat_loop()
 
         # spec 2026-08-29 P4: agent 生命周期单一 Owner — daemon 唯一管理.
         # 移除 backend 自启 agent 分支 (原 GAF_AUTO_START_AGENT) 以避免双 Owner

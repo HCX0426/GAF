@@ -13,11 +13,11 @@ last_updated: 2026-08-02
 
 ## 0. 现实状态（2026-07-22 审计）
 
-> ⚠️ **重要**：本文档为设计稿。Phase 5.1-5.4 + Phase 3.3 已将文档中的类实现为独立 helper（🔧 状态），但部分 helper 尚未接入生产热路径。`AgentSelector` 和 `ConcurrencyController` 是例外 — 均已接入 `dispatch_task`。
+> ⚠️ **重要**：本文档为设计稿。Phase 5.1-5.4 + Phase 3.3 已将文档中的类实现为独立 helper（🔧 状态），但部分 helper 尚未接入生产热路径。`WorkerSelector` 和 `ConcurrencyController` 是例外 — 均已接入 `dispatch_task`。
 
 | 项 | 文档声称 | 现实代码 | 状态 |
 |----|----------|----------|------|
-| `AgentSelector` 类 | 任务分配时按能力+负载选 Agent | `backend/tasks/agent_selector.py` — 类已实现并接入 `dispatch_task`（Phase 5.2，commit `-`） | ✅ 已实现并接入 |
+| `WorkerSelector` 类 | 任务分配时按能力+负载选 Agent | `backend/tasks/worker_selector.py` — 类已实现并接入 `dispatch_task`（Phase 5.2，commit `-`） | ✅ 已实现并接入 |
 | `ConcurrencyController` 类 | 控制每 Agent 最大任务数 | `backend/tasks/concurrency_controller.py` — 类已实现（Phase 5.3，commit `-`），**已接入 `dispatch_task`**（`tasks.py:109-110` 调用 `can_assign` 过滤，`tasks.py:156` 调用 `assign`）+ `AgentConsumer`（task.completed/task.failed 时 release）+ force-terminate 路径（`services/monitor_service.py` cancel/execution/heartbeat timeouts） | ✅ 已实现并接入 |
 | `ResourceLock` 类 | 设备资源锁 | `backend/tasks/resource_lock.py` — 类已实现（Phase 5.4，commit `-`），**未接入 dispatch 路径** | 🔧 helper 就绪，集成待办 |
 | `ScreenshotCache` / `RedisScreenshotCache` | 截图缓存 | `worker/src/devices/screenshot_cache.py` — 类已实现（Phase 3.3，commit `-`），**未接入 `ScreenshotManager.capture()` 热路径** | 🔧 helper 就绪，集成待办 |
@@ -27,16 +27,16 @@ last_updated: 2026-08-02
 
 ### 0.1 实际并发控制
 
-`backend/tasks/tasks.py:dispatch_task` 实现了（Phase 5.2 起通过 `AgentSelector` 封装，Phase 5.3 起叠加 `ConcurrencyController` 并发限制）：
-1. 按任务 required_capabilities 过滤 Agent（`AgentSelector.filter_by_capability`）
+`backend/tasks/tasks.py:dispatch_task` 实现了（Phase 5.2 起通过 `WorkerSelector` 封装，Phase 5.3 起叠加 `ConcurrencyController` 并发限制）：
+1. 按任务 required_capabilities 过滤 Agent（`WorkerSelector.filter_by_capability`）
 2. 通过 `ConcurrencyController.can_assign(agent_id)` 过滤掉已达并发上限的 Agent（`tasks.py:109-110`）— 全部 Agent 都满载时将 execution 置为 PENDING 并调度重试（`tasks.py:111-122`）
-3. 优先选空闲 Agent，空闲中选心跳最新鲜的；非空闲选 cpu 最低的（`AgentSelector.select_by_load`）
+3. 优先选空闲 Agent，空闲中选心跳最新鲜的；非空闲选 cpu 最低的（`WorkerSelector.select_by_load`）
 4. 通过 `task.assign` WebSocket 消息下发
 
 > **WS 帧名规范（命名归一化 C-5, 2026-08-29 锁定）**: 规范帧名 = `task.assign`（canonical）；`task.dispatch` 保留为 **deprecated alias**（历史兼容，映射同一 handler `handle_task_assign`）。后端方法名 `handle_task_assign`（下划线）保持不变——帧名与内部方法名不强求一致，wire-contract 级对齐通过本文档保证。alias 计划在未来大版本移除。
 5. Agent 标记 BUSY 后调用 `ConcurrencyController.assign(agent_id, execution_id)` 占用并发槽位（`tasks.py:156`）
 
-> **心跳协议安全余量** (TD-340, 2026-07-23): agent 端 `heartbeat_interval=10s` (原 30s), backend `HEARTBEAT_OFFLINE_SECONDS=30s`. AgentSelector 依赖 `last_heartbeat` 判断 agent 健康, 30s/30s 临界会导致 status 在 ONLINE/OFFLINE 间抖动, 进而让 `select_by_load` 选到刚被标 offline 的 agent. 10s 间隔提供 3x 安全余量, 消除抖动.
+> **心跳协议安全余量** (TD-340, 2026-07-23): agent 端 `heartbeat_interval=10s` (原 30s), backend `HEARTBEAT_OFFLINE_SECONDS=30s`. WorkerSelector 依赖 `last_heartbeat` 判断 agent 健康, 30s/30s 临界会导致 status 在 ONLINE/OFFLINE 间抖动, 进而让 `select_by_load` 选到刚被标 offline 的 agent. 10s 间隔提供 3x 安全余量, 消除抖动.
 
 设备锁通过 `TaskExecution` 状态机隐式实现：running 状态的 execution 持有设备，新任务无法分配到同一设备。`ResourceLock` 类已实现但尚未接入，未来可作为强锁替换隐式状态机依赖。
 
@@ -44,7 +44,7 @@ last_updated: 2026-08-02
 
 | Helper | 接入点 | 集成复杂度 | 优先级 |
 |--------|--------|-----------|--------|
-| `AgentSelector` | `dispatch_task` | ✅ 已接入 | — |
+| `WorkerSelector` | `dispatch_task` | ✅ 已接入 | — |
 | `ConcurrencyController` | `dispatch_task` (can_assign + assign) + `AgentConsumer` (release on task.completed/task.failed) + `services/monitor_service.py` (release on force-terminate) | ✅ 已接入 | — |
 | `ResourceLock` | `dispatch_task` + device 操作前 | 高（需确定 device_id 来源 + 跨 agent 协调） | P3 |
 | `ScreenshotCache` | `ScreenshotManager.capture()` | 中（需 frame hash + 缓存查询） | P3 |
@@ -56,7 +56,7 @@ last_updated: 2026-08-02
 
 GAF 需要支持多 Agent 并发执行任务、高效截图传输、实时状态同步等场景。本设计定义多 Agent 并发控制、截图缓存策略、WebSocket 消息压缩、数据库查询优化和前端渲染优化方案。
 
-> ⚠️ **现实提示**：Phase 5.1-5.4 + Phase 3.3 已将并发控制相关类实现为独立 helper，但除 `AgentSelector` 和 `ConcurrencyController` 外均未接入生产热路径。集成路线图见 §0.2。
+> ⚠️ **现实提示**：Phase 5.1-5.4 + Phase 3.3 已将并发控制相关类实现为独立 helper，但除 `WorkerSelector` 和 `ConcurrencyController` 外均未接入生产热路径。集成路线图见 §0.2。
 
 ---
 
@@ -69,7 +69,7 @@ GAF 需要支持多 Agent 并发执行任务、高效截图传输、实时状态
 │  Server (Django)                                         │
 │                                                          │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │  dispatch_task (AgentSelector 选 Worker)          │   │
+│  │  dispatch_task (WorkerSelector 选 Worker)          │   │
 │  │  - 任务分配                                       │   │
 │  │  - Agent 选择                                     │   │
 │  │  - 负载均衡                                       │   │
@@ -87,7 +87,7 @@ GAF 需要支持多 Agent 并发执行任务、高效截图传输、实时状态
 ### 2.2 Agent 选择策略
 
 ```python
-class AgentSelector:
+class WorkerSelector:
     """Agent 选择器，负责任务分配"""
 
     def select_agent(self, task: Task, agents: list[Agent]) -> Agent | None:

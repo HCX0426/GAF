@@ -23,7 +23,7 @@ last_updated: '2026-08-27 (B1: TaskChain 节点派发归一化到 dispatch_task 
     ↓
 ④ Celery Worker 执行 dispatch_task
     ↓
-⑤ AgentSelector 选 Agent (能力匹配 + 负载均衡)
+⑤ WorkerSelector 选 Agent (能力匹配 + 负载均衡)
     ↓
 ⑥ channel_layer.group_send (Redis Channel Layer, DB 1)
     ↓
@@ -40,7 +40,7 @@ last_updated: '2026-08-27 (B1: TaskChain 节点派发归一化到 dispatch_task 
 | ② 触发调度 | `transaction.on_commit` | Django 事务提交后异步触发 Celery 任务，确保 execution 已持久化 | on_commit 回调不执行（罕见 Django bug） |
 | ③ 入队 | Redis (Celery) | `dispatch_task.delay(execution_id)` 将任务放入 Celery 队列 | Redis 不可用 → 任务丢失 |
 | ④ 执行调度 | `tasks/tasks.py:dispatch_task` | Celery Worker 消费队列，加载 execution，执行 Agent 选择逻辑 | Worker 未启动 → 任务永久留在队列 |
-| ⑤ 选 Agent | `AgentSelector` | `filter_by_capability` → `select_by_load`（空闲优先，心跳最新优先） | 无匹配 Agent → execution FAILED |
+| ⑤ 选 Agent | `WorkerSelector` | `filter_by_capability` → `select_by_load`（空闲优先，心跳最新优先） | 无匹配 Agent → execution FAILED |
 | ⑥ 发送 | Redis Channel Layer | `group_send(agent_group, task.assign)` 通过 Redis pub/sub 推送给 Daphne | Channel Layer 不可用 → 消息丢失 |
 | ⑦ 转发 | `AgentConsumer.task_assign` | Daphne 进程接收 Channel Layer 消息，序列化为 WebSocket 帧发送给 Agent | Agent 断开 → 消息丢失，execution 悬空 |
 | ⑧ 执行 | Agent 端 `handler.py` | 接收 `task.assign` 帧，解析 `task_definition`，开始执行 pipeline | 执行异常 → 卡住，依赖异常捕获 |
@@ -91,7 +91,7 @@ GAF 调度系统由 5 个独立服务协同完成：
 | 服务 | 进程类型 | 职责 | 依赖 |
 |------|----------|------|------|
 | **Daphne** | ASGI 服务器 | 处理 HTTP API + WebSocket 连接；维护 Agent 和 Frontend 的 WS 长连接；接收 Channel Layer 消息转发给 Agent | Redis |
-| **Celery Worker** | 任务消费者 | 执行 `dispatch_task` 等异步任务；从 Redis 队列消费消息；调用 AgentSelector 选 Agent 并通过 Channel Layer 发送 | Redis + Django ORM |
+| **Celery Worker** | 任务消费者 | 执行 `dispatch_task` 等异步任务；从 Redis 队列消费消息；调用 WorkerSelector 选 Agent 并通过 Channel Layer 发送 | Redis + Django ORM |
 | **Celery Beat** | 定时调度器 | 定期触发 `beat_schedule` 中的任务（每 60s 扫描 PENDING 执行、每 5s 检查心跳等） | Redis + Django ORM |
 | **Agent** | 任务执行器 | 通过 WebSocket 连接到 Daphne；接收 `task.assign` 帧执行 pipeline；发送 `task.result` 帧反馈执行结果 | Daphne (WS) |
 | **Redis** | 消息代理 + 状态存储 | Celery 队列（DB 1）、Channel Layer（DB 1）、心跳状态、结果后端 | 无 |
@@ -102,7 +102,7 @@ GAF 调度系统由 5 个独立服务协同完成：
 用户 HTTP 请求 → Daphne (HTTP) → Django View → services.py
     → TaskExecution.create → on_commit → dispatch_task.delay
     → Redis 队列 (Celery)
-    → Celery Worker 消费 → AgentSelector.select → group_send
+    → Celery Worker 消费 → WorkerSelector.select → group_send
     → Redis Channel Layer
     → Daphne (ASGI) → AgentConsumer.task_assign
     → WebSocket 帧 → Agent 执行
@@ -138,7 +138,7 @@ agent/device/game_account，status=PENDING）后调用
 `dispatch_task.delay(execution.id, force_agent_id=<chain agent>)`，由
 `dispatch_task` 统一接管：
 
-- **agent 固定**: `force_agent_id` 跳过 AgentSelector，整条链锁定在同一个 Agent
+- **agent 固定**: `force_agent_id` 跳过 WorkerSelector，整条链锁定在同一个 Agent
 - **可靠性对齐**: 设备级串行检查 / 并发控制器 / S1 dispatch-ack (dispatch_sent_at)
   / device_info 构建 / resource_pack 透传 / debug 目录 + meta.json 全部统一生效
 - **payload 单源**: 删除了 pipeline/tasks.py 的 `_send_task_assign` /

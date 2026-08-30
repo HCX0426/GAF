@@ -1,4 +1,4 @@
-"""Unit tests for AgentSelector (spec-40 Phase 1 / TD-288).
+"""Unit tests for WorkerSelector (spec-40 Phase 1 / TD-288).
 
 Covers:
 - get_required_capabilities: steps + nodes formats, cap_key matching, empty fallback
@@ -13,9 +13,9 @@ import datetime
 from dataclasses import dataclass
 from typing import Any
 
-from tasks.agent_selector import (
+from tasks.worker_selector import (
     CAPABILITY_MAP,
-    AgentSelector,
+    WorkerSelector,
     _agent_matches_capabilities,
     _get_required_capabilities,
 )
@@ -23,7 +23,7 @@ from tasks.agent_selector import (
 
 @dataclass
 class FakeAgent:
-    """Minimal mock for AgentSelector — no Django model needed."""
+    """Minimal mock for WorkerSelector — no Django model needed."""
     agent_id: str = "test-1"
     status: str = "idle"
     capabilities: Any = None
@@ -90,7 +90,7 @@ class TestGetRequiredCapabilities:
         assert result == {"adb"}
 
     def test_selector_method_delegates(self):
-        selector = AgentSelector()
+        selector = WorkerSelector()
         task_def = {"steps": [{"action": "click", "type": "win32"}]}
         result = selector.get_required_capabilities(task_def)
         assert "windows" in result
@@ -139,18 +139,18 @@ class TestAgentMatchesCapabilities:
 
 class TestFilterByCapability:
     def test_empty_agents(self):
-        selector = AgentSelector()
+        selector = WorkerSelector()
         assert selector.filter_by_capability([], {"adb"}) == []
 
     def test_all_match(self):
-        selector = AgentSelector()
+        selector = WorkerSelector()
         a1 = FakeAgent(agent_id="1", capabilities={"adb": True})
         a2 = FakeAgent(agent_id="2", capabilities={"adb": True})
         result = selector.filter_by_capability([a1, a2], {"adb"})
         assert len(result) == 2
 
     def test_partial_match(self):
-        selector = AgentSelector()
+        selector = WorkerSelector()
         a1 = FakeAgent(agent_id="1", capabilities={"adb": True})
         a2 = FakeAgent(agent_id="2", capabilities={"windows": True})
         result = selector.filter_by_capability([a1, a2], {"adb"})
@@ -158,7 +158,7 @@ class TestFilterByCapability:
         assert result[0].agent_id == "1"
 
     def test_order_preserved(self):
-        selector = AgentSelector()
+        selector = WorkerSelector()
         a1 = FakeAgent(agent_id="first", capabilities={"adb": True})
         a2 = FakeAgent(agent_id="second", capabilities={"adb": True})
         a3 = FakeAgent(agent_id="third", capabilities={"adb": True})
@@ -166,7 +166,7 @@ class TestFilterByCapability:
         assert [a.agent_id for a in result] == ["first", "second", "third"]
 
     def test_agent_throws_exception_is_skipped(self):
-        selector = AgentSelector()
+        selector = WorkerSelector()
 
         class BrokenAgent:
             agent_id = "broken"
@@ -184,16 +184,16 @@ class TestFilterByCapability:
 
 class TestSelectByLoad:
     def test_empty_list_returns_none(self):
-        selector = AgentSelector()
+        selector = WorkerSelector()
         assert selector.select_by_load([]) is None
 
     def test_single_idle_agent(self):
-        selector = AgentSelector()
+        selector = WorkerSelector()
         a = FakeAgent(status="idle")
         assert selector.select_by_load([a]) is a
 
     def test_multiple_idle_picks_most_recent_heartbeat(self):
-        selector = AgentSelector()
+        selector = WorkerSelector()
         old = FakeAgent(
             agent_id="old",
             status="idle",
@@ -208,28 +208,28 @@ class TestSelectByLoad:
         assert result is new
 
     def test_busy_agents_pick_lowest_cpu(self):
-        selector = AgentSelector()
+        selector = WorkerSelector()
         a1 = FakeAgent(agent_id="high", status="busy", cpu_usage=80.0, memory_usage=50.0)
         a2 = FakeAgent(agent_id="low", status="busy", cpu_usage=20.0, memory_usage=90.0)
         result = selector.select_by_load([a1, a2])
         assert result is a2
 
     def test_busy_agents_cpu_tie_picks_lowest_memory(self):
-        selector = AgentSelector()
+        selector = WorkerSelector()
         a1 = FakeAgent(agent_id="high-mem", status="busy", cpu_usage=50.0, memory_usage=80.0)
         a2 = FakeAgent(agent_id="low-mem", status="busy", cpu_usage=50.0, memory_usage=20.0)
         result = selector.select_by_load([a1, a2])
         assert result is a2
 
     def test_idle_preferred_over_busy(self):
-        selector = AgentSelector()
+        selector = WorkerSelector()
         busy = FakeAgent(agent_id="busy", status="busy", cpu_usage=1.0, memory_usage=1.0)
         idle = FakeAgent(agent_id="idle", status="idle", last_heartbeat=datetime.datetime(2020, 1, 1, tzinfo=datetime.UTC))
         result = selector.select_by_load([busy, idle])
         assert result is idle
 
     def test_none_heartbeat_treated_as_oldest(self):
-        selector = AgentSelector()
+        selector = WorkerSelector()
         a1 = FakeAgent(agent_id="none-hb", status="idle", last_heartbeat=None)
         a2 = FakeAgent(
             agent_id="has-hb",
@@ -240,7 +240,7 @@ class TestSelectByLoad:
         assert result is a2
 
     def test_status_case_insensitive(self):
-        selector = AgentSelector()
+        selector = WorkerSelector()
         a = FakeAgent(status="IDLE")
         # _agent_status lowercases — should be treated as "idle"
         result = selector.select_by_load([a])
@@ -251,13 +251,13 @@ class TestSelectByLoad:
 
 class TestSelect:
     def test_no_matching_agent_returns_none(self):
-        selector = AgentSelector()
+        selector = WorkerSelector()
         a = FakeAgent(capabilities={"windows": True})
         result = selector.select([a], {"adb"})
         assert result is None
 
     def test_matching_idle_agent_selected(self):
-        selector = AgentSelector()
+        selector = WorkerSelector()
         a = FakeAgent(
             agent_id="match",
             status="idle",
@@ -268,7 +268,7 @@ class TestSelect:
         assert result is a
 
     def test_picks_idle_over_busy_when_both_match(self):
-        selector = AgentSelector()
+        selector = WorkerSelector()
         busy = FakeAgent(
             agent_id="busy",
             status="busy",

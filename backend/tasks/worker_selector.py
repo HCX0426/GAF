@@ -1,7 +1,7 @@
 """Agent selection: filter agents by capability and select by load.
 
 ✅ Status: helper class with unit tests (spec-40). ``dispatch_task`` in
-``tasks/tasks.py`` is the primary consumer. ``AgentSelector``
+``tasks/tasks.py`` is the primary consumer. ``WorkerSelector``
 owns the capability + load selection logic directly (no delegation to tasks.py).
 
 Two-step selection
@@ -24,9 +24,9 @@ Usage
 -----
 ::
 
-    from tasks.agent_selector import AgentSelector
+    from tasks.worker_selector import WorkerSelector
 
-    selector = AgentSelector()
+    selector = WorkerSelector()
     matched = selector.filter_by_capability(available_agents, {"adb", "ocr"})
     agent = selector.select_by_load(matched)
     if agent is None:
@@ -129,7 +129,7 @@ def _agent_matches_capabilities(agent: Any, required_capabilities: set[str]) -> 
     return True
 
 
-class AgentSelector:
+class WorkerSelector:
     """Select agents by capability + load.
 
     Owns capability filtering and load-based selection. The capability
@@ -179,7 +179,7 @@ class AgentSelector:
                 # selection. Log and skip.
                 agent_id = getattr(agent, "agent_id", "<unknown>")
                 logger.warning(
-                    "AgentSelector.filter_by_capability: agent %r check failed: %s",
+                    "WorkerSelector.filter_by_capability: agent %r check failed: %s",
                     agent_id, exc,
                 )
         return matched

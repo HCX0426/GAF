@@ -62,7 +62,7 @@ DEFAULT_REDIS_PORT = 6379
 DEFAULT_BACKEND_PORT = 8000
 DEFAULT_FRONTEND_PORT = 5173
 
-# Agent 心跳新鲜度阈值 (与 backend agents/agent_runtime _is_agent_connected_via_db 对齐)
+# Agent 心跳新鲜度阈值 (与 backend workers/worker_runtime _is_agent_connected_via_db 对齐)
 AGENT_HEARTBEAT_STALE_SECONDS = 30
 AGENT_HEALTHY_STATUSES = {"idle", "online"}
 

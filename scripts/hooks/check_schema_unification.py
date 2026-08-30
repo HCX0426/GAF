@@ -118,7 +118,7 @@ LEGACY_FIELD_RULES = [
             # 测试用例有意测试 legacy/canvas schema 兼容性
             "backend/pipeline/tests/test_validators_nested.py",  # test_canvas_schema_still_passes
             "backend/pipeline/tests/test_validators.py",  # test_canvas_schema_still_passes (canvas 用 type)
-            "backend/tasks/tests/test_agent_selector.py",  # test legacy type 字段兼容
+            "backend/tasks/tests/test_worker_selector.py",  # test legacy type 字段兼容
         ],
     ),
     # 2. config.max_wait (应为 timeout)

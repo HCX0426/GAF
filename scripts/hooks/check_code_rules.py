@@ -221,7 +221,7 @@ _SCHEMA_WHITELIST = frozenset({
     "frontend/src/utils/schemaValidator.ts",
     "worker/src/engine/parser.py",
     "backend/pipeline/tests/test_validators_nested.py",
-    "backend/tasks/tests/test_agent_selector.py",
+    "backend/tasks/tests/test_worker_selector.py",
     # config.max_wait legacy 兼容层
     "worker/src/engine/nodes/wait.py",
     # node.type @deprecated 兼容层

@@ -88,7 +88,7 @@ GAF 支持三种部署模式，覆盖从个人开发者到企业级团队的不�
 - agent `__main__.py` 自带 PID 文件锁, 检测到已有 agent 进程存活则 exit(1)
 - 手动启动场景同理: 直接 `python -m src` 也会被单例锁保护
 - 调试场景可用 `--skip-singleton-check` 绕过 (不推荐生产使用)
-- 与 backend 端 `agent_runtime.py` (TD-217) 互补: backend 自启 agent 由 backend 管理, 手动启动由 agent 自身兜底
+- 与 backend 端 `worker_runtime.py` (TD-217) 互补: backend 自启 agent 由 backend 管理, 手动启动由 agent 自身兜底
 
 ### 2.4 环境初始化
 
