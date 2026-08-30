@@ -1,5 +1,5 @@
 /**
- * Agent management API
+ * Worker management API
  * Covers agent CRUD, token generation, deletion
  */
 import client from './client';

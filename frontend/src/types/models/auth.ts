@@ -54,7 +54,7 @@ export interface ChangePasswordRequest {
   new_password: string;
 }
 
-/** Agent status type — matches backend Agent.Status choices */
+/** Worker status type — matches backend Worker.Status choices */
 
 export type AgentStatus = API.components['schemas']['AgentHeartbeatStatusEnum'];
 
@@ -63,7 +63,7 @@ export type AgentStatus = API.components['schemas']['AgentHeartbeatStatusEnum'];
  *
  * Migrated from hand-written interface to `API.components['schemas']['Worker']`
  * after TD-266 Phase 1 fixed the `capabilities: JSONField` schema regression
- * (model renamed Agent -> Worker in naming-g P1).
+ * (model renamed Worker -> Worker in naming-g P1).
  *
  * Schema differences vs the pre-migration hand-written interface:
  *   - `ip_address`: schema `string | null` (optional) vs models was `string` (required)

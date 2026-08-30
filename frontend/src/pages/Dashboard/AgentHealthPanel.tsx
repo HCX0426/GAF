@@ -1,6 +1,6 @@
 /**
- * Agent health panel component
- * Displays CPU / memory / FPS for each Agent, highlights abnormal values, and updates via WebSocket
+ * Worker health panel component
+ * Displays CPU / memory / FPS for each Worker, highlights abnormal values, and updates via WebSocket
  */
 import { useMemo, useEffect, useCallback, useRef, memo } from 'react';
 // migration-test-marker
@@ -111,8 +111,8 @@ function agentCardPropsEqual(prev: AgentCardProps, next: AgentCardProps): boolea
   for (const f of agentFields) {
     if (prev.agent[f] !== next.agent[f]) return false;
   }
-  // Compare the device list (one Agent = one machine may own MANY windows /
-  // emulator instances — see docs/architecture/overview.md §Agent/Device).
+  // Compare the device list (one Worker = one machine may own MANY windows /
+  // emulator instances — see docs/architecture/overview.md §Worker/Device).
   const prevSig = deviceSummary(prev.devices);
   const nextSig = deviceSummary(next.devices);
   return prevSig === nextSig;
@@ -171,7 +171,7 @@ const AgentCard = memo(function AgentCard({ agent, devices }: AgentCardProps) {
           <DesktopOutlined className="gaf-text-md" style={{ color: borderColor }} />
           <div className="gaf-flex-col">
             <strong>{agent.hostname || agent.agent_id}</strong>
-            {/* One Agent = one machine that owns ALL its windows (PC windows +
+            {/* One Worker = one machine that owns ALL its windows (PC windows +
                 emulator instances) — list every device, not just the first. */}
             {devices.length > 0 && (
               <div className="gaf-flex" style={{ gap: 4, flexWrap: 'wrap' }}>
@@ -251,9 +251,9 @@ const AgentCard = memo(function AgentCard({ agent, devices }: AgentCardProps) {
 
 /** Collect ALL devices (windows / emulator instances) owned by this agent.
  *
- * Model (docs/architecture/overview.md): one machine runs one Agent process
+ * Model (docs/architecture/overview.md): one machine runs one Worker process
  * and discovers every window on it — PC windows AND emulator instances are all
- * registered as Device rows under that Agent.
+ * registered as Device rows under that Worker.
  */
 function findAgentDevices(agent: Worker, devices: Device[]): Device[] {
   return devices.filter(

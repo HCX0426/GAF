@@ -10,14 +10,14 @@
  * Pattern B (internal message.type comparison in useNotificationWebSocket /
  * useLogStream): also use these constants.
  *
- * Distinct from Agent ↔ Backend protocol types (MessageType in
- * backend/protocol/constants.py) which cover the Agent WebSocket frame types.
+ * Distinct from Worker ↔ Backend protocol types (MessageType in
+ * backend/protocol/constants.py) which cover the Worker WebSocket frame types.
  */
 
 export const WS_EVENT = {
-  /** Agent heartbeat broadcast (backend FrontendEventType.AGENT_HEARTBEAT) */
+  /** Worker heartbeat broadcast (backend FrontendEventType.AGENT_HEARTBEAT) */
   AGENT_HEARTBEAT: 'agent_heartbeat',
-  /** Agent status change broadcast */
+  /** Worker status change broadcast */
   AGENT_STATUS: 'agent_status',
   /** Task execution log stream (unified; replaces legacy 'task_log') */
   EXECUTION_LOG: 'execution_log',
@@ -27,7 +27,7 @@ export const WS_EVENT = {
   SCREENSHOT_FRAME: 'screenshot_frame',
   /** Notification push (used by useNotificationWebSocket Pattern B) */
   NOTIFICATION: 'notification',
-  /** Agent log entry stream (used by useLogStream Pattern B) */
+  /** Worker log entry stream (used by useLogStream Pattern B) */
   LOG_ENTRY: 'log.entry',
   /** Device status broadcast (TD-201 修复 2026-07-18: renamed device_status → device.status for naming consistency) */
   DEVICE_STATUS: 'device.status',

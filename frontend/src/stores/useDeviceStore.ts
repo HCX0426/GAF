@@ -1,6 +1,6 @@
 /**
  * device status management Store
- * management Device list, group, screenshot,Agent list,WebSocket reconnect recover
+ * management Device list, group, screenshot,Worker list,WebSocket reconnect recover
  * Phase 3 additions: scan, register, test screenshot, lock/unlock, stats, compatibility check
  */
 import { create } from 'zustand';
@@ -87,7 +87,7 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
   loading: false,
   currentScreenshot: null,
 
-  /** get Agent list */
+  /** get Worker list */
   fetchAgents: async (page = 1, pageSize = 50) => {
     set({ loading: true });
     try {

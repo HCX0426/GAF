@@ -61,7 +61,7 @@ const makeDevice = (id: number, overrides: Partial<Device> = {}): Device =>
   }) as Device;
 
 const makeGroup = (id: number, name = `Group ${id}`): DeviceGroup => ({ id, name }) as DeviceGroup;
-const makeAgent = (id: number): Worker => ({ id, name: `Agent ${id}` }) as unknown as Worker;
+const makeAgent = (id: number): Worker => ({ id, name: `Worker ${id}` }) as unknown as Worker;
 
 beforeEach(() => {
   useDeviceStore.setState({

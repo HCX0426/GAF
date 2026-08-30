@@ -285,10 +285,10 @@ export async function generateDiagnosticPack(): Promise<Blob> {
 }
 
 // ============================================================
-// Agent Debug Mode API (singleton upsert via /settings/agent-debug/)
+// Worker Debug Mode API (singleton upsert via /settings/agent-debug/)
 // ============================================================
 
-/** Agent debug mode config stored as AppSettings(agent_debug). */
+/** Worker debug mode config stored as AppSettings(agent_debug). */
 export interface AgentDebugConfig {
   /** Whether to save annotated screenshots during pipeline execution. */
   enabled: boolean;

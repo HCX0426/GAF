@@ -48,7 +48,7 @@ export function SLADashboard() {
     }
   };
 
-  /** load in online Agent count */
+  /** load in online Worker count */
   const loadOnlineAgents = async () => {
     try {
       const data = await fetchAgents();

@@ -246,7 +246,7 @@ export function UnattendedStrategyPanel() {
           size="small"
           className="gaf-mt-lg"
         >
-          <Form.Item name={['system_recovery_config', 'agent_no_response_timeout']} label="Agent 无响应超时(秒)">
+          <Form.Item name={['system_recovery_config', 'agent_no_response_timeout']} label="Worker 无响应超时(秒)">
             <InputNumber min={30} max={3600} className="gaf-w-full" />
           </Form.Item>
           <Form.Item name={['system_recovery_config', 'on_no_response_actions']} label="超时动作">
@@ -254,7 +254,7 @@ export function UnattendedStrategyPanel() {
               options={[
                 { value: 'notify', label: '发送通知' },
                 { value: 'mark_offline', label: '标记离线' },
-                { value: 'auto_restart_agent', label: '自动重启 Agent' },
+                { value: 'auto_restart_agent', label: '自动重启 Worker' },
                 { value: 'switch_device', label: '切换设备' },
               ]}
             />

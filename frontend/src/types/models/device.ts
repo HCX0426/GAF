@@ -126,7 +126,7 @@ export interface Resolution {
   height: number;
 }
 
-/** associate Agent summary — matches backend DeviceSerializer.get_agent_info() */
+/** associate Worker summary — matches backend DeviceSerializer.get_agent_info() */
 
 export interface AgentInfo {
   id: number;

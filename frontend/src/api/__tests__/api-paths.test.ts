@@ -31,7 +31,7 @@ describe('API 路径一致性', () => {
     );
   });
 
-  it('Agent 路径应以斜杠结尾', async () => {
+  it('Worker 路径应以斜杠结尾', async () => {
     const { fetchAgents } = await import('../agents');
     await fetchAgents();
     expect(client.get).toHaveBeenCalledWith(expect.stringMatching(/\/agents\/$/), expect.anything());

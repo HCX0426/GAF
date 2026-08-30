@@ -365,10 +365,10 @@ export function UnattendedStrategySettings() {
 
                 <Card size="small" title="层级 5：系统级恢复">
                   <Text type="secondary" className="gaf-mb-sm" style={{ display: 'block' }}>
-                    Agent 进程无响应或系统级异常时的恢复策略
+                    Worker 进程无响应或系统级异常时的恢复策略
                   </Text>
                   <Space wrap>
-                    <Text type="secondary">Agent 无响应超时（秒）：</Text>
+                    <Text type="secondary">Worker 无响应超时（秒）：</Text>
                     <InputNumber
                       min={30}
                       max={7200}
@@ -418,7 +418,7 @@ export function UnattendedStrategySettings() {
                         (sys.timeoutActions ?? [])
                           .map((v) => ({ notify: '通知', mark_offline: '标记离线', reassign: '重新分配' })[v] || v)
                           .join('+') || '无';
-                      return `恢复策略执行流程：\n步骤失败 → (步骤级: 重试${step.maxRetries ?? 3}次, ${step.exponentialBackoff ? '指数退避' : '固定间隔'}) → 仍失败\n  → (任务级: 连续${task.consecutiveFailureThreshold ?? 3}个任务失败) → ${taskAction}\n    → (应用级: 游戏卡死${app.freezeTimeoutSeconds ?? 120}秒) → ${appAction}\n      → (设备级: 设备崩溃) → ${devAction}\n        → (系统级: Agent无响应${sys.agentTimeoutSeconds ?? 300}秒) → ${sysAction}`;
+                      return `恢复策略执行流程：\n步骤失败 → (步骤级: 重试${step.maxRetries ?? 3}次, ${step.exponentialBackoff ? '指数退避' : '固定间隔'}) → 仍失败\n  → (任务级: 连续${task.consecutiveFailureThreshold ?? 3}个任务失败) → ${taskAction}\n    → (应用级: 游戏卡死${app.freezeTimeoutSeconds ?? 120}秒) → ${appAction}\n      → (设备级: 设备崩溃) → ${devAction}\n        → (系统级: Worker无响应${sys.agentTimeoutSeconds ?? 300}秒) → ${sysAction}`;
                     })()}
                   </Text>
                 </Card>

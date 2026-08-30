@@ -3,15 +3,15 @@ import type { LocaleMessages } from '@/i18n/types';
 export const settings: LocaleMessages = {
   'zh-CN': {
     'settings.agent_debug_desc':
-      '调试模式开启后，Agent 执行 pipeline 时会在指定目录下保存带标注的截图（模板匹配/OCR/点击位置等），按时间轴组织。用于排查"上一步匹配错误导致下一步失败"等问题。不影响前端浏览器调试设置。',
+      '调试模式开启后，Worker 执行 pipeline 时会在指定目录下保存带标注的截图（模板匹配/OCR/点击位置等），按时间轴组织。用于排查"上一步匹配错误导致下一步失败"等问题。不影响前端浏览器调试设置。',
     'settings.agent_debug_dir': '调试目录',
     'settings.agent_debug_dir_desc':
       '保存调试截图和日志的根目录（相对仓库根目录）。每次执行创建嵌套子目录：{dir}/{日期YYYYMMDD}/{pipeline名}/{时分秒HHMMSS}_{执行ID}/',
-    'settings.agent_debug_enable': '启用 Agent 调试模式',
+    'settings.agent_debug_enable': '启用 Worker 调试模式',
     'settings.agent_debug_enable_desc': '开启后执行 pipeline 会保存带标注的调试截图。关闭时不产生任何调试文件。',
     'settings.agent_debug_save': '保存到后端',
-    'settings.agent_debug_saved': 'Agent 调试配置已保存',
-    'settings.agent_debug_title': 'Agent 调试模式（服务端）',
+    'settings.agent_debug_saved': 'Worker 调试配置已保存',
+    'settings.agent_debug_title': 'Worker 调试模式（服务端）',
     'settings.cleanup_btn': '立即清理',
     'settings.cleanup_confirm': '确认清理？此操作不可撤销',
     'settings.cleanup_current_data': '当前数据量',
@@ -64,7 +64,7 @@ export const settings: LocaleMessages = {
     'settings.diag_downloading': '下载中…',
     'settings.diag_failed': '诊断包生成失败',
     'settings.diag_generate_btn': '生成诊断包',
-    'settings.diag_generate_desc': '包含内容：系统版本、配置信息、最近日志、错误截图、Agent 状态',
+    'settings.diag_generate_desc': '包含内容：系统版本、配置信息、最近日志、错误截图、Worker 状态',
     'settings.diag_generate_title': '生成诊断包',
     'settings.diag_success': '诊断包生成成功',
     'settings.diagnostic_pack': '诊断包',
@@ -148,12 +148,12 @@ export const settings: LocaleMessages = {
     'settings.agent_debug_dir': 'Debug Directory',
     'settings.agent_debug_dir_desc':
       'Root directory for debug screenshots (relative to repo root). Each execution creates a subdirectory: {dir}/{timestamp}_{pipelineName}/',
-    'settings.agent_debug_enable': 'Enable Agent Debug Mode',
+    'settings.agent_debug_enable': 'Enable Worker Debug Mode',
     'settings.agent_debug_enable_desc':
       'When enabled, pipeline executions save annotated debug screenshots. When disabled, no debug files are produced.',
     'settings.agent_debug_save': 'Save to Backend',
-    'settings.agent_debug_saved': 'Agent debug config saved',
-    'settings.agent_debug_title': 'Agent Debug Mode (Server-side)',
+    'settings.agent_debug_saved': 'Worker debug config saved',
+    'settings.agent_debug_title': 'Worker Debug Mode (Server-side)',
     'settings.cleanup_btn': 'Clean Up Now',
     'settings.cleanup_confirm': 'Confirm cleanup? This action is irreversible',
     'settings.cleanup_current_data': 'Current Data Volume',
@@ -209,7 +209,7 @@ export const settings: LocaleMessages = {
     'settings.diag_failed': 'Diagnostic pack generation failed',
     'settings.diag_generate_btn': 'Generate Diagnostic Pack',
     'settings.diag_generate_desc':
-      'Includes: system version, config info, recent logs, error screenshots, Agent status',
+      'Includes: system version, config info, recent logs, error screenshots, Worker status',
     'settings.diag_generate_title': 'Generate Diagnostic Pack',
     'settings.diag_success': 'Diagnostic pack generated successfully',
     'settings.diagnostic_pack': 'Diagnostic Pack',
@@ -290,16 +290,16 @@ export const settings: LocaleMessages = {
   },
   'ja-JP': {
     'settings.agent_debug_desc':
-      '有効化すると、Agent が pipeline 実行時に注釈付きスクリーンショット（テンプレートマッチ/OCR/クリック位置など）を指定ディレクトリに保存します。タイムライン順で整理されます。「前ステップの誤マッチ→次ステップ失敗」の排查に役立ちます。ブラウザデバッグ設定には影響しません。',
+      '有効化すると、Worker が pipeline 実行時に注釈付きスクリーンショット（テンプレートマッチ/OCR/クリック位置など）を指定ディレクトリに保存します。タイムライン順で整理されます。「前ステップの誤マッチ→次ステップ失敗」の排查に役立ちます。ブラウザデバッグ設定には影響しません。',
     'settings.agent_debug_dir': 'デバッグディレクトリ',
     'settings.agent_debug_dir_desc':
       'デバッグスクリーンショットのルートディレクトリ（リポジトリルートからの相対）。実行ごとにサブディレクトリ {dir}/{タイムスタンプ}_{pipeline名}/ を作成',
-    'settings.agent_debug_enable': 'Agent デバッグモードを有効化',
+    'settings.agent_debug_enable': 'Worker デバッグモードを有効化',
     'settings.agent_debug_enable_desc':
       '有効化すると pipeline 実行時に注釈付きデバッグスクリーンショットを保存。無効時はデバッグファイルを生成しません。',
     'settings.agent_debug_save': 'バックエンドに保存',
-    'settings.agent_debug_saved': 'Agent デバッグ設定を保存しました',
-    'settings.agent_debug_title': 'Agent デバッグモード（サーバー側）',
+    'settings.agent_debug_saved': 'Worker デバッグ設定を保存しました',
+    'settings.agent_debug_title': 'Worker デバッグモード（サーバー側）',
     'settings.cleanup_btn': '今すぐクリーンアップ',
     'settings.cleanup_confirm': 'クリーンアップを確認しますか？この操作は元に戻せません',
     'settings.cleanup_current_data': '現在のデータ量',
@@ -435,16 +435,16 @@ export const settings: LocaleMessages = {
   },
   'ko-KR': {
     'settings.agent_debug_desc':
-      '활성화하면 Agent가 pipeline 실행 시 주석이 달린 스크린샷(템플릿 매치/OCR/클릭 위치 등)을 지정된 디렉토리에 저장합니다. 타임라인 순으로 정리됩니다. "이전 단계 매치 오류→다음 단계 실패" 문제 해결에 유용합니다. 브라우저 디버그 설정에는 영향하지 않습니다.',
+      '활성화하면 Worker가 pipeline 실행 시 주석이 달린 스크린샷(템플릿 매치/OCR/클릭 위치 등)을 지정된 디렉토리에 저장합니다. 타임라인 순으로 정리됩니다. "이전 단계 매치 오류→다음 단계 실패" 문제 해결에 유용합니다. 브라우저 디버그 설정에는 영향하지 않습니다.',
     'settings.agent_debug_dir': '디버그 디렉토리',
     'settings.agent_debug_dir_desc':
       '디버그 스크린샷과 로그의 루트 디렉토리(레포지토리 루트 기준 상대경로). 실행마다 중첩 하위 디렉토리 {dir}/{YYYYMMDD}/{pipeline명}/{HHMMSS}_{execId}/ 생성',
-    'settings.agent_debug_enable': 'Agent 디버그 모드 활성화',
+    'settings.agent_debug_enable': 'Worker 디버그 모드 활성화',
     'settings.agent_debug_enable_desc':
       '활성화 시 pipeline 실행 중 주석이 달린 디버그 스크린샷을 저장합니다. 비활성화 시 디버그 파일을 생성하지 않습니다.',
     'settings.agent_debug_save': '백엔드에 저장',
-    'settings.agent_debug_saved': 'Agent 디버그 설정이 저장되었습니다',
-    'settings.agent_debug_title': 'Agent 디버그 모드 (서버 측)',
+    'settings.agent_debug_saved': 'Worker 디버그 설정이 저장되었습니다',
+    'settings.agent_debug_title': 'Worker 디버그 모드 (서버 측)',
     'settings.cleanup_btn': '지금 정리',
     'settings.cleanup_confirm': '정리를 확인하시겠습니까? 이 작업은 되돌릴 수 없습니다',
     'settings.cleanup_current_data': '현재 데이터량',

@@ -3,8 +3,8 @@
  * layout structure ( vertical directly streaming layout ):
  * - title area: workspace + system run row overview
  * - 1st row: today schedule timeline
- * - 2nd row: system stats card ( in online Agent/ run row task / today execute / success rate )
- * - 3rd row:Agent health panel
+ * - 2nd row: system stats card ( in online Worker/ run row task / today execute / success rate )
+ * - 3rd row:Worker health panel
  * - 4th row: most recent execute record
  * - 5th row: shortcut operation
  */

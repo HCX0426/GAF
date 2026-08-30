@@ -388,7 +388,7 @@ function DebugSettingsTab() {
   /** Track the save delay timer so it can be cleaned up on unmount */
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Agent debug mode state (backend AppSettings, not localStorage)
+  // Worker debug mode state (backend AppSettings, not localStorage)
   const [agentDebug, setAgentDebug] = useState<AgentDebugConfig>({ enabled: false, dir: 'debug' });
   const [agentDebugLoading, setAgentDebugLoading] = useState(false);
   const [agentDebugSaving, setAgentDebugSaving] = useState(false);
@@ -625,7 +625,7 @@ function DebugSettingsTab() {
         </Space>
       </Card>
 
-      {/* Agent Debug Mode Section (backend AppSettings) */}
+      {/* Worker Debug Mode Section (backend AppSettings) */}
       <Card
         title={
           <>

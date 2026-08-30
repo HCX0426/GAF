@@ -79,7 +79,7 @@ export interface WeeklyReport {
   recovery_success_rate: number | null;
 }
 
-/** Agent performance record item */
+/** Worker performance record item */
 export interface AgentPerfItem {
   agent_name: string;
   execution_count: number;

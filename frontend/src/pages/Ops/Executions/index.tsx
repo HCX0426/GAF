@@ -278,7 +278,7 @@ export function ExecutionsPage() {
 
   const handleStartMonitoring = async (record: TaskExecution) => {
     setMonitoringExecutionId(record.id);
-    // Use the Agent.agent_id string (e.g. "td010-repro-agent") for
+    // Use the Worker.agent_id string (e.g. "td010-repro-agent") for
     // screenshot stream routing. The backend Channels group is
     // `agent_{agent_id}` (string), NOT `agent_{DB pk}`. Passing the DB
     // id (record.agent, e.g. 4) would route to a non-existent group and

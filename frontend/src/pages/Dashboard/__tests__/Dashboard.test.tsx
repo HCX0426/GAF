@@ -63,12 +63,12 @@ describe('DashboardPage', () => {
       </MemoryRouter>,
     );
     await waitFor(() => {
-      expect(screen.getByText('在线 Agent')).toBeDefined();
+      expect(screen.getByText('在线 Worker')).toBeDefined();
       expect(screen.getByText('运行任务')).toBeDefined();
       expect(screen.getByText('今日执行')).toBeDefined();
       expect(screen.getByText('成功率')).toBeDefined();
       expect(screen.getByText('最近执行')).toBeDefined();
-      expect(screen.getByText('Agent 健康面板')).toBeDefined();
+      expect(screen.getByText('Worker 健康面板')).toBeDefined();
     });
   });
 });

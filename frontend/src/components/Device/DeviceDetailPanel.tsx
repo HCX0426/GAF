@@ -1,7 +1,7 @@
 /**
  * device detail drawer panel
  * shows device real-time screenshot stream, basic info, action buttons
- * supports both Agent WebSocket screenshot stream and HTTP polling screenshot modes
+ * supports both Worker WebSocket screenshot stream and HTTP polling screenshot modes
  */
 import { useEffect, useRef, useState, useCallback } from 'react';
 import {
@@ -137,7 +137,7 @@ export function DeviceDetailPanel({ device, open, onClose, onDelete }: DeviceDet
   const isStreaming = wsStream.isStreaming || polling;
   const currentFrame = wsStream.currentFrame || pollingFrame;
 
-  /** HTTP polling screenshot (fallback when no Agent) */
+  /** HTTP polling screenshot (fallback when no Worker) */
   const pollScreenshot = useCallback(async () => {
     if (!device || pollingLoadingRef.current) return;
     pollingLoadingRef.current = true;

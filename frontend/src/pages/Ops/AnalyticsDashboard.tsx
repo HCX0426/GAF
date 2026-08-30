@@ -1,6 +1,6 @@
 /**
  * performance analysis dashboard page
- * use antd Statistic/Table/Progress show execute stats, step elapsed when ranking, trend, week report,Agent to compare
+ * use antd Statistic/Table/Progress show execute stats, step elapsed when ranking, trend, week report,Worker to compare
  */
 import { useEffect, useState } from 'react';
 import { Card, Row, Col, Statistic, Table, Progress, Spin, Tag, theme as antTheme } from 'antd';
@@ -44,7 +44,7 @@ interface WeeklyReport {
   recovery_success_rate: number | null;
 }
 
-/** Agent performance record item */
+/** Worker performance record item */
 interface AgentPerfItem {
   agent_name: string;
   execution_count: number;
@@ -186,7 +186,7 @@ export function AnalyticsDashboardPage() {
     },
   ];
 
-  /** Agent performance column config */
+  /** Worker performance column config */
   const agentColumns = [
     { title: t('analytics.col_agent'), dataIndex: 'agent_name', key: 'agent_name' },
     { title: t('analytics.col_exec_count'), dataIndex: 'execution_count', key: 'execution_count' },
@@ -280,7 +280,7 @@ export function AnalyticsDashboardPage() {
           />
         </Card>
 
-        {/* 周报 + Agent 对比 */}
+        {/* 周报 + Worker 对比 */}
         <Row gutter={[16, 16]}>
           <Col xs={24} lg={12}>
             <Card title={t('analytics.card_weekly')}>

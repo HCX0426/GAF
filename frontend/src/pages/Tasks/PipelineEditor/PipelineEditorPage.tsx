@@ -175,7 +175,7 @@ function PipelineEditorInner({ pipelineId, readonly }: { pipelineId?: string; re
   const [deviceOptions, setDeviceOptions] = useState<{ label: string; value: string }[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<string | undefined>();
 
-  // F6: 加载设备列表填充下拉 (Agent 在线设备)
+  // F6: 加载设备列表填充下拉 (Worker 在线设备)
   useEffect(() => {
     fetchDevices({ page_size: 50 })
       .then((res) => {
