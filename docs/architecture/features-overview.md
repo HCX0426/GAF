@@ -24,8 +24,8 @@ last_updated: 2026-08-08
 |------|------|---------|
 | **前端** | React + TypeScript + Vite + Ant Design + Zustand + React Router + React Flow (Pipeline) + WebSocket | React 19.2 / TS 6.0 / Vite 8.0 / Antd 6.4 |
 | **后端** | Django + DRF + Celery + Celery Beat + Redis + SQLite + WAL + Channels (Daphne) + drf-spectacular | Django 5.2 / DRF 3.15 / Channels 4.1 / Python 3.11 |
-| **Agent** | Python 独立进程，WebSocket 连后端；平台抽象层 `agent/src/platforms/{windows,linux,macos}` + 设备发现注册表 DeviceDiscoveryRegistry + 统一执行引擎 TaskExecutor | Python 3.11 自研 |
-| **Desktop** | Electron 桌面应用（封装前端 + 后端 + Agent 一体化分发） | 见 `desktop/` |
+| **Worker** | Python 独立进程，WebSocket 连后端；平台抽象层 `agent/src/platforms/{windows,linux,macos}` + 设备发现注册表 DeviceDiscoveryRegistry + 统一执行引擎 TaskExecutor | Python 3.11 自研 |
+| **Desktop** | Electron 桌面应用（封装前端 + 后端 + Worker 一体化分发） | 见 `desktop/` |
 | **认证** | SimpleJWT + pyotp (TOTP 2FA) + OAuth2 (GitHub/Google) + AES-256-GCM (游戏账号密码加密) | — |
 | **AI** | OpenAI 兼容 LLM (统一客户端 BaseLLMClient) + ChromaDB RAG + LangGraph Agent + WebSocket RPC | — |
 | **API** | 统一前缀 `/api/v2/`，OpenAPI 文档 `/api/v2/docs/` | — |
@@ -43,11 +43,11 @@ last_updated: 2026-08-08
 | 功能点 | 后端 API | 技术 |
 |--------|---------|------|
 | 今日进度环 | `tasks/analytics/task-stats` | Django ORM 聚合 |
-| 设备健康网格 | `monitors/device-health` | Agent 心跳 + 状态聚合 |
+| 设备健康网格 | `monitors/device-health` | Worker 心跳 + 状态聚合 |
 | 执行队列预览 | `scheduler/today` + `executions/trend` | Celery Beat 5s 心跳 |
 | 告警摘要 | `monitors/alerts` | 告警升级链 (P1→P0) |
 | 趋势图 | `tasks/analytics/trend` | 时序聚合 |
-| Agent 健康面板 | `agents/` (AgentViewSet) | WebSocket 心跳 10s/30s |
+| Worker 健康面板 | `workers/` (WorkerViewSet) | WebSocket 心跳 10s/30s |
 | 无人值守控制 | `scheduler/unattended/*` | start/stop/pause/resume |
 | 系统公告 | `notifications/` | Notification model |
 
@@ -64,7 +64,7 @@ last_updated: 2026-08-08
 | 功能点 | 后端 API | 技术 |
 |--------|---------|------|
 | 档案 CRUD | `gamestate/game-profiles` (GameProfileViewSet) | 游戏产品定义 |
-| 默认任务链 | GameProfile.default_routine (FK→TaskChain) | ✅ v3 新增: 新窗口绑 GameProfile 自动继承 |
+| 默认任务链 | GameProfile.default_task_chain (FK→TaskChain) | ✅ v3 新增: 新窗口绑 GameProfile 自动继承 |
 | 默认截图方式 | GameProfile.default_screenshot_method | ✅ v3 新增: 'auto' 时由 Device 继承 |
 | 默认输入方式 | GameProfile.default_input_method | ✅ v3 新增: 'auto' 时由 Device 继承 |
 | 默认控制模式 | GameProfile.default_control_mode | ✅ v3 新增: 'auto' 时由 Device 继承 |
@@ -77,7 +77,7 @@ last_updated: 2026-08-08
 
 1. 任务 (Tasks) — 该档案关联的任务列表。支持绑定/解绑：`+ 添加任务` 按钮打开搜索式弹窗选择未绑定的 Task，操作列`解绑`按钮（Popconfirm 确认）。后端 `gamestate/game-profiles/<id>/bind-task/` + `unbind-task/`。
 2. 任务链 (Task Chains) — 该档案关联的 TaskChain 列表。支持绑定/解绑（同上模式）+ 设为默认任务链。后端 `bind-task-chain/` + `unbind-task-chain/`。TaskChain 新建入口在 `/ops/scheduler` 任务链 Tab。
-3. 窗口 (Devices) — 该游戏档案绑定的窗口列表。窗口由 Agent 自动注册（Agent 启动时自动发现本机所有 Windows 窗口和模拟器实例），不支持手动绑定/解绑。每行显示窗口名称、类型（windows/emulator）、状态、ADB 序列号、分辨率等信息。支持单设备派发默认 routine。
+3. 窗口 (Devices) — 该游戏档案绑定的窗口列表。窗口由 Worker 自动注册（Worker 启动时自动发现本机所有 Windows 窗口和模拟器实例），不支持手动绑定/解绑。每行显示窗口名称、类型（windows/emulator）、状态、ADB 序列号、分辨率等信息。支持单设备派发默认 task-chain。
 4. 账户 (Accounts) — 该档案关联的游戏账户列表。支持绑定/解绑（同上模式）。后端 `bind-account/` + `unbind-account/`。
 5. 资源包 (Resource Packs) — 只读概览。架构 §3.2：资源包绑定在 GameAccount 上（不绑 GameProfile），支持同游戏不同服务器使用不同资源包。如需调整请到「账户」Tab 修改账户的资源包。
 
@@ -132,7 +132,7 @@ last_updated: 2026-08-08
 | 功能点 | 后端 API | 技术 |
 |--------|---------|------|
 | 录制列表 | `tasks/recordings` (RecordingViewSet) | Recording 模型 |
-| 录制回放 | Agent WindowsEventCapture (pynput) | 录制 Stepper |
+| 录制回放 | Worker WindowsEventCapture (pynput) | 录制 Stepper |
 | 转 Pipeline | `pipeline/recordings/<pk>/convert-to-pipeline/` | `recording_converter.py` |
 | 标注 Overlay | 前端 RecordingStepper 红色脉冲 | Canvas 渲染 |
 
@@ -151,30 +151,30 @@ last_updated: 2026-08-08
 
 **路由**: `/devices` / `/devices/emulators` / `/devices/windows` / `/devices/adb-logs`  **权限**: `device.view`
 
-设备中心，管理 Agent 与设备。后端由 `agents/` app + `agent/` 平台抽象层共同承载。
+Worker 运行时架构 workers/ app + worker/ 进程目录 双层协同
 
 ### 4.1 设备列表 `/devices`
 
 | 功能点 | 后端 API | 技术 |
 |--------|---------|------|
-| 设备 CRUD | `agents/devices` (DeviceViewSet) | DRF ViewSet |
+| 设备 CRUD | `workers/devices` (DeviceViewSet) | DRF ViewSet |
 | 设备扫描 | `devices/scan/` | ADB + Win32 窗口发现 |
 | 设备注册 | `devices/register/` | 3 级查重（serial/同名/同模拟器）|
 | 设备截图 | `devices/<id>/screenshot/` | 5 层降级链 |
-| 模板匹配 | `agents/<pk>/template-match` | OpenCV cv2.matchTemplate |
-| 颜色检测 | `agents/<pk>/color-detect` | 像素采样 |
-| 点击/输入 | `agents/<pk>/click` + `/input` | Win32 SendInput / ADB |
-| 设备锁 | `agents/<pk>/lock` + `/unlock` | locked_by 字段 + 竞态保护 |
+| 模板匹配 | `workers/<pk>/template-match` | OpenCV cv2.matchTemplate |
+| 颜色检测 | `workers/<pk>/color-detect` | 像素采样 |
+| 点击/输入 | `workers/<pk>/click` + `/input` | Win32 SendInput / ADB |
+| 设备锁 | `workers/<pk>/lock` + `/unlock` | locked_by 字段 + 竞态保护 |
 | 兼容性检查 | `devices/check-compatibility/` | 平台能力矩阵 |
 | 设备分组 | `device-groups/` (DeviceGroupViewSet) | 树形结构 parent FK |
-| Agent 自动关联 | WebSocket `device.sync` | Agent 启动上报 → Server 创建/更新 |
+| Worker 自动关联 | WebSocket `device.sync` | Worker 启动上报 → Server 创建/更新 |
 
 ### 4.2 模拟器管理 `/devices/emulators`
 
 | 功能点 | 后端 API | 技术 |
 |--------|---------|------|
 | 模拟器生命周期 | `devices/emulator-lifecycle/` | LDPlayer/MuMu/BlueStacks 启停 |
-| ADB 连接池 | Agent `WorkerPool` | 线程安全单例 + 自动重连 |
+| ADB 连接池 | Worker `WorkerPool` | 线程安全单例 + 自动重连 |
 | LDPlayer 14 截图 | `ld_opengl.py` v3 IReadPixelsClass | GDI 共享内存 ~26ms/帧 |
 | NemuIpc (MuMu) | `nemu_ipc.py` + keepalive | 25s 心跳 + 错误码映射 |
 
@@ -266,7 +266,7 @@ last_updated: 2026-08-08
 | 游戏账户 CRUD | `accounts/game-accounts` (GameAccountViewSet) | AES-256-GCM 密码加密 |
 | 资源包绑定 | GameAccount.resource_pack FK | 换服只改此字段 |
 | 账户分组 | `accounts/groups` (GameAccountGroupViewSet) | 分组管理 |
-| 轮换规则 | `accounts/rotation-rules` (GameAccountRotationViewSet) | sequential/random/by_stamina |
+| 轮换规则 | `accounts/rotation-rules` (GameAccountRotationViewSet) | sequential/random/by_stamina/by_last_executed |
 | 登录方式 | password/qr_scan/token/steam | 多种登录支持 |
 | 账户自动处理 | AccountAutoHandler / BatchChecker / LoginTester | 批量操作 |
 | BD2 导入 | （已移除） | 后端无对应端点（`accounts/urls.py` 未注册） |
@@ -337,7 +337,7 @@ last_updated: 2026-08-08
 |--------|---------|------|
 | 趋势分析 | `analytics/trend` | ORM 聚合 |
 | 步骤热力图 | `analytics/step-heatmap` | 步骤耗时统计 |
-| Agent 性能 | `analytics/agent-performance` | 性能对比 |
+| Worker 性能 | `analytics/worker-performance` | 性能对比 |
 | 周报 | `analytics/weekly-report` | 自动生成 |
 | 任务统计 | `analytics/task-stats` | 统计聚合 |
 | 执行回放 | `/ops/executions/:executionId/replay` | ScreenshotFrame 回放 |
@@ -523,7 +523,7 @@ AI 模块，跨 2 个后端 app: `gaf_ai/` (C-038 重命名, 2026-07-15, 原 `ai
 
 | 功能点 | 后端 API | 技术 |
 |--------|---------|------|
-| 备份任务 CRUD | `settings/backups` (BackupViewSet) | BackupJob 模型 |
+| 备份任务 CRUD | `settings/backups` (BackupViewSet) | ZIP 快照 API `/tasks/backup/`（无 ORM 模型 BackupJob） |
 | 手动备份 | `settings/backups/<pk>/run` | 立即执行 |
 | 恢复 | `settings/backups/<pk>/restore` | 数据恢复 |
 | 定时备份 | Celery Beat 调度 | 自动备份 |
@@ -585,11 +585,11 @@ AI 模块，跨 2 个后端 app: `gaf_ai/` (C-038 重命名, 2026-07-15, 原 `ai
 
 ---
 
-## 附录 B: Agent 平台抽象层
+## 附录 B: Worker 平台抽象层
 
-Agent 是独立 Python 进程，通过 WebSocket 连接后端，提供跨平台能力。
+Worker 是独立 Python 进程，通过 WebSocket 连接后端，提供跨平台能力。
 
-> **v9.4 (2026-07-19, spec-39 Phase 4)** — 同步 P-028 ✅ 实际落地位置: macOS/Linux 在 `backend/device_bridge/platforms/{macos,linux}/` (非 agent 侧)
+> **v9.4 (2026-07-19, spec-39 Phase 4)** — 同步 P-028 ✅ 实际落地位置: macOS/Linux 在 `backend/device_bridge/platforms/{macos,linux}/` (非 worker 侧)
 
 | 平台 | 截图 | 输入 | 发现 | 实现位置 |
 |------|------|------|------|---------|
@@ -603,7 +603,7 @@ Agent 是独立 Python 进程，通过 WebSocket 连接后端，提供跨平台�
 - `agent/src/platforms/windows/` — Win32 截图/输入 + LDPlayer/MuMu 专用 (agent 侧仅 Windows)
 - `backend/device_bridge/platforms/{windows,macos,linux}/` — backend 侧跨平台抽象层 (P-028 ✅, 纯 Python 包非 Django app)
 - `agent/src/core/` — retry / timeout / 配置
-- `agent/src/client/` — WebSocket 连接 + 设备同步 (走 `/ws/protocol/agents/`)
+- `agent/src/client/` — WebSocket 连接 + 设备同步 (走 `/ws/protocol/workers/`)
 
 ---
 
@@ -616,7 +616,7 @@ Agent 是独立 Python 进程，通过 WebSocket 连接后端，提供跨平台�
 | 轮换按账户维度 | 一个账户所有任务完成后换下一个 | 资源包一致 |
 | 设备并行执行 | 多开模拟器同时跑不同账户 | 吞吐量最大化 |
 | TaskDevice 中间表 | M2M Task ↔ Device | 任务指定执行设备 |
-| Agent 自动关联 | Agent 启动上报 → Server 创建/更新 Device | 减少手动配置 |
+| Worker 设备同步 | Worker 连接建立 -> Server 创建/更新 Device | 设备状态实时同步 |
 | 5 层截图降级 | scrcpy→droidcast→nemuipe→ld_opengl→screencap | 容错最大化 |
 | 3 方法输入 | SendInput/PostMessage/PseudoBackground × 鼠标/键盘/滚轮 | 兼容各种窗口 (TD-090 统一) |
 | Multi-game 模式开关 + 白名单降级 (Spec A) | FeatureFlag `unattended_multi_game_mode` + `resolve_device_methods` 过滤 | 多游戏并行时禁用非 hwnd-isolated 方法, 防止串台 |
@@ -625,5 +625,6 @@ Agent 是独立 Python 进程，通过 WebSocket 连接后端，提供跨平台�
 | minitouch/MaaTouch 动态端口 (Spec D / TD-123) | per-serial CRC32 哈希端口分配 + 线性探测 | 多模拟器并行时固定端口会冲突; 同 serial 同端口确保 adb forward 规则稳定 |
 | DXGI per-window crop (Spec E / TD-124) | `DXGICapture.capture_window(hwnd)` — GetWindowRect + numpy slice | DXGI 截全桌面, 多游戏并行串台; hwnd crop 实现隔离 |
 | Backend WGC mock 移除 (Spec E / TD-125) | 删除 `_wgc.py`, `_capture_wgc` delegate 到 PrintWindow | backend WGC 一直是 mock 返回假图, 误导用户; agent 端 WGC 仍真实可用 |
-| 两套 WebSocket | agents (同步+ACK) + protocol (异步+帧协议) | 控制流 vs 协议化通信 |
+| 两套 WebSocket | workers (同步+ACK) + protocol (异步+帧协议) | 控制流 vs 协议化通信 |
+| ChainManager 重命名 | ChainManager -> StateMachineEngine | 状态机引擎替代链式管理器 |
 | Celery Beat | 5s 心跳 + 300s 告警升级 | 定时任务调度 |
