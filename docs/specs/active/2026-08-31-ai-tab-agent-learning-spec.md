@@ -85,7 +85,7 @@ status: active
 - 新增 MCP：`agent/mcp/` 提供 `MCPServer`/`MCPClient` 抽象 + 1 个示例 MCP server（把 GAF 工具 `get_execution_detail`/`search_similar_errors` 暴露为标准 MCP tool）；`skill_tool_adapter` 改为走统一 Tool 协议（LangChain tool + MCP tool 统一注入）
 - 工具注册表：`TOOL_REGISTRY` 集中声明，支持 langchain_tool / mcp_tool 两种类型
 
-**前端**：`/ai/assistant` 增加 Agent 轨迹可视化（节点/边/工具调用时间轴 + token 消耗）—— 对应 JD"前端变成 Agent 观测层"
+**前端**：`/ai/assistant` 增加 Agent 轨迹可视化（节点/边/工具调用时间轴 + token 消耗）—— 对应 JD"前端变成 Agent 观测层"（用户决策：**延后**到后端核心验收后再做，独立子阶段）
 
 **测试**：`gaf_ai/tests/test_langgraph_graph.py`（图构建/条件路由/迭代护栏/工具调用成功路径/失败兜底）+ MCP server/client 单测
 **JD 收获**：手写状态图（面试可讲原理）、MCP 协议、Tool Calling、Agent 可观测性、轨迹可视化
@@ -109,7 +109,7 @@ status: active
 | Phase | 状态 | 完成 commit | 验收证据 |
 |-------|------|------------|---------|
 | Phase 1 多服务商 LLM 配置 | ✅ | 本 spec Phase 1 commit | backend `test_llm_provider.py` 8 项 + frontend `AiConfigPage.test.tsx` 7 项 + tsc 0 + ruff 0 |
-| Phase 2 手写 LangGraph + MCP | ⏳ 未开始 | - | - |
+| Phase 2 手写 LangGraph + MCP | 🚧 后端核心完成；前端轨迹待做 | 本 spec Phase 2 后端 commit | backend `test_langgraph_graph.py` 19 项 + `test_skill_tool_adapter.py` 32 项 + ruff 0；手写 `StateGraph`(router/tools/responder) + 轻量 MCP(`MCPServer/MCPClient`) + `TOOL_REGISTRY`(langchain_tool/mcp_tool) |
 | Phase 3 RAG rerank + 评测 | ⏳ 未开始 | - | - |
 
 ## 5. 学习路线（配合执行）

@@ -1,13 +1,24 @@
-"""LangGraph ReAct agent — builds the log analysis agent graph."""
+"""LangGraph ReAct agent — builds the log analysis agent graph.
+
+Phase 2 (spec 2026-08-31-ai-tab-agent-learning-spec): the default graph is
+now the hand-written ``StateGraph`` in :mod:`gaf_ai.agent.langgraph_graph`.
+The old ``create_agent`` high-level wrapper is retained behind a feature
+setting (`AGENT_USE_CREATE_AGENT=1`) so the two implementations can be
+compared for learning/regression debugging.
+"""
 import logging
 
 from langchain.agents import create_agent
 
 from gaf_ai.feature_flags import is_langgraph_agent_enabled
-from gaf_ai.llm_router import get_tools_for_model
 
 from .llm_adapter import build_agent_llm
 from .skill_tool_adapter import collect_skill_tools
+from .tool_registry import (
+    LANGCHAIN_TOOL,
+    TOOL_REGISTRY,
+    ToolRegistryEntry,
+)
 from .tools import (
     get_execution_detail,
     get_execution_steps,
@@ -18,6 +29,38 @@ from .tools import (
 )
 
 logger = logging.getLogger(__name__)
+
+# ── Phase 2: centralized tool registration (spec §Phase 2) ──────────
+# Core GAF tools declared once in TOOL_REGISTRY. Skill tools are injected
+# per-user at build time (they are not static), so they are appended outside
+# the registry (see build_log_analysis_agent).
+
+
+def _register_core_tools() -> None:
+    """Register the core GAF analysis tools into the shared registry."""
+    registry_items = [
+        (get_execution_detail, 'get_execution_detail', False),
+        (get_execution_steps, 'get_execution_steps', False),
+        (search_similar_errors, 'search_similar_errors', False),
+        (get_task_config, 'get_task_config', False),
+        (get_structured_log, 'get_structured_log', False),
+        (get_screenshot_base64, 'get_screenshot_base64', True),
+    ]
+    for func, name, vision in registry_items:
+        if name in TOOL_REGISTRY.entries:
+            continue
+        TOOL_REGISTRY.register(ToolRegistryEntry(
+            name=name,
+            type=LANGCHAIN_TOOL,
+            obj=func,
+            description=func.description or '',
+            vision_required=vision,
+            group='gaf-analysis',
+        ))
+
+
+# Register once at import time.
+_register_core_tools()
 
 # System prompt for the ReAct agent
 SYSTEM_PROMPT = """You are a game automation log analysis agent. Your job is to analyze execution records and diagnose failures.
@@ -140,28 +183,70 @@ def build_log_analysis_agent(user=None):
             "LangGraph agent is disabled by feature flag 'langgraph_agent_enabled'"
         )
 
-    # spec §7.2.2 — 任务 2.4: 按模型能力决定是否暴露视觉工具
+    # spec §7.2.2 — 任务 2.4: 按模型能力决定是否暴露视觉工具.
+    # Phase 2: resolve from the centralized TOOL_REGISTRY. The screenshot
+    # tool is tagged ``vision_required=True``; whether it's included depends
+    # on the resolved model's vision capability (mirrors the old
+    # get_tools_for_model logic via is_vision_capable).
     model_name = _resolve_preferred_model_name()
     if model_name:
-        fixed_tools = get_tools_for_model(model_name)
+        from gaf_ai.llm_router import is_vision_capable
+
+        vision_available = is_vision_capable(model_name)
+        fixed_tools = TOOL_REGISTRY.resolve_tools(
+            vision_available=vision_available,
+        )
         logger.info(
-            "Agent tools for model %r: %d tools (vision=%s)",
-            model_name, len(fixed_tools),
-            'get_screenshot_base64' in {t.name for t in fixed_tools},
+            "Agent tools from registry for model %r: %d tools (vision=%s)",
+            model_name, len(fixed_tools), vision_available,
         )
     else:
         # 模型名无法解析 (例如只用 LLM_LOCAL_BASE_URL 但没设 LLM_LOCAL_MODEL):
-        # 保守用全部 6 个工具, 与旧行为一致, 避免回归.
-        fixed_tools = AGENT_TOOLS
-        logger.info("Agent tools: model unknown, using all %d tools", len(fixed_tools))
+        # 保守暴露全部 6 个工具 (含视觉), 与旧行为一致, 避免回归.
+        fixed_tools = TOOL_REGISTRY.resolve_tools(vision_available=True)
+        logger.info(
+            "Agent tools: model unknown, using all %d tools", len(fixed_tools),
+        )
 
     skill_tools = collect_skill_tools(user=user)
     all_tools = list(fixed_tools) + skill_tools
 
     llm = build_agent_llm()
-    agent = create_agent(
+
+    if _use_create_agent():
+        logger.info("Agent graph: using create_agent (AGENT_USE_CREATE_AGENT=1)")
+        return create_agent(
+            llm,
+            all_tools,
+            system_prompt=SYSTEM_PROMPT,
+        )
+
+    # Phase 2 default: hand-written StateGraph (teachable, auditable).
+    logger.info(
+        "Agent graph: using hand-written StateGraph (%d tools)",
+        len(all_tools),
+    )
+    from .langgraph_graph import build_react_graph
+
+    return build_react_graph(
         llm,
         all_tools,
         system_prompt=SYSTEM_PROMPT,
     )
-    return agent
+
+
+def _use_create_agent() -> bool:
+    """Return True when the legacy ``create_agent`` path is explicitly requested.
+
+    Reads the ``AGENT_USE_CREATE_AGENT`` env / Django setting. Defaults to
+    False (Phase 2: hand-written graph). Kept only for A/B comparison while
+    the handwritten graph is validated in production.
+    """
+    try:
+        from gaf_ai.llm_service import _settings_get
+
+        val = _settings_get('AGENT_USE_CREATE_AGENT')
+        return str(val).strip().lower() in ('1', 'true', 'yes')
+    except Exception as exc:
+        logger.warning('Failed to read AGENT_USE_CREATE_AGENT: %s', exc)
+        return False

@@ -17,6 +17,7 @@ to avoid real LLM calls — the executor's own tests in
 ``skills/tests/test_executor.py`` cover the real path.
 """
 import json
+import os
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth import get_user_model
@@ -398,6 +399,7 @@ class BuildAgentWithSkillsTest(TestCase):
     @patch('gaf_ai.agent.graph._resolve_preferred_model_name', return_value='')
     @patch('gaf_ai.agent.graph.create_agent')
     @patch('gaf_ai.agent.graph.build_agent_llm')
+    @patch.dict(os.environ, {'AGENT_USE_CREATE_AGENT': '1'}, clear=False)
     def test_agent_includes_skill_tools_when_skills_exist(
         self, mock_llm, mock_create, _mock_model,
     ):
@@ -422,6 +424,7 @@ class BuildAgentWithSkillsTest(TestCase):
     @patch('gaf_ai.agent.graph._resolve_preferred_model_name', return_value='')
     @patch('gaf_ai.agent.graph.create_agent')
     @patch('gaf_ai.agent.graph.build_agent_llm')
+    @patch.dict(os.environ, {'AGENT_USE_CREATE_AGENT': '1'}, clear=False)
     def test_agent_works_with_only_agent_tools_when_no_skills(
         self, mock_llm, mock_create, _mock_model,
     ):
@@ -440,6 +443,7 @@ class BuildAgentWithSkillsTest(TestCase):
     @patch('gaf_ai.agent.graph._resolve_preferred_model_name', return_value='')
     @patch('gaf_ai.agent.graph.create_agent')
     @patch('gaf_ai.agent.graph.build_agent_llm')
+    @patch.dict(os.environ, {'AGENT_USE_CREATE_AGENT': '1'}, clear=False)
     def test_agent_user_none_excludes_custom_skills(self, mock_llm, mock_create, _mock_model):
         """build_log_analysis_agent(user=None) includes global
         SkillDefinitions but not CustomSkills."""
@@ -459,6 +463,7 @@ class BuildAgentWithSkillsTest(TestCase):
 
     @patch('gaf_ai.agent.graph.create_agent')
     @patch('gaf_ai.agent.graph.build_agent_llm')
+    @patch.dict(os.environ, {'AGENT_USE_CREATE_AGENT': '1'}, clear=False)
     def test_agent_default_user_none_works(self, mock_llm, mock_create):
         """build_log_analysis_agent() with no args defaults user=None and
         still builds successfully (backward compat with existing callers
@@ -474,6 +479,7 @@ class BuildAgentWithSkillsTest(TestCase):
     @patch('gaf_ai.agent.graph._resolve_preferred_model_name', return_value='gpt-4o')
     @patch('gaf_ai.agent.graph.create_agent')
     @patch('gaf_ai.agent.graph.build_agent_llm')
+    @patch.dict(os.environ, {'AGENT_USE_CREATE_AGENT': '1'}, clear=False)
     def test_agent_vision_model_gets_screenshot_tool(self, mock_llm, mock_create, _mock_model):
         """spec §7.2.2 — 任务 2.4: 视觉模型 (gpt-4o) 应拿到 get_screenshot_base64."""
         mock_llm.return_value = MagicMock(name='fake_llm')
@@ -490,6 +496,7 @@ class BuildAgentWithSkillsTest(TestCase):
     @patch('gaf_ai.agent.graph._resolve_preferred_model_name', return_value='deepseek-chat')
     @patch('gaf_ai.agent.graph.create_agent')
     @patch('gaf_ai.agent.graph.build_agent_llm')
+    @patch.dict(os.environ, {'AGENT_USE_CREATE_AGENT': '1'}, clear=False)
     def test_agent_text_model_excludes_screenshot_tool(self, mock_llm, mock_create, _mock_model):
         """spec §7.2.2 — 任务 2.4: 纯文本模型 (deepseek-chat) 不应拿到 get_screenshot_base64."""
         mock_llm.return_value = MagicMock(name='fake_llm')
