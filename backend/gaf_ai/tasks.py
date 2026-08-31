@@ -102,6 +102,10 @@ def _run_agent_analysis(session: AgentSession, execution_id: int) -> dict:
     messages = agent_result.get('messages', [])
     reasoning_steps = _extract_reasoning_steps(messages)
 
+    # Phase 2: persist the LangGraph observability trail (nodes/tools/tokens)
+    # for the frontend trajectory timeline.
+    trajectory = agent_result.get('trajectory', []) or []
+
     # Get the final AI message (last AIMessage with content)
     final_content = ''
     model_used = ''
@@ -160,6 +164,7 @@ def _run_agent_analysis(session: AgentSession, execution_id: int) -> dict:
     # Save to session
     session.messages = _serialize_messages(messages)
     session.reasoning_steps = reasoning_steps
+    session.trajectory = trajectory
     session.final_summary = summary
     session.final_suggestions = suggestions
     session.evidence = evidence
@@ -175,6 +180,7 @@ def _run_agent_analysis(session: AgentSession, execution_id: int) -> dict:
         'status': 'completed',
         'model_used': model_used,
         'reasoning_steps': reasoning_steps,
+        'trajectory': trajectory,
         'summary': summary,
         'suggestions': suggestions,
         'evidence': evidence,

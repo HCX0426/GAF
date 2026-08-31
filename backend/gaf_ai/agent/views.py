@@ -227,6 +227,7 @@ def agent_session_status_view(request, session_id: int):
             'status': session.status,
             'model_used': session.model_used,
             'reasoning_steps': session.reasoning_steps or [],
+            'trajectory': session.trajectory or [],
             'summary': session.final_summary or '',
             'suggestions': session.final_suggestions or [],
             'evidence': session.evidence or [],

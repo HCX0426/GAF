@@ -1693,6 +1693,10 @@ class AgentSessionStatusTest(TestCase):
         self.session.final_summary = '执行 #42 模板匹配失败'
         self.session.final_suggestions = ['更新模板 X']
         self.session.total_tokens = 1500
+        self.session.trajectory = [
+            {'step': 1, 'type': 'router', 'tool_calls': [{'name': 'get_execution_detail', 'args': {}}]},
+            {'step': 2, 'type': 'responder', 'tokens': {'total_tokens': 1500}},
+        ]
         self.session.save()
 
         response = self.client.get(f'/api/v2/ai/agent/sessions/{self.session.id}/')
@@ -1703,6 +1707,8 @@ class AgentSessionStatusTest(TestCase):
         self.assertEqual(response.data['summary'], '执行 #42 模板匹配失败')
         self.assertEqual(response.data['suggestions'], ['更新模板 X'])
         self.assertEqual(response.data['total_tokens'], 1500)
+        self.assertEqual(len(response.data['trajectory']), 2)
+        self.assertEqual(response.data['trajectory'][0]['type'], 'router')
 
     def test_get_failed_session_returns_error(self):
         """GET on a FAILED session surfaces the error_message."""
@@ -1871,7 +1877,7 @@ class RunAgentAnalysisTaskUnitTest(TestCase):
 
     def test_task_returns_failed_for_nonexistent_session(self):
         """Calling the task with a bad session_id returns failed dict."""
-        result = run_agent_analysis_task.run(session_id=999999, task_result_id=42)
+        result = run_agent_analysis_task.run(session_id=999999, execution_id=42)
         self.assertEqual(result['status'], 'failed')
         self.assertIn('not found', result['error'])
 
@@ -1880,7 +1886,7 @@ class RunAgentAnalysisTaskUnitTest(TestCase):
         with patch('gaf_ai.agent.graph.build_log_analysis_agent') as mock_build:
             mock_build.return_value.invoke.side_effect = RuntimeError('boom')
             result = run_agent_analysis_task.run(
-                session_id=self.session.id, task_result_id=42,
+                session_id=self.session.id, execution_id=42,
             )
         self.assertEqual(result['status'], 'failed')
         self.assertIn('boom', result['error'])
@@ -1901,7 +1907,7 @@ class RunAgentAnalysisTaskUnitTest(TestCase):
                 'messages': [fake_ai_message],
             }
             result = run_agent_analysis_task.run(
-                session_id=self.session.id, task_result_id=42,
+                session_id=self.session.id, execution_id=42,
             )
         self.assertEqual(result['status'], 'completed')
         self.assertEqual(result['model_used'], 'gpt-4o')
@@ -1910,6 +1916,53 @@ class RunAgentAnalysisTaskUnitTest(TestCase):
         self.assertEqual(self.session.status, AgentSession.Status.COMPLETED)
         self.assertEqual(self.session.model_used, 'gpt-4o')
         self.assertIsNotNone(self.session.completed_at)
+
+    def test_task_persists_trajectory_to_session(self):
+        """Phase 2: the LangGraph trajectory (nodes/tools/tokens) is persisted
+        to AgentSession and returned for the frontend timeline."""
+        fake_ai_message = _make_ai_message(
+            content=json.dumps({'summary': 'OK', 'suggestions': []}),
+            model_name='gpt-4o',
+            total_tokens=100,
+        )
+        trajectory = [
+            {
+                'step': 1, 'type': 'router',
+                'tokens': {'prompt_tokens': 20, 'completion_tokens': 5, 'total_tokens': 25},
+                'tool_calls': [{'name': 'get_execution_detail', 'args': {'execution_id': 42}}],
+            },
+            {'step': 2, 'type': 'tools', 'count': 1, 'names': ['get_execution_detail']},
+            {
+                'step': 3, 'type': 'responder',
+                'tokens': {'prompt_tokens': 60, 'completion_tokens': 40, 'total_tokens': 100},
+            },
+        ]
+        with patch('gaf_ai.agent.graph.build_log_analysis_agent') as mock_build:
+            mock_build.return_value.invoke.return_value = {
+                'messages': [fake_ai_message],
+                'trajectory': trajectory,
+            }
+            result = run_agent_analysis_task.run(
+                session_id=self.session.id, execution_id=42,
+            )
+        self.assertEqual(result['trajectory'], trajectory)
+        self.session.refresh_from_db()
+        self.assertEqual(self.session.trajectory, trajectory)
+
+    def test_task_trajectory_defaults_empty_when_absent(self):
+        """agent_result without a trajectory key → stored/returned as []."""
+        fake_ai_message = _make_ai_message(
+            content=json.dumps({'summary': 'OK', 'suggestions': []}),
+            model_name='gpt-4o',
+        )
+        with patch('gaf_ai.agent.graph.build_log_analysis_agent') as mock_build:
+            mock_build.return_value.invoke.return_value = {'messages': [fake_ai_message]}
+            result = run_agent_analysis_task.run(
+                session_id=self.session.id, execution_id=42,
+            )
+        self.assertEqual(result['trajectory'], [])
+        self.session.refresh_from_db()
+        self.assertEqual(self.session.trajectory, [])
 
     def test_task_weak_check_annotates_summary_without_evidence(self):
         """S3 P5: 无 evidence 的最终答案 → summary 附人工复核注记."""
@@ -1922,7 +1975,7 @@ class RunAgentAnalysisTaskUnitTest(TestCase):
                 'messages': [fake_ai_message],
             }
             result = run_agent_analysis_task.run(
-                session_id=self.session.id, task_result_id=42,
+                session_id=self.session.id, execution_id=42,
             )
         self.assertEqual(result['evidence'], [])
         self.assertIn('请人工复核', result['summary'])
@@ -1949,7 +2002,7 @@ class RunAgentAnalysisTaskUnitTest(TestCase):
                 'messages': [fake_ai_message],
             }
             result = run_agent_analysis_task.run(
-                session_id=self.session.id, task_result_id=42,
+                session_id=self.session.id, execution_id=42,
             )
         self.assertEqual(result['evidence'], ['tool get_error_log returned exit_code=1'])
         # P2: 无工具观测 → 强校验未通过注记 (行为变化)
@@ -1981,7 +2034,7 @@ class RunAgentAnalysisTaskUnitTest(TestCase):
                 'messages': messages,
             }
             return run_agent_analysis_task.run(
-                session_id=self.session.id, task_result_id=42,
+                session_id=self.session.id, execution_id=42,
             )
 
     def test_strong_check_all_verified(self):

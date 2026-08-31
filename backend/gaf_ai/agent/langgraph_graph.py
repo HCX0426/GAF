@@ -76,8 +76,31 @@ def _record_trajectory(
 ) -> dict[str, Any]:
     """Append an observability record without mutating the caller's state dict."""
     trajectory = list(state.get('trajectory', []))
+    record['step'] = len(trajectory) + 1
     trajectory.append(record)
     return {'trajectory': trajectory}
+
+
+def _extract_tokens(msg: BaseMessage) -> dict[str, int]:
+    """Pull prompt/completion/total tokens from an LLM response's metadata.
+
+    Not all providers populate ``token_usage`` (and non-OpenAI-compatible
+    models may omit it), so every field defaults to 0 and callers must not
+    assume a key is present. Shape mirrors OpenAI's ``Usage``:
+    ``{"prompt_tokens", "completion_tokens", "total_tokens"}``.
+    """
+    meta = getattr(msg, 'response_metadata', {}) or {}
+    usage = meta.get('token_usage') or {}
+    prompt = int(usage.get('prompt_tokens', 0) or 0)
+    completion = int(usage.get('completion_tokens', 0) or 0)
+    total = int(usage.get('total_tokens', 0) or 0)
+    if not total:
+        total = prompt + completion
+    return {
+        'prompt_tokens': prompt,
+        'completion_tokens': completion,
+        'total_tokens': total,
+    }
 
 
 def router_node(
@@ -113,6 +136,7 @@ def router_node(
         update: dict[str, Any] = {'messages': [response]}
         update.update(_record_trajectory(state, {
             'type': 'router',
+            'tokens': _extract_tokens(response),
             'tool_calls': [
                 {'name': tc.get('name'), 'args': tc.get('args', {})}
                 for tc in (getattr(response, 'tool_calls', None) or [])
@@ -219,6 +243,7 @@ def responder_node(llm: BaseChatModel) -> callable:
         update: dict[str, Any] = {'messages': [final]}
         update.update(_record_trajectory(state, {
             'type': 'responder',
+            'tokens': _extract_tokens(final),
         }))
         return update
 

@@ -52,6 +52,16 @@ class AgentSession(models.Model):
         verbose_name='Reasoning steps',
         help_text='List of {thought, action, action_input, observation}',
     )
+    # Phase 2 (spec 2026-08-31-ai-tab-agent-learning-spec): observability trail
+    # from the hand-written LangGraph StateGraph. Each record is
+    # {"step", "type" (router/tools/responder), ...} with tool-call names and
+    # per-node token usage, driving the frontend trajectory timeline.
+    trajectory = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name='Trajectory',
+        help_text='LangGraph node trajectory: step/type/tool calls/token usage',
+    )
     final_summary = models.TextField(
         blank=True,
         default='',
