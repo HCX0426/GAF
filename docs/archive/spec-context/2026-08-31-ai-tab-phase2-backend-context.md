@@ -75,3 +75,43 @@ created: 2026-08-31
 ## 用时
 
 - start_ts: 2026-08-31 18:0x | end_ts: 2026-08-31 18:5x | duration: ~50 min（对照大修改基线 < 60 min 内；耗时主要在修复寄存器哈希 bug + 迁移 6 个 create_agent 测试到 legacy 开关路径）
+
+---
+
+# 前端子阶段（轨迹可视化）补充
+
+> 同 spec，Phase 2 前端独立子阶段（后端核心已批准延后到这一步）。用户批准继续做。
+
+## 范围与决策
+
+- **只做前端轨迹可视化**：把后端手写图产出的 `trajectory` 观测数据打到前端 Agent 分析结果页。
+- **打通后端链（3 文件）**：
+  1. `agent/models.py`：`AgentSession.trajectory` JSONField（default=list）→ migration `0011_agentsession_trajectory.py`（依赖 0010）。
+  2. `tasks.py::_run_agent_analysis`：持久化 `agent_result.get('trajectory', []) or []` 到 session 并随返回值透出（无此 key 兼容 → []）。
+  3. `agent/views.py::agent_session_status_view`：GET 响应增加 `trajectory`。
+- **后端观测增强**：`langgraph_graph.py` 新增 `_extract_tokens(msg)`（读 `response_metadata.token_usage`，字段缺省 0、total 缺失时 fallback prompt+completion），router/responder 节点各记 `tokens`；`_record_trajectory` 增 `step` 自增序号。tools 节点无 LLM 调用不记 tokens，仅 `names/count`。
+
+## N167（前端子阶段，3 维快速评估）
+
+| 维度 | 评分 | 说明 |
+|------|:---:|------|
+| 1 架构长远性 | 8 | 独立 `TrajectoryTimeline` 组件可复用；契约 `TrajectoryStep` 类型化 |
+| 2 全局归一化 | 9 | 复用现有 `Timeline`/`Tag`/`useTranslation` 体系 + antd token 色彩（镜像 reasoning chain 风格） |
+| 7 长期维护成本 | 8 | 契约类型 + i18n key 四语齐全；后端缺 trajectory 时前端 `?? []` 兜底 |
+
+## 前端交付
+
+- `api/ai.ts`：新增 `TrajectoryStep`（step/type/tool_calls/names/count/tokens）+ `AgentAnalysisResult.trajectory`。
+- `components/Ai/TrajectoryTimeline.tsx`：垂直 Timeline，节点类型映射（router=蓝/Apartment、tools=橙/Tool、responder=绿/Check），显示工具名 + 每节点 tokens。
+- `pages/AI/LogAnalysisPanel.tsx`：Reasoning chain 之后、summary 之前插入 trajectory 卡片。
+- i18n：4 语（zh-CN/en-US/ja-JP/ko-KR）各 7 个 `ailab.trajectory_*` key。
+
+## 测试与回归
+
+- backend：`test_langgraph_graph.py` 20 项 + `RunAgentAnalysisTaskUnitTest`（含新增 trajectory 持久化/缺省 2 项）11 项 + `AgentSessionStatusTest`（含 trajectory 透出）9 项 = 40 项通过；ruff 0；`makemigrations --check` 无漂移。
+- **修复既有测试 bug**：`RunAgentAnalysisTaskUnitTest` 传 `task_result_id=42` 而任务签名用 `execution_id` → 机械改名 `execution_id=42`（6 处），该 class 由久红转全绿（此前全量 `-n 8` 挂的 9 项）。
+- frontend：`TrajectoryTimeline.test.tsx` 3 项通过 + `npx tsc --noEmit` 0 + eslint 0 errors + prettier 通过。
+
+## 用时（前端子阶段）
+
+- start_ts: ~19:00 | end_ts: ~19:45 | duration: ~45 min（中修改基线 < 15 min 超出，因含后端链打通 3 文件 + 既有测试 bug 修复 + 四语 i18n；本质跨"中→大"边界，按子阶段记录）

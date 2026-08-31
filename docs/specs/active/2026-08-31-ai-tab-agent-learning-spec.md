@@ -109,7 +109,7 @@ status: active
 | Phase | 状态 | 完成 commit | 验收证据 |
 |-------|------|------------|---------|
 | Phase 1 多服务商 LLM 配置 | ✅ | 本 spec Phase 1 commit | backend `test_llm_provider.py` 8 项 + frontend `AiConfigPage.test.tsx` 7 项 + tsc 0 + ruff 0 |
-| Phase 2 手写 LangGraph + MCP | 🚧 后端核心完成；前端轨迹待做 | 本 spec Phase 2 后端 commit | backend `test_langgraph_graph.py` 19 项 + `test_skill_tool_adapter.py` 32 项 + ruff 0；手写 `StateGraph`(router/tools/responder) + 轻量 MCP(`MCPServer/MCPClient`) + `TOOL_REGISTRY`(langchain_tool/mcp_tool) |
+| Phase 2 手写 LangGraph + MCP | ✅ 后端核心 + 前端轨迹均完成 | 本 spec Phase 2 后端 commit + 前端子阶段 commit | backend `test_langgraph_graph.py` 20 项 + `test_skill_tool_adapter.py` 32 项 + `test_agent.py`(RunAgentAnalysisTask + AgentSessionStatus) 20 项 + ruff 0；手写 `StateGraph`(router/tools/responder，每节点 token) + 轻量 MCP(`MCPServer/MCPClient`) + `TOOL_REGISTRY`；前端 `TrajectoryTimeline` + `TrajectoryStep` + `LogAnalysisPanel` 集成 + `TrajectoryTimeline.test.tsx` 3 项 + tsc 0 + prettier 0 |
 | Phase 3 RAG rerank + 评测 | ⏳ 未开始 | - | - |
 
 ## 5. 学习路线（配合执行）

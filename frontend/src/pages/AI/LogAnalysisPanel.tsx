@@ -27,6 +27,7 @@ import {
 import { fetchExecutions } from '@/api/tasks';
 import { fetchExecutionAnalysis, analyzeExecutionWithAgent, fetchAgentSessionStatus } from '@/api/ai';
 import type { AgentAnalysisResult } from '@/api/ai';
+import { TrajectoryTimeline } from '@/components/Ai/TrajectoryTimeline';
 import { fetchDebugLogs, analyzeDebugLog, fetchAnalysisResults } from '@/api/debug';
 import { fetchSkills } from '@/api/skills';
 import type { DebugLogArchive, LLMAnalysisResult, AnalysisStatus, SkillDefinition } from '@/types/models';
@@ -385,6 +386,11 @@ function ExecutionAnalysisTab() {
           ) : (
             <Alert type="info" title={t('ailab.label_no_reasoning_steps')} className="gaf-mb-md" showIcon />
           )}
+
+          {/* Agent trajectory (Phase 2 observability: nodes/tools/tokens) */}
+          <Card size="small" type="inner" title={t('ailab.trajectory_title')} className="gaf-mb-md">
+            <TrajectoryTimeline trajectory={agentResult.trajectory ?? []} />
+          </Card>
 
           {/* Agent summary */}
           {agentResult.summary && (

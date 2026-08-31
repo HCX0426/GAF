@@ -281,6 +281,27 @@ export interface AgentReasoningStep {
   observation: string | null;
 }
 
+/** One node in the LangGraph execution trail produced by the hand-written
+ *  StateGraph (backend gaf_ai.agent.langgraph_graph). Each step records the
+ *  node type (router / tools / responder), the tool names invoked, and the
+ *  per-node LLM token usage driving the frontend trajectory timeline.
+ */
+export interface TrajectoryStep {
+  step: number;
+  type: 'router' | 'tools' | 'responder';
+  /** Present on tools steps: which tools were invoked this round. */
+  names?: string[];
+  count?: number;
+  /** Present on router steps: the tool calls the LLM decided to make. */
+  tool_calls?: Array<{ name: string; args?: Record<string, unknown> }>;
+  /** Per-node token usage (router/responder only). */
+  tokens?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  };
+}
+
 /** Agent deep analysis result.
  *  - POST /ai/agent/analyze/ returns {session_id, status: 'pending'}
  *  - GET  /ai/agent/sessions/<id>/ returns the full result once completed.
@@ -294,6 +315,8 @@ export interface AgentAnalysisResult {
   summary: string;
   suggestions: string[];
   total_tokens: number;
+  /** LangGraph observability trail (router/tools/responder nodes + tokens). */
+  trajectory: TrajectoryStep[];
   error?: string | null;
   /** Optional dispatch message included in the POST response. */
   message?: string;
