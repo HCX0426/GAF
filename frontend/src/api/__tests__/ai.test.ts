@@ -44,6 +44,8 @@ import {
   fetchLlmProviderConfig,
   createLlmProviderConfig,
   updateLlmProviderConfig,
+  deleteLlmProviderConfig,
+  setActiveLlmProvider,
   testLlmConnection,
   fetchCustomSkills,
   createCustomSkill,
@@ -132,13 +134,13 @@ describe('AI API client', () => {
 
   // ── LLM Provider Config ───────────────────────────────────────
   describe('LLM provider config', () => {
-    it('fetchLlmProviderConfig GETs settings endpoint', async () => {
+    it('fetchLlmProviderConfig GETs settings endpoint and unwraps paginated results', async () => {
       (client.get as ReturnType<typeof vi.fn>).mockResolvedValue({
-        data: { id: 1, provider: 'openai' },
+        data: { count: 1, next: null, previous: null, results: [{ id: 1, provider: 'openai' }] },
       });
       const result = await fetchLlmProviderConfig();
       expect(client.get).toHaveBeenCalledWith('/settings/llm-config/');
-      expect(result).toEqual({ id: 1, provider: 'openai' });
+      expect(result).toEqual([{ id: 1, provider: 'openai' }]);
     });
 
     it('fetchLlmProviderConfig handles array response', async () => {
@@ -150,10 +152,10 @@ describe('AI API client', () => {
       expect(result).toHaveLength(2);
     });
 
-    it('fetchLlmProviderConfig returns null when response data is null', async () => {
+    it('fetchLlmProviderConfig returns empty array when response data is null', async () => {
       (client.get as ReturnType<typeof vi.fn>).mockResolvedValue({ data: null });
       const result = await fetchLlmProviderConfig();
-      expect(result).toBeNull();
+      expect(result).toEqual([]);
     });
 
     it('createLlmProviderConfig POSTs payload', async () => {
@@ -174,6 +176,21 @@ describe('AI API client', () => {
       const result = await updateLlmProviderConfig(3, payload);
       expect(client.put).toHaveBeenCalledWith('/settings/llm-config/3/', payload);
       expect(result.id).toBe(3);
+    });
+
+    it('deleteLlmProviderConfig DELETEs by id', async () => {
+      (client.delete as ReturnType<typeof vi.fn>).mockResolvedValue({});
+      await deleteLlmProviderConfig(9);
+      expect(client.delete).toHaveBeenCalledWith('/settings/llm-config/9/');
+    });
+
+    it('setActiveLlmProvider POSTs to /{id}/set-active/', async () => {
+      (client.post as ReturnType<typeof vi.fn>).mockResolvedValue({
+        data: { id: 2, provider: 'deepseek', is_active: true },
+      });
+      const result = await setActiveLlmProvider(2);
+      expect(client.post).toHaveBeenCalledWith('/settings/llm-config/2/set-active/');
+      expect(result.is_active).toBe(true);
     });
   });
 

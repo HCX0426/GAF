@@ -25,7 +25,7 @@ from gaf_core.mixins import (
     build_diff_details,
 )
 from rest_framework import status, viewsets
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -81,6 +81,21 @@ class LLMConfigViewSet(AuditMixin, viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, RoleBasedPermission]
     required_permission = 'manage'
     audit_resource_type = AuditResourceType.LLM_CONFIG
+
+    @action(detail=True, methods=['post'], url_path='set-active')
+    def set_active(self, request, pk=None):
+        """Set this LLMConfig as the single active provider.
+
+        Multi-provider exclusivity: marking one row active demotes all
+        other rows to inactive, so exactly one provider is in effect.
+        URL: POST /llm-config/{id}/set-active/
+        """
+        obj = self.get_object()
+        LLMConfig.objects.filter(is_active=True).exclude(pk=obj.pk).update(is_active=False)
+        if not obj.is_active:
+            obj.is_active = True
+            obj.save(update_fields=['is_active', 'updated_at'])
+        return Response(self.get_serializer(obj).data)
 
     def _build_audit_details(self, action, instance, *, old_instance=None) -> dict:
         """Build audit details with api_key redacted.

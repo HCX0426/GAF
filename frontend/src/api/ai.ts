@@ -57,6 +57,9 @@ export interface LlmProviderConfig {
   id?: number;
   provider: string;
   api_key: string;
+  /** Redacted key preview (e.g. sk-***vpce) returned by the backend; the
+   * raw key is write-only and never sent back. */
+  api_key_masked?: string;
   api_base: string;
   default_model: string;
   temperature: number;
@@ -66,12 +69,14 @@ export interface LlmProviderConfig {
   test_status?: 'success' | 'failed' | null;
 }
 
-/** Fetch LLM provider config.
- * NOTE: actual endpoint is GET /settings/llm-config/ (settings domain, AI-related).
- * Backend may return either an array or a single object. */
-export async function fetchLlmProviderConfig(): Promise<LlmProviderConfig | LlmProviderConfig[] | null> {
-  const res = await client.get<LlmProviderConfig | LlmProviderConfig[] | null>('/settings/llm-config/');
-  return res.data;
+/** Fetch all LLM provider configs.
+ * Endpoint GET /settings/llm-config/ returns a paginated envelope
+ * ({ count, next, previous, results }) — unwrap to the array so the
+ * UI always gets a list (Phase 1: multi-provider management). */
+export async function fetchLlmProviderConfig(): Promise<LlmProviderConfig[]> {
+  const res = await client.get<PaginatedResponse<LlmProviderConfig>>('/settings/llm-config/');
+  if (Array.isArray(res.data)) return res.data;
+  return res.data?.results ?? [];
 }
 
 /** Create new LLM provider config.
@@ -88,6 +93,17 @@ export async function updateLlmProviderConfig(
   payload: Partial<LlmProviderConfig>,
 ): Promise<LlmProviderConfig> {
   const res = await client.put<LlmProviderConfig>(`/settings/llm-config/${id}/`, payload);
+  return res.data;
+}
+
+/** Delete an LLM provider config (Phase 1 multi-provider management). */
+export async function deleteLlmProviderConfig(id: number): Promise<void> {
+  await client.delete(`/settings/llm-config/${id}/`);
+}
+
+/** Set an LLM provider as the single active one (backend demotes others). */
+export async function setActiveLlmProvider(id: number): Promise<LlmProviderConfig> {
+  const res = await client.post<LlmProviderConfig>(`/settings/llm-config/${id}/set-active/`);
   return res.data;
 }
 

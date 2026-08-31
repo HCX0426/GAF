@@ -42,11 +42,16 @@ _router_cache_key: str | None = None
 
 
 def _get_llm_config():
-    """从数据库获取 LLMConfig 单例，失败返回 None"""
+    """从数据库获取激活的 LLMConfig，失败返回 None。
+
+    Multi-provider (TD-423 / AI-tab learning spec Phase 1): 多行并存时
+    必须取 ``is_active=True`` 的那条，而非 ``objects.first()``（后者会
+    选中最新创建但可能未激活的行）。
+    """
     try:
         from settings.models import LLMConfig
-        config = LLMConfig.objects.first()
-        if config and config.is_active:
+        config = LLMConfig.objects.filter(is_active=True).order_by('-updated_at').first()
+        if config:
             return config
     except Exception as e:
         logger.warning('Failed to load LLMConfig from DB: %s', e)

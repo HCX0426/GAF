@@ -2,6 +2,16 @@ import type { LocaleMessages } from '@/i18n/types';
 
 export const ailab: LocaleMessages = {
   'zh-CN': {
+    'ailab.btn_add_provider': '添加 Provider',
+    'ailab.btn_set_active': '设为激活',
+    'ailab.btn_edit': '编辑',
+    'ailab.label_active': '已激活',
+    'ailab.label_inactive': '未激活',
+    'ailab.msg_confirm_delete_provider': '确定删除该 Provider 配置？此操作不可撤销。',
+    'ailab.msg_delete_success': 'Provider 已删除',
+    'ailab.msg_delete_failed': '删除失败',
+    'ailab.msg_set_active_success': '已设为激活',
+    'ailab.msg_set_active_failed': '设置激活失败',
     'ailab.alert_fix_suggestions_desc': '调用优化API获取自动修复建议（功能即将上线）',
     'ailab.alert_fix_suggestions_title': '一键修复建议',
     'ailab.alert_no_anomaly_desc': '在选定的时间范围内，没有发现满足条件的重复失败模式。系统运行状态良好！',
@@ -292,6 +302,16 @@ export const ailab: LocaleMessages = {
     'ailab.label_no_reasoning_steps': '无思考链数据',
   },
   'en-US': {
+    'ailab.btn_add_provider': 'Add Provider',
+    'ailab.btn_set_active': 'Set Active',
+    'ailab.btn_edit': 'Edit',
+    'ailab.label_active': 'Active',
+    'ailab.label_inactive': 'Inactive',
+    'ailab.msg_confirm_delete_provider': 'Delete this provider config? This cannot be undone.',
+    'ailab.msg_delete_success': 'Provider deleted',
+    'ailab.msg_delete_failed': 'Delete failed',
+    'ailab.msg_set_active_success': 'Set as active',
+    'ailab.msg_set_active_failed': 'Failed to set active',
     'ailab.alert_fix_suggestions_desc':
       'Call the optimization API to get automatic fix suggestions (feature coming soon)',
     'ailab.alert_fix_suggestions_title': 'One-click Fix Suggestions',
@@ -589,6 +609,16 @@ export const ailab: LocaleMessages = {
     'ailab.label_no_reasoning_steps': 'No reasoning steps data',
   },
   'ja-JP': {
+    'ailab.btn_add_provider': 'プロバイダーを追加',
+    'ailab.btn_set_active': 'アクティブ化',
+    'ailab.btn_edit': '編集',
+    'ailab.label_active': 'アクティブ',
+    'ailab.label_inactive': '非アクティブ',
+    'ailab.msg_confirm_delete_provider': 'このプロバイダー設定を削除しますか？この操作は元に戻せません。',
+    'ailab.msg_delete_success': 'プロバイダーを削除しました',
+    'ailab.msg_delete_failed': '削除に失敗しました',
+    'ailab.msg_set_active_success': 'アクティブに設定しました',
+    'ailab.msg_set_active_failed': 'アクティブ化に失敗しました',
     'ailab.alert_fix_suggestions_desc': '最適化APIを呼び出して自動修正提案を取得（機能は近日公開）',
     'ailab.alert_fix_suggestions_title': 'ワンクリック修正提案',
     'ailab.alert_no_anomaly_desc':
@@ -883,6 +913,16 @@ export const ailab: LocaleMessages = {
     'ailab.label_no_reasoning_steps': '思考チェーンデータなし',
   },
   'ko-KR': {
+    'ailab.btn_add_provider': '프로바이더 추가',
+    'ailab.btn_set_active': '활성화로 설정',
+    'ailab.btn_edit': '편집',
+    'ailab.label_active': '활성화됨',
+    'ailab.label_inactive': '비활성화됨',
+    'ailab.msg_confirm_delete_provider': '이 프로바이더 설정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+    'ailab.msg_delete_success': '프로바이더가 삭제되었습니다',
+    'ailab.msg_delete_failed': '삭제에 실패했습니다',
+    'ailab.msg_set_active_success': '활성화로 설정되었습니다',
+    'ailab.msg_set_active_failed': '활성화 설정에 실패했습니다',
     'ailab.alert_fix_suggestions_desc': '최적화 API를 호출하여 자동 수정 제안을 받습니다 (기능 곧 출시)',
     'ailab.alert_fix_suggestions_title': '원클릭 수정 제안',
     'ailab.alert_no_anomaly_desc':

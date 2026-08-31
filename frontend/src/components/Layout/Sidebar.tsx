@@ -32,6 +32,8 @@ type MenuItemConfig = {
   key: string;
   icon?: React.ReactNode;
   labelKey: string;
+  /** 'group' renders a non-clickable sub-section heading inside a menu. */
+  type?: 'group' | 'divider';
   permission?: string;
   roles?: string[];
   children?: MenuItemConfig[];
@@ -130,15 +132,43 @@ const menuItemConfigs: MenuItemConfig[] = [
     labelKey: 'sidebar.ai',
     roles: ADMIN_ROLES,
     children: [
-      { key: '/ai/assistant', labelKey: 'sidebar.assistant', permission: 'ai.view' },
-      { key: '/ai/qa', labelKey: 'sidebar.qa', permission: 'ai.view' },
-      { key: '/ai/anomaly', labelKey: 'sidebar.anomaly', permission: 'ai.view' },
-      { key: '/ai/skill-editor', labelKey: 'sidebar.skill_editor', permission: 'ai.view', roles: ADMIN_ROLES },
-      { key: '/ai/skill-market', labelKey: 'sidebar.skill_market', permission: 'ai.view' },
-      { key: '/ai/log-analysis', labelKey: 'sidebar.log_analysis', permission: 'ai.view' },
-      // v3 §2.8.1: AI config + usage moved from /system/* to /ai/* for cohesion
-      { key: '/ai/config', labelKey: 'sidebar.ai_config', permission: 'ai.view', roles: ADMIN_ROLES },
-      { key: '/ai/usage', labelKey: 'sidebar.ai_usage', permission: 'ai.view', roles: ADMIN_ROLES },
+      {
+        key: 'ai-group-dialog',
+        type: 'group',
+        labelKey: 'sidebar.ai_group_dialog',
+        children: [
+          { key: '/ai/assistant', labelKey: 'sidebar.assistant', permission: 'ai.view' },
+          { key: '/ai/qa', labelKey: 'sidebar.qa', permission: 'ai.view' },
+        ],
+      },
+      {
+        key: 'ai-group-analysis',
+        type: 'group',
+        labelKey: 'sidebar.ai_group_analysis',
+        children: [
+          { key: '/ai/anomaly', labelKey: 'sidebar.anomaly', permission: 'ai.view' },
+          { key: '/ai/log-analysis', labelKey: 'sidebar.log_analysis', permission: 'ai.view' },
+        ],
+      },
+      {
+        key: 'ai-group-skill',
+        type: 'group',
+        labelKey: 'sidebar.ai_group_skill',
+        children: [
+          { key: '/ai/skill-editor', labelKey: 'sidebar.skill_editor', permission: 'ai.view', roles: ADMIN_ROLES },
+          { key: '/ai/skill-market', labelKey: 'sidebar.skill_market', permission: 'ai.view' },
+        ],
+      },
+      {
+        key: 'ai-group-config',
+        type: 'group',
+        labelKey: 'sidebar.ai_group_config',
+        children: [
+          // v3 §2.8.1: AI config + usage moved from /system/* to /ai/* for cohesion
+          { key: '/ai/config', labelKey: 'sidebar.ai_config', permission: 'ai.view', roles: ADMIN_ROLES },
+          { key: '/ai/usage', labelKey: 'sidebar.ai_usage', permission: 'ai.view', roles: ADMIN_ROLES },
+        ],
+      },
     ],
   },
   {
@@ -181,6 +211,7 @@ function translateMenuItems(items: MenuItemConfig[], locale: SupportedLocale): M
       label: t(item.labelKey, locale),
       permission: item.permission,
       roles: item.roles,
+      type: item.type,
     };
     if (item.children) {
       translated.children = translateMenuItems(item.children, locale);
