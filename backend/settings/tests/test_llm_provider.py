@@ -136,3 +136,50 @@ class TestLLMProviderMultiRow(TestCase):
         self.assertNotIn('api_key', row)
         self.assertIn('api_key_masked', row)
         self.assertNotEqual(row['api_key_masked'], 'sk-abcdef123456')
+
+    def test_available_models_roundtrip(self):
+        """TC-P1-7: available_models 模型列表可读写往返"""
+        res = self.client.post(
+            self.base_url,
+            {
+                'provider': 'openai',
+                'api_key': 'sk-test-abc',
+                'api_base': 'https://api.openai.com/v1',
+                'default_model': 'gpt-4o-mini',
+                'available_models': ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini'],
+            },
+            format='json',
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.data)
+        row = _unwrap(res)
+        self.assertEqual(row['available_models'], ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini'])
+
+        # 落库一致
+        db_row = LLMConfig.objects.get(provider='openai')
+        self.assertEqual(db_row.available_models, ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini'])
+
+    @override_settings(GAF_LLM_API_KEY_ENCRYPTION_KEY=_TEST_FERNET_KEY)
+    def test_test_connection_missing_key(self):
+        """TC-P1-8: test 端点无 api_key 时返回 400"""
+        from settings import crypto as crypto_mod
+
+        crypto_mod._fernet = None
+        crypto_mod._encryption_key_checked = False
+        try:
+            res = self.client.post(
+                self.base_url,
+                {
+                    'provider': 'openai',
+                    'api_key': '',
+                    'api_base': 'https://api.openai.com/v1',
+                    'default_model': 'gpt-4o-mini',
+                },
+                format='json',
+            )
+            self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.data)
+            row = _unwrap(res)
+            test_res = self.client.post(f"{self.base_url}{row['id']}/test/", {}, format='json')
+            self.assertIn(test_res.status_code, (status.HTTP_400_BAD_REQUEST, status.HTTP_200_OK))
+        finally:
+            crypto_mod._fernet = None
+            crypto_mod._encryption_key_checked = False

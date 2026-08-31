@@ -104,6 +104,14 @@ status: active
 **JD 收获**：RAG 全链路（能说"混合检索+chunk 优化把命中率从 X→Y"）、Agent 评测体系、成本/延迟优化、可观测性
 **验收**：RAG 命中率有可量化提升（Hit Rate 报告）；Agent 评测有指标看板；trace 可视化可用
 
+## 4.0 阶段状态表
+
+| Phase | 状态 | 完成 commit | 验收证据 |
+|-------|------|------------|---------|
+| Phase 1 多服务商 LLM 配置 | ✅ | 本 spec Phase 1 commit | backend `test_llm_provider.py` 8 项 + frontend `AiConfigPage.test.tsx` 7 项 + tsc 0 + ruff 0 |
+| Phase 2 手写 LangGraph + MCP | ⏳ 未开始 | - | - |
+| Phase 3 RAG rerank + 评测 | ⏳ 未开始 | - | - |
+
 ## 5. 学习路线（配合执行）
 
 1. LangChain/LangGraph 官方 docs 快速过 → Phase 1（熟悉全栈 + 协议）

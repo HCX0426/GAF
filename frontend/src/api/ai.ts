@@ -64,6 +64,8 @@ export interface LlmProviderConfig {
   default_model: string;
   temperature: number;
   max_tokens: number;
+  /** Model list under this provider (Phase 1 model management). */
+  available_models?: string[];
   is_active: boolean;
   last_tested_at?: string;
   test_status?: 'success' | 'failed' | null;
@@ -104,6 +106,21 @@ export async function deleteLlmProviderConfig(id: number): Promise<void> {
 /** Set an LLM provider as the single active one (backend demotes others). */
 export async function setActiveLlmProvider(id: number): Promise<LlmProviderConfig> {
   const res = await client.post<LlmProviderConfig>(`/settings/llm-config/${id}/set-active/`);
+  return res.data;
+}
+
+/** Per-provider connection test result (POST /settings/llm-config/{id}/test/). */
+export interface LlmTestResult {
+  success: boolean;
+  latency_ms?: number;
+  model?: string;
+  message?: string;
+}
+
+/** Test connectivity to a specific LLM provider.
+ * Endpoint POST /settings/llm-config/{id}/test/ (Phase 1 per-provider test). */
+export async function testLlmProvider(id: number): Promise<LlmTestResult> {
+  const res = await client.post<LlmTestResult>(`/settings/llm-config/${id}/test/`);
   return res.data;
 }
 

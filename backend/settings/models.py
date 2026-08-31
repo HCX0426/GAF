@@ -70,6 +70,12 @@ class LLMConfig(models.Model):
     )
     temperature = models.FloatField(default=0.3, verbose_name='温度参数', help_text='LLM 采样温度, 越高越随机')
     max_tokens = models.IntegerField(default=4096, verbose_name='最大 Token 数', help_text='LLM 单次响应的最大 Token 数')
+    available_models = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name='模型列表',
+        help_text='该 provider 下可用的模型名称列表',
+    )
     is_active = models.BooleanField(default=False, verbose_name='是否启用 LLM', help_text='标记 LLM 功能是否启用')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间', help_text='记录创建的时间戳')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间', help_text='记录最近一次更新的时间戳')

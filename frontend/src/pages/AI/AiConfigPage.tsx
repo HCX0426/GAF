@@ -41,6 +41,7 @@ import {
   deleteLlmProviderConfig,
   setActiveLlmProvider,
   testLlmConnection,
+  testLlmProvider,
   type LlmProviderConfig,
 } from '@/api/ai';
 import { useTranslation } from '@/i18n';
@@ -103,6 +104,8 @@ export function AiConfigPage() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
+  // testingProviderId: which provider card's test button is loading
+  const [testingProviderId, setTestingProviderId] = useState<number | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   // editing === undefined -> closed; null -> new; object -> edit existing
   const [editing, setEditing] = useState<LlmProviderConfig | null | undefined>(undefined);
@@ -133,6 +136,7 @@ export function AiConfigPage() {
       provider: 'openai',
       api_base: PROVIDER_PRESETS.openai.apiBase,
       default_model: PROVIDER_PRESETS.openai.defaultModel,
+      available_models: PROVIDER_PRESETS.openai.defaultModel,
       temperature: 0.7,
       max_tokens: 4096,
       is_active: false,
@@ -150,6 +154,7 @@ export function AiConfigPage() {
       api_key: '',
       api_base: p.api_base,
       default_model: p.default_model,
+      available_models: (p.available_models ?? [p.default_model]).join('\n'),
       temperature: p.temperature ?? 0.7,
       max_tokens: p.max_tokens ?? 4096,
       is_active: p.is_active ?? false,
@@ -165,6 +170,7 @@ export function AiConfigPage() {
     if (preset) {
       form.setFieldValue('api_base', preset.apiBase);
       form.setFieldValue('default_model', preset.defaultModel);
+      form.setFieldValue('available_models', preset.defaultModel);
     }
   };
 
@@ -175,7 +181,15 @@ export function AiConfigPage() {
 
     setSaving(true);
     try {
+      // Convert newline-separated model list (TextArea) into an array.
       const payload: Record<string, unknown> = { ...values, is_active: values.is_active ?? false };
+      const modelsText: string = Array.isArray(values.available_models)
+        ? values.available_models.join('\n')
+        : values.available_models ?? '';
+      payload.available_models = modelsText
+        .split('\n')
+        .map((m: string) => m.trim())
+        .filter(Boolean);
       if (editing?.id) {
         // api_key is write-only + optional: empty on edit means "keep existing"
         if (!values.api_key) delete payload.api_key;
@@ -268,6 +282,29 @@ export function AiConfigPage() {
   const providerName = (key: string) => {
     const preset = PROVIDER_PRESETS[key];
     return preset ? t(preset.labelKey) : key;
+  };
+
+  /** Test connectivity for a specific provider card (POST {id}/test/) */
+  const handleTestProvider = async (p: LlmProviderConfig) => {
+    if (!p.id) return;
+    setTestingProviderId(p.id);
+    try {
+      const data = await testLlmProvider(p.id);
+      if (data.success) {
+        msgApi.success(t('ailab.msg_test_provider_success', { latencyMs: data.latency_ms ?? 0 }));
+      } else {
+        msgApi.error(
+          t('ailab.msg_test_provider_failed', { message: data.message || t('ailab.msg_connection_failed') }),
+        );
+      }
+      loadProviders();
+    } catch (e: unknown) {
+      const errMsg = e instanceof Error ? e.message : t('ailab.msg_connection_failed');
+      msgApi.error(t('ailab.msg_test_provider_failed', { message: errMsg }));
+      loadProviders();
+    } finally {
+      setTestingProviderId(null);
+    }
   };
 
   return (
@@ -378,6 +415,14 @@ export function AiConfigPage() {
                               {t('ailab.btn_set_active')}
                             </Button>
                           )}
+                          <Button
+                            size="small"
+                            icon={<PlayCircleOutlined />}
+                            loading={testingProviderId === p.id}
+                            onClick={() => handleTestProvider(p)}
+                          >
+                            {t('ailab.btn_test_provider')}
+                          </Button>
                           <Button size="small" icon={<EditOutlined />} onClick={() => handleOpenEdit(p)}>
                             {t('ailab.btn_edit')}
                           </Button>
@@ -405,6 +450,16 @@ export function AiConfigPage() {
                             {p.api_base}
                           </Text>
                         </Space>
+                        {Array.isArray(p.available_models) && p.available_models.length > 0 && (
+                          <Space size={[4, 4]} wrap>
+                            {p.available_models.map((m) => (
+                              <Tag key={m} color={m === p.default_model ? 'blue' : 'default'}>
+                                {m}
+                                {m === p.default_model ? ` (${t('ailab.label_active')})` : ''}
+                              </Tag>
+                            ))}
+                          </Space>
+                        )}
                       </Space>
                     </Card>
                   );
@@ -479,6 +534,16 @@ export function AiConfigPage() {
             rules={[{ required: true, message: t('ailab.msg_model_name_required') }]}
           >
             <Input placeholder="gpt-4o-mini / deepseek-chat / qwen-max / llama3" />
+          </Form.Item>
+          <Form.Item
+            name="available_models"
+            label={t('ailab.label_models_list')}
+            extra={t('ailab.msg_models_placeholder')}
+          >
+            <Input.TextArea
+              rows={2}
+              placeholder="gpt-4o-mini&#10;gpt-4o&#10;deepseek-chat"
+            />
           </Form.Item>
           <Space className="gaf-w-full" size="middle">
             <Form.Item

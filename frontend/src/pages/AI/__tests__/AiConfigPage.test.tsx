@@ -38,6 +38,7 @@ const mockAiApi = vi.hoisted(() => ({
   deleteLlmProviderConfig: vi.fn(),
   setActiveLlmProvider: vi.fn().mockResolvedValue(mockProviders[1]),
   testLlmConnection: vi.fn().mockResolvedValue({ content: 'OK' }),
+  testLlmProvider: vi.fn().mockResolvedValue({ success: true, latency_ms: 120 }),
 }));
 
 vi.mock('@/api/ai', () => mockAiApi);
@@ -46,6 +47,7 @@ import {
   fetchLlmProviderConfig,
   setActiveLlmProvider,
   testLlmConnection,
+  testLlmProvider,
   deleteLlmProviderConfig,
 } from '@/api/ai';
 
@@ -114,6 +116,37 @@ describe('AiConfigPage', () => {
         expect.objectContaining({ model: 'gpt-4o-mini' }),
         expect.objectContaining({ timeout: 15000 }),
       );
+    });
+  });
+
+  it('每张 provider 卡片的"测试"按钮调用 testLlmProvider(id)', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('OpenAI')).toBeDefined();
+    });
+    // 卡片级测试按钮（与顶部横幅的"测试连接"区分开）
+    const testBtns = screen.getAllByRole('button');
+    const cardTest = testBtns.find((b) => (b as HTMLButtonElement).textContent === '测试');
+    expect(cardTest).toBeDefined();
+    fireEvent.click(cardTest as HTMLElement);
+    await waitFor(() => {
+      expect(testLlmProvider).toHaveBeenCalledWith(1);
+    });
+  });
+
+  it('编辑弹窗展示模型列表并回填 available_models', async () => {
+    // 给第一个 provider 加 available_models
+    fetchLlmProviderConfig.mockResolvedValueOnce([
+      { ...mockProviders[0], available_models: ['gpt-4o-mini', 'gpt-4o'] },
+      mockProviders[1],
+    ]);
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('OpenAI')).toBeDefined();
+    });
+    fireEvent.click(screen.getAllByText('编辑')[0]);
+    await waitFor(() => {
+      expect(screen.getByText('模型列表')).toBeDefined();
     });
   });
 

@@ -892,6 +892,10 @@
 | 2026-08-31T12:58:55+08:00 | 17 | 18 | 1.17 | FAILED: spec-context carrier |
 | 2026-08-31T13:06:35+08:00 | 18 | 18 | 1.61 | all pass |
 | 2026-08-31T13:06:49+08:00 | 18 | 18 | 1.17 | all pass |
+| 2026-08-31T18:13:15+08:00 | 16 | 18 | 5.02 | FAILED: doc-code sync, B2 evidence |
+| 2026-08-31T18:13:38+08:00 | 16 | 18 | 1.50 | FAILED: doc-code sync, B2 evidence |
+| 2026-08-31T18:15:53+08:00 | 16 | 18 | 1.88 | FAILED: doc-code sync, B2 evidence |
+| 2026-08-31T18:16:44+08:00 | 18 | 18 | 1.47 | all pass |
 
 ## pytest 耗时记录
 

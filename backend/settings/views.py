@@ -97,6 +97,55 @@ class LLMConfigViewSet(AuditMixin, viewsets.ModelViewSet):
             obj.save(update_fields=['is_active', 'updated_at'])
         return Response(self.get_serializer(obj).data)
 
+    @action(detail=True, methods=['post'], url_path='test')
+    def test_connection(self, request, pk=None):
+        """Test connectivity to this provider's LLM API.
+
+        Sends a minimal chat request (10 max_tokens) and returns
+        success/failure with latency.  URL: POST /llm-config/{id}/test/
+        """
+        import time
+
+        obj = self.get_object()
+        api_key = obj.get_api_key()
+        if not api_key:
+            return Response(
+                {'success': False, 'message': 'API key is not configured'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from gaf_ai.qa_llm_client import OpenAIClient
+
+        client = OpenAIClient(
+            api_key=api_key,
+            provider=obj.provider,
+            base_url=obj.api_base or None,
+            model=obj.default_model,
+            timeout=15,
+        )
+        start = time.monotonic()
+        try:
+            result = client.chat(
+                messages=[{'role': 'user', 'content': 'Hello, this is a connection test. Reply with "OK" only.'}],
+                max_tokens=10,
+                temperature=0,
+            )
+            latency_ms = int((time.monotonic() - start) * 1000)
+            return Response({
+                'success': True,
+                'latency_ms': latency_ms,
+                'model': result.get('model', obj.default_model),
+                'message': 'Connection successful',
+            })
+        except Exception as exc:
+            latency_ms = int((time.monotonic() - start) * 1000)
+            return Response({
+                'success': False,
+                'latency_ms': latency_ms,
+                'model': obj.default_model,
+                'message': str(exc),
+            }, status=status.HTTP_502_BAD_GATEWAY)
+
     def _build_audit_details(self, action, instance, *, old_instance=None) -> dict:
         """Build audit details with api_key redacted.
 
