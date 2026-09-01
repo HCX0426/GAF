@@ -255,3 +255,9 @@ last_manual_edit: 2026-07-20
 | N172 | \| N172 \| AI 思维链不主动用 subagent + 假沉淀 (用户每次都说"继续") \| 剩余 ≥ 2 个独立 TD 必主动用 subagent 并行 (search 评估 / general_purpose_task 修复); "应该沉淀" = 立即调用工具写文档, 非口头修辞; 详见 project_rules §3.6+§3.8 + dispatching-parallel-agents skill \| `lessons/N172-ai-proactive-subagent-and-real-sedimentation.md` \| 5 \| 2026-07-18 \| | cap-clear: last=2026-07-18 cnt=5 |
 | N185 | \| N185 \| 测试覆盖盲区 = AI 思维链缺陷 (TD-336; 2026-07-22 OCR bug 排查暴露) \| AI 准备写测试修复前必评估"为什么测试没覆盖到" — 测试用例缺失? 测试场景设计缺陷? AI 思维链本身没识别到? 同类关键方法同步补单测; 详见 N182-N185 家族 lesson (N185 section) + TD-336 \| `lessons/N182-bug-investigation-three-dimensional-root-cause.md` (N185 section) \| 4 \| 2026-07-22 \| | cap-clear: last=2026-07-22 cnt=4 |
 | N189 | \| N189 \| AI 把 "AI 主导开发必需的治理" 误判为 "过度治理" (2026-07-26 评估任务) \| "AI 主导开发" 模式治理复杂度 ≈ AI agent 框架复杂度, 是内在需求; N178 A3 判定增强: 数量多 ≠ 过度治理, 执行率低 + 无 evidence = 过度治理; 区分 AI 自我治理 (必需) vs 治理形式化 (应精简) \| `lessons/N189-ai-led-development-governance-necessity.md` \| 4 \| 2026-07-26 \| | cap-clear: last=2026-07-26 cnt=4 |
+
+## P2 自动归档 (治本机制 — 2026-09-01)
+
+| N## | 原索引行 | 归档原因 |
+|:---:|---------|---------|
+| N195 | \| N195 \| 透明 PNG 模板 alpha 通道丢失 → matchTemplate 置信度暴跌 (2026-07-30 用户测试 get_email.json 暴露; TD-335 根因) \| 加载模板保留 alpha 通道作为 mask, 匹配用 `cv2.matchTemplate(..., mask=alpha)` 让透明区不贡献差异; 禁用 `PIL.convert('RGB')` 丢 alpha (透明区填纯黑 (0,0,0) 被当模板内容); TM_SQDIFF/TM_CCORR_NORMED 支持 mask, TM_CCOEFF_NORMED 不支持 mask 时自动切 TM_CCORR_NORMED; 详见 lesson N195 \| `lessons/N195-transparent-png-alpha-mask-bug.md` \| 2 \| 2026-07-30 \| | cap-clear: last=2026-07-30 cnt=2 |
