@@ -421,6 +421,15 @@ urlpatterns = [
 - 自动生成的 schema 必含：tags / summary / parameters / responses
 - schema 变更后同步运行 `npm run generate:api-types`，保持前端类型最新
 
+### 13.1 AI 辅助端点速查 (Phase 3, 2026-09-01)
+
+| 端点 | 方法 | 说明 | 数据源 |
+|------|------|------|--------|
+| `/api/v2/ai/usage-stats/` | GET | LLM 用量统计 (`?days=`) | `LLMUsageLog` |
+| `/api/v2/ai/agent-evaluation/` | GET | Agent 评测指标 (会话/完成率/延迟/token/工具调用) | `AgentSession.trajectory` |
+
+> `agent-evaluation` 由 Phase 2 LangGraph 轨迹落库驱动，前端 `AIUsageDashboard` 消费。
+
 ## 14. 禁止清单
 
 - ❌ URL 用动词（`/getDevice`, `/createTask`）

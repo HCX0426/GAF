@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from gaf_ai.agent.views import agent_analyze_view, agent_session_status_view
 from gaf_ai.views import (
+    agent_evaluation_view,
     ai_chat_view,
     ai_usage_stats_view,
     generate_pipeline,
@@ -22,6 +23,7 @@ urlpatterns = [
     path('generate-pipeline-stream/', generate_pipeline_stream, name='ai-generate-pipeline-stream'),
     path('optimize-pipeline/', optimize_pipeline, name='ai-optimize-pipeline'),
     path('usage-stats/', ai_usage_stats_view, name='ai-usage-stats'),
+    path('agent-evaluation/', agent_evaluation_view, name='ai-agent-evaluation'),
     path('chat/', ai_chat_view, name='ai-chat'),
     path('anomaly-detection/', anomaly_detection_view, name='ai-anomaly-detection'),
     path('agent/analyze/', agent_analyze_view, name='ai-agent-analyze'),

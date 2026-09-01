@@ -306,6 +306,25 @@ def ai_usage_stats_view(request):
 
 @extend_schema(
     tags=['ai'],
+    summary='Agent evaluation metrics (completion/latency/tokens/tool usage)',
+    parameters=[OpenApiParameter('days', int, OpenApiParameter.QUERY, description='window days (default 30)')],
+    responses={200: OpenApiTypes.OBJECT},
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def agent_evaluation_view(request):
+    """Agent evaluation metrics from AgentSession trajectory (Phase 3).
+
+    GET /api/ai/agent-evaluation/?days=30
+    """
+    from gaf_ai.evaluation import evaluate_agent_sessions
+
+    days = int(request.query_params.get('days', 30))
+    return Response(evaluate_agent_sessions(days=days))
+
+
+@extend_schema(
+    tags=['ai'],
     summary='AI chat with LLM',
     request=OpenApiTypes.OBJECT,
     responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT},

@@ -239,6 +239,31 @@ export async function fetchAiUsageStats(params?: { days?: number }): Promise<AiU
   return res.data ?? {};
 }
 
+// ===== Agent Evaluation (Phase 3) =====
+
+/** Agent evaluation metrics aggregated from AgentSession trajectory. */
+export interface AgentEvaluation {
+  window_days: number;
+  total_sessions: number;
+  completed_sessions: number;
+  failed_sessions: number;
+  completion_rate: number;
+  avg_latency_seconds: number;
+  total_tokens: number;
+  avg_tokens: number;
+  total_cost: number;
+  avg_tool_calls_per_session: number;
+  sessions_with_tools: number;
+  tool_steps: number;
+}
+
+/** Fetch agent evaluation metrics from /ai/agent-evaluation/.
+ * @param params - e.g. { days: 30 } */
+export async function fetchAgentEvaluation(params?: { days?: number }): Promise<AgentEvaluation> {
+  const res = await client.get<AgentEvaluation>('/ai/agent-evaluation/', { params });
+  return res.data ?? {};
+}
+
 // ===== Pipeline Optimization =====
 
 /** Optimize pipeline request payload. */

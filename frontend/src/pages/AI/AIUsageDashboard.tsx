@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from 'react';
 import { Card, Row, Col, Statistic, Spin, Empty, theme } from 'antd';
-import { RobotOutlined, CheckCircleOutlined, ThunderboltOutlined, DollarOutlined } from '@ant-design/icons';
+import { RobotOutlined, CheckCircleOutlined, ThunderboltOutlined, DollarOutlined, ToolOutlined } from '@ant-design/icons';
 import {
   PieChart,
   Pie,
@@ -18,7 +18,8 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { fetchAiUsageStats } from '@/api/ai';
+import { fetchAiUsageStats, fetchAgentEvaluation } from '@/api/ai';
+import type { AgentEvaluation } from '@/api/ai';
 import { useTranslation } from '@/i18n';
 import { PageWrapper } from '@/components/Common/PageWrapper';
 
@@ -50,11 +51,23 @@ export function AIUsageDashboard() {
   const t = useTranslation();
   const { token } = theme.useToken();
   const [stats, setStats] = useState<UsageStats | null>(null);
+  const [agentEval, setAgentEval] = useState<AgentEvaluation | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadStats();
+    loadAgentEvaluation();
   }, []);
+
+  /** Load agent evaluation metrics (Phase 3) */
+  const loadAgentEvaluation = async () => {
+    try {
+      const data = await fetchAgentEvaluation({ days: 30 });
+      setAgentEval(data);
+    } catch (err) {
+      console.error('Agent evaluation load failed:', err);
+    }
+  };
 
   /** Load usage statistics data */
   const loadStats = async () => {
@@ -121,6 +134,57 @@ export function AIUsageDashboard() {
             </Card>
           </Col>
         </Row>
+
+        {/* Agent evaluation metrics (Phase 3) */}
+        <Card
+          title={
+            <span>
+              <RobotOutlined /> {t('ailab.card_agent_result')}
+            </span>
+          }
+          size="small"
+          className="gaf-mb-lg"
+        >
+          {!agentEval || agentEval.total_sessions === 0 ? (
+            <Empty description={t('ailab.empty_no_data')} />
+          ) : (
+            <Row gutter={[16, 16]}>
+              <Col xs={12} sm={6}>
+                <Statistic
+                  title={t('ailab.label_agent_status')}
+                  value={agentEval.total_sessions}
+                  suffix={t('ailab.label_sessions_unit')}
+                  prefix={<RobotOutlined />}
+                />
+              </Col>
+              <Col xs={12} sm={6}>
+                <Statistic
+                  title={t('ailab.label_completion_rate')}
+                  value={(agentEval.completion_rate * 100).toFixed(1)}
+                  precision={1}
+                  suffix="%"
+                  prefix={<CheckCircleOutlined />}
+                  styles={{ content: { color: token.colorSuccess } }}
+                />
+              </Col>
+              <Col xs={12} sm={6}>
+                <Statistic
+                  title={t('ailab.label_avg_latency')}
+                  value={agentEval.avg_latency_seconds.toFixed(1)}
+                  suffix="s"
+                  prefix={<ThunderboltOutlined />}
+                />
+              </Col>
+              <Col xs={12} sm={6}>
+                <Statistic
+                  title={t('ailab.label_avg_tool_calls')}
+                  value={agentEval.avg_tool_calls_per_session.toFixed(1)}
+                  prefix={<ToolOutlined />}
+                />
+              </Col>
+            </Row>
+          )}
+        </Card>
 
         <Row gutter={[16, 16]}>
           <Col xs={24} lg={10}>
