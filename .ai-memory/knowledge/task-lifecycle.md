@@ -14,7 +14,6 @@ symptom:
 solution: 8 个状态机 + 5 种转换路径 + 4 个 AI 易错点 (含 N76 跳过 ready, N81 误转 completed)
 related_files:
 - backend/tasks/models.py
-- backend/tasks/services.py
 - backend/scheduler/engine.py
 - worker/src/core/orchestrator.py
 - .ai-memory/meta/auto-kb/pipeline-nodes.md

@@ -14,7 +14,7 @@ solution: 22 个 Django app 路由表 + 1 个 /api/v2/analytics 路由组 + Swag
 related_files:
 - backend/config/urls.py
 - backend/config/app_info.py
-- backend/agents/urls.py
+- backend/workers/urls.py
 - backend/tasks/urls.py
 - backend/pipeline/urls.py
 created_by: AI
@@ -39,7 +39,7 @@ auto_updated: 2026-07-26
 
         - `backend/config/urls.py`
 - `backend/config/app_info.py`
-- `backend/agents/urls.py`
+- `backend/workers/urls.py`
 - `backend/tasks/urls.py`
 - `backend/pipeline/urls.py`
 

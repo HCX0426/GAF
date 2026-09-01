@@ -3,10 +3,10 @@ date: 2026-06-30
 symptom: [agent-platform, com, ctypes, HRESULT, signed-comparison, win32]
 solution: ctypes.c_long (HRESULT) is signed — error codes like E_FAIL (0x80004005) appear as negative numbers. Compare with (hr & 0xFFFFFFFF) == E_FAIL, never hr == E_FAIL.
 related_files:
-  - agent/src/platforms/windows/_com_delegate.py
-  - agent/src/platforms/windows/wgc.py
-  - agent/tests/test_com_delegate.py
-  - agent/tests/test_wgc.py
+  - worker/src/platforms/windows/_com_delegate.py
+  - worker/src/platforms/windows/wgc.py
+  - worker/tests/test_com_delegate.py
+  - worker/tests/test_wgc.py
 created_by: AI
 priority: medium
 cross_refs: []
@@ -19,7 +19,7 @@ topic: agent-platform
 
 ## Symptom (症状)
 
-Two tests in `agent/tests/test_com_delegate.py` failed after writing COM delegate
+Two tests in `worker/tests/test_com_delegate.py` failed after writing COM delegate
 vtable tests:
 
 - `test_invoke_returns_e_fail_on_exception`
@@ -93,6 +93,6 @@ def hr_failed(hr: int, expected: int) -> bool:
 
 ## Related
 
-- `agent/src/platforms/windows/_com_delegate.py` — defines `HRESULT = ctypes.c_long`.
-- `agent/src/platforms/windows/wgc.py` — WGC COM calls return HRESULT.
+- `worker/src/platforms/windows/_com_delegate.py` — defines `HRESULT = ctypes.c_long`.
+- `worker/src/platforms/windows/wgc.py` — WGC COM calls return HRESULT.
 - P2-1 WinRT FrameArrived callback work (commit `-`).

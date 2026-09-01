@@ -10,8 +10,8 @@ related_files:
   - .trae/rules/env-hardrules.md
   - .ai-memory/meta/failure-modes.md
   - pyproject.toml
-  - agent/conftest.py
-  - agent/tests/conftest.py
+  - worker/conftest.py
+  - worker/tests/conftest.py
 created_by: AI
 topic: testing
 last_updated: 2026-08-16
@@ -34,9 +34,9 @@ last_updated: 2026-08-16
 AI 跑 agent 测试时用默认命令:
 ```powershell
 # ❌ 慢命令 (2 小时)
-conda run -n gaf python -m pytest agent/tests/
+conda run -n gaf python -m pytest worker/tests/
 # 或
-D:\code\environment\conda\envs\gaf\python.exe -m pytest agent/tests/
+D:\code\environment\conda\envs\gaf\python.exe -m pytest worker/tests/
 ```
 
 ## Root Cause（根因链）
@@ -66,7 +66,7 @@ D:\code\environment\conda\envs\gaf\python.exe -m pytest agent/tests/
 ### 根因 #3 (误导): 误判为 retry 真睡
 
 1. 日志显示大量 `retrying in 0.20s` / `retrying in 0.50s`
-2. `agent/src/core/retry.py:289` 的 `_interruptible_sleep` 用真 `time.sleep`
+2. `worker/src/core/retry.py:289` 的 `_interruptible_sleep` 用真 `time.sleep`
 3. 初步判断: retry 真睡是慢根因
 4. **但**: 单测 `delay=0.01` 也跑 12 秒, 与 retry 无关
 5. 用 `python _time_retry.py` 直跑只要 20ms, 证明 retry 代码本身不慢
@@ -90,7 +90,7 @@ D:\code\environment\conda\envs\gaf\python.exe -m pytest agent/tests/
 
 ```powershell
 # ✅ 快命令 (2.5 分钟, 2154 passed)
-D:\code\environment\conda\envs\gaf\python.exe -m pytest agent/tests/ -p no:django -o addopts=""
+D:\code\environment\conda\envs\gaf\python.exe -m pytest worker/tests/ -p no:django -o addopts=""
 ```
 
 关键参数:
@@ -114,7 +114,7 @@ D:\code\environment\conda\envs\gaf\python.exe -m pytest backend/
 | `python -m pytest test_retry.py::test_exhausts_and_reraises` | 12.44s call | ~2h | 默认配置, pytest-django 加载 |
 | `python -m pytest test_retry.py::test_exhausts_and_reraises -p no:django -o addopts=""` | 0.02s call | - | 禁用 django 插件 |
 | `python _time_retry.py` (直跑) | 0.02s | - | 不经 pytest |
-| `python -m pytest agent/tests/ -p no:django -o addopts=""` | - | **150s (2154 passed)** | 全量 agent 测试 |
+| `python -m pytest worker/tests/ -p no:django -o addopts=""` | - | **150s (2154 passed)** | 全量 agent 测试 |
 
 速度提升: 单测试 620x, 全量 48x (2h → 2.5min)
 
@@ -122,7 +122,7 @@ D:\code\environment\conda\envs\gaf\python.exe -m pytest backend/
 
 ### 为什么之前没发现?
 
-1. **历史跑测试都用默认命令**: 之前 AI 跑 agent 测试都是 `conda run -n gaf python -m pytest agent/tests/`, 慢但不知道为什么
+1. **历史跑测试都用默认命令**: 之前 AI 跑 agent 测试都是 `conda run -n gaf python -m pytest worker/tests/`, 慢但不知道为什么
 2. **CLIXML 问题掩盖了真相**: conda run 把 stdout 序列化, 进度看不到, AI 以为"测试本身慢"
 3. **未做对比实验**: 没有用 `python _time_retry.py` 直跑对比, 也没用 `--durations=20` 看具体慢在哪
 4. **误判根因**: 看到 retry 日志 `retrying in 0.20s` 就以为是 retry 真睡, 实际 retry 代码没问题

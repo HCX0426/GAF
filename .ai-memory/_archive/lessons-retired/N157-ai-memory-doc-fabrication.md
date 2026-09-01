@@ -11,7 +11,7 @@ related_files:
   - .ai-memory/games/browndust-ii/overview.md
   - resources/BrownDust II/manifest.json
   - resources/BrownDust II/tasks/login.json
-  - agent/src/engine/resource_resolver.py
+  - worker/src/engine/resource_resolver.py
 created_by: AI
 level: L1
 n_id: N157
@@ -47,7 +47,7 @@ topic: honest-status
 | 5 | 成熟度虚标 | "✅ 成熟, 准确率 98%" | 无任何验证证据，刚从 BD2-AUTO 移植 |
 | 6 | 格式虚构 | YAML `steps:` + `type: click_template` | JSON `nodes:` + `type: template_match` |
 | 7 | 坐标基准错误 | 1280x720 | 实际 ROI 基准 1920x1080 (`original_base_res`) |
-| 8 | 虚构代码文件 | `agent/src/core/pipeline_nodes.py` | 实际 `agent/src/engine/nodes/template_match.py` |
+| 8 | 虚构代码文件 | `worker/src/core/pipeline_nodes.py` | 实际 `worker/src/engine/nodes/template_match.py` |
 
 ## 根因分析
 
@@ -103,7 +103,7 @@ AI memory 文档生成时（2026-06-16），资源包已存在 2 天（2026-06-1
 | 1 | 写 AI memory 文档前，是否 Glob/Read 了实际代码/资源目录？ | | Y=基于实际写 / N=先验证再写 |
 | 2 | 文档中写的路径，是否验证过存在？ | | `Glob("<path>")` 非空 |
 | 3 | 文档中写的文件名，是否验证过存在？ | | `Glob("**/<filename>")` 非空 |
-| 4 | 文档中写的 API/节点类型，是否 Grep 过实际代码？ | | `Grep("<type>" agent/src/)` 非空 |
+| 4 | 文档中写的 API/节点类型，是否 Grep 过实际代码？ | | `Grep("<type>" worker/src/)` 非空 |
 | 5 | 标 ✅ 前，是否有验证证据（测试通过/浏览器截图/pytest 输出）？ | | N128 3 步验证 |
 | 6 | 读 AI memory 文档后，是否验证了关键路径/文件存在？ | | 不盲目信任 |
 | 7 | 文档生成后，实际代码变更时是否同步更新文档？ | | 代码改了文档也要改 |

@@ -8,7 +8,7 @@ symptom: Backend tests (agents/tests/) failed with 405/404 on /api/v2/agents/ an
   as a workaround, masking the root cause.
 category: architecture
 cause: 'URL mounting anti-pattern: the Django app name ''agents'' was used as both
-  the mount prefix in backend/config/urls.py AND a resource name inside backend/agents/urls.py. This
+  the mount prefix in backend/config/urls.py AND a resource name inside backend/workers/urls.py. This
   created duplicate path segments. The app defines multiple resources (agents, devices,
   device-groups) but was mounted at a single-resource prefix, breaking the contract
   that mount prefix + resource path = final URL with no duplication.'
@@ -53,7 +53,7 @@ topic: api-design
 
 ## What happened
 
-`backend/agents/tests/` had 10+ pre-existing test failures:
+`backend/workers/tests/` had 10+ pre-existing test failures:
 - `test_agent_core.py`: 405 on POST `/api/v2/agents/` (Method Not Allowed)
 - `test_device_api.py`: 404 on POST `/api/v2/devices/` (Not Found)
 - `test_token_api.py`: 404 on `/api/v2/auth/agent-tokens/` (wrong path)
@@ -63,7 +63,7 @@ Root investigation revealed `backend/config/urls.py` mounted `agents.urls` at `/
 path(f"{API_PREFIX}/agents/", include("agents.urls")),
 ```
 
-But `backend/agents/urls.py` internally defines:
+But `backend/workers/urls.py` internally defines:
 ```python
 router.register(r'agents', AgentViewSet, basename='agent')
 router.register(r'devices', DeviceViewSet, basename='device')

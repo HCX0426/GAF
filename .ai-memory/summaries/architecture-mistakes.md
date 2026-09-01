@@ -383,7 +383,7 @@ source: handwritten
 
 
 
-- **Problem**: `backend/agents/views.py` was corrupted with escape sequences (`_` → `\_`, Chinese → mojibake), causing Django SyntaxError on startup.
+- **Problem**: `backend/workers/views.py` was corrupted with escape sequences (`_` → `\_`, Chinese → mojibake), causing Django SyntaxError on startup.
 
 - **Root cause**: Unknown — likely from a bulk edit operation that introduced character escaping. The file had 32+ `\_` sequences and garbled Chinese comments.
 
