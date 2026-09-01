@@ -73,12 +73,12 @@ def _make_execution(task, status='failed', **kwargs):
 def _make_step(execution, index=0, name='screenshot', status='success', **kwargs):
     """Create a minimal ExecutionStep."""
     defaults = {
-        'execution': execution,
+        'task_result': execution,
         'step_index': index,
         'step_name': name,
         'step_type': 'action',
         'status': status,
-        'duration': timedelta(seconds=2),
+        'duration': 2.0,  # float seconds (naming-c: duration is float, not timedelta)
         'started_at': timezone.now() - timedelta(minutes=4),
         'completed_at': timezone.now() - timedelta(minutes=3),
     }
@@ -550,9 +550,14 @@ class SearchSimilarErrorsRAGTest(TestCase):
         shutil.rmtree(self._jsonl_dir, ignore_errors=True)
 
     def _mock_rag(self, docs):
-        """Patch ai.rag.get_rag_retriever to return a fake retriever yielding `docs`."""
+        """Patch ai.rag.get_rag_retriever to return a fake retriever yielding `docs`.
+
+        Mocks both ``search`` and ``search_reranked`` since
+        ``_rag_search_errors`` prefers the Phase-3 reranked path when present.
+        """
         fake_retriever = MagicMock()
         fake_retriever.search.return_value = docs
+        fake_retriever.search_reranked.return_value = docs
         return patch('gaf_ai.rag.get_rag_retriever', return_value=fake_retriever)
 
     def _make_failed_execution_with_jsonl(self, exec_id, events):
@@ -1469,6 +1474,48 @@ class JsonlArchiveScanTest(TestCase):
             'Template match failed', executions=executions, top_k=2,
         )
         self.assertEqual(len(matches), 2)
+
+    def test_rerank_correctness(self):
+        """Rerank correctness: threshold + top_k + descending sort.
+
+        Given multiple candidate executions with varying error messages,
+        the function must:
+        1. Only include matches with similarity > threshold.
+        2. Sort matches by similarity descending.
+        3. Return at most top_k matches.
+        """
+        # Create executions with different error messages → different similarities
+        ex_high = self._make_mock_execution(10020, [
+            {'execution_id': 10020, 'success': False,
+             'error_msg': 'Template match failed: btn.png', 'node_id': 's1',
+        }])
+        ex_medium = self._make_mock_execution(10021, [
+            {'execution_id': 10021, 'success': False,
+             'error_msg': 'Template match failed partial', 'node_id': 's1',
+        }])
+        ex_low = self._make_mock_execution(10022, [
+            {'execution_id': 10022, 'success': False,
+             'error_msg': 'Some totally different error', 'node_id': 's1',
+        }])
+        executions = [ex_high, ex_medium, ex_low]
+
+        # similarity_threshold=0.5 should include high and medium (both >0.5),
+        # exclude low (<0.5); top_k=1 returns only the best match. Note the
+        # prefix-match "partial" error ranks highest (SequenceMatcher ratio on
+        # a shared prefix) — assert behaviour, not a specific id.
+        matches = _search_similar_errors_via_jsonl(
+            'Template match failed', executions=executions, similarity_threshold=0.5, top_k=1,
+        )
+        self.assertEqual(len(matches), 1)
+        self.assertIn(matches[0]['execution_id'], (10020, 10021))
+        # Verify similarity descending order when multiple pass threshold
+        matches2 = _search_similar_errors_via_jsonl(
+            'Template match failed', executions=executions, similarity_threshold=0.3,
+        )
+        sims = [m['similarity'] for m in matches2]
+        self.assertEqual(sims, sorted(sims, reverse=True))
+        # low doc ("Some totally different error") scores < 0.3 → filtered out
+        self.assertEqual(len(matches2), 2)
 
     def test_match_dict_has_expected_fields(self):
         """Each match must include all fields spec §7.3.2 lists."""

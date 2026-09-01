@@ -94,7 +94,8 @@ def get_execution_steps(execution_id: int) -> str:
                 'index': s.step_index,
                 'name': s.step_name,
                 'status': s.status,
-                'duration_seconds': s.duration.total_seconds() if s.duration else None,
+                # duration is float seconds (naming-c); no .total_seconds()
+                'duration_seconds': s.duration if s.duration else None,
                 'error': s.error_message or None,
                 'retry_count': s.retry_count,
                 'screenshot_path': s.screenshot_path or None,
@@ -186,6 +187,8 @@ def search_similar_errors(error_text: str) -> str:
 def _rag_search_errors(error_text: str, top_k: int = 10) -> list[dict]:
     """Query the RAG retriever for documents similar to error_text.
 
+    Uses :meth:`RAGRetriever.search_reranked` (Phase 3 hybrid retrieval +
+    RRF rerank) when available, falling back to plain vector search.
     Returns an empty list when ChromaDB is unavailable, the retriever
     fails, or no documents match — letting the caller fall back to SQL.
     Each match dict has: content, filepath, filename, type, score.
@@ -194,7 +197,12 @@ def _rag_search_errors(error_text: str, top_k: int = 10) -> list[dict]:
         from gaf_ai.rag import get_rag_retriever
 
         retriever = get_rag_retriever()
-        docs = retriever.search(error_text, top_k=top_k)
+        reranked = getattr(retriever, 'search_reranked', None)
+        docs = (
+            reranked(error_text, top_k=top_k, pool_size=top_k * 2)
+            if reranked
+            else retriever.search(error_text, top_k=top_k)
+        )
     except Exception as exc:  # RAG must never block the agent
         logger.warning('RAG search failed, falling back to SQL: %s', exc)
         return []
@@ -206,7 +214,7 @@ def _rag_search_errors(error_text: str, top_k: int = 10) -> list[dict]:
             'filepath': doc.get('filepath', ''),
             'filename': doc.get('filename', ''),
             'type': doc.get('type', ''),
-            'score': doc.get('score', 0),
+            'score': doc.get('rerank_score', doc.get('score', 0)),
         })
     return matches
 

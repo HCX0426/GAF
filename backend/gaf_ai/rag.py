@@ -460,6 +460,44 @@ class RAGRetriever:
             logger.warning(f"检索失败: {e}")
             return self._fallback_search(query, top_k)
 
+    def search_reranked(self, query: str, top_k: int = 5, pool_size: int = 20,
+                        llm_rerank: bool = False) -> list[dict]:
+        """Hybrid retrieval + rerank (Phase 3, TD-423 continuation).
+
+        1. Vector search pulls ``pool_size`` candidates (cosine distance).
+        2. Keyword signal: :func:`_keyword_similarity` (difflib) between the
+           query and each candidate snippet.
+        3. Reciprocal Rank Fusion of the vector rank + keyword rank, plus a
+           small keyword boost, so documents strong on BOTH signals win.
+        4. Optional LLM rerank (default off) re-orders the top candidates
+           via the active LLM — see :func:`_llm_rerank`.
+
+        Returns up to ``top_k`` docs sorted by fused ``rerank_score``.
+        """
+        if not self._collection:
+            return self._fallback_search(query, top_k)
+        try:
+            results = self._collection.query(
+                query_texts=[query],
+                n_results=max(pool_size, top_k),
+            )
+            docs = []
+            if results.get('documents') and results['documents'][0]:
+                for i, doc in enumerate(results['documents'][0]):
+                    meta = results['metadatas'][0][i] if results.get('metadatas') else {}
+                    docs.append({
+                        'content': doc[:500],
+                        'filepath': meta.get('filepath', ''),
+                        'filename': meta.get('filename', ''),
+                        'type': meta.get('type', ''),
+                        'score': results['distances'][0][i] if results.get('distances') else 0,
+                        '_idx': i,  # original vector rank position
+                    })
+            return _rerank_docs(query, docs, top_k=top_k, llm_rerank=llm_rerank)
+        except Exception as e:
+            logger.warning("混合检索失败: %s", e)
+            return self._fallback_search(query, top_k)
+
     def _fallback_search(self, query: str, top_k: int) -> list[dict]:
         """降级方案：从 QASession 中搜索关键词"""
         from gaf_ai.models import QASession
@@ -481,6 +519,98 @@ class RAGRetriever:
                     'score': score,
                 })
         return sorted(results, key=lambda x: x['score'], reverse=True)[:top_k]
+
+
+# ── Hybrid rerank (Phase 3) ─────────────────────────────────────
+_RRF_K = 60  # reciprocal rank fusion smoothing constant
+
+
+def _keyword_similarity(query: str, content: str) -> float:
+    """Lexical similarity between the query and a doc snippet (0..1)."""
+    import difflib
+    q = (query or '').lower()
+    c = (content or '')[:300].lower()
+    if not q or not c:
+        return 0.0
+    return difflib.SequenceMatcher(None, q, c).ratio()
+
+
+def _rrf_score(ranks: list[int], k: int = _RRF_K) -> float:
+    """Reciprocal rank fusion: sum(1/(k+rank+1)) over each signal's rank."""
+    return sum(1.0 / (k + r + 1) for r in ranks)
+
+
+def _llm_rerank(query: str, docs: list[dict]) -> list[dict]:
+    """Re-order top candidates with the active LLM (best-first judgment).
+
+    Default-off because every call costs tokens; falls back to the local
+    fused order on any failure so retrieval never blocks.
+    """
+    if len(docs) <= 1:
+        return docs
+    try:
+        from gaf_ai.llm_service import call_llm
+
+        items = '\n'.join(
+            f'{i + 1}. {d.get("content", "")[:180]}' for i, d in enumerate(docs)
+        )
+        prompt = (
+            'You are a retrieval ranker. Given the query and candidate documents, '
+            'return only the indices (comma-separated, best first) of the 1-2 most '
+            'relevant candidates.\n'
+            f'Query: {query}\nCandidates:\n{items}\n'
+            'Indices:'
+        )
+        resp = call_llm(
+            messages=[{'role': 'user', 'content': prompt}],
+            max_tokens=16,
+            temperature=0,
+            stream=False,
+        )
+        content = resp.get('content', '') or ''
+        picked = [
+            i for tok in re.findall(r'\d+', content)
+            if (i := int(tok) - 1) < len(docs)
+        ]
+        if picked:
+            chosen = [docs[i] for i in picked]
+            rest = [d for i, d in enumerate(docs) if i not in picked]
+            return (chosen + rest)[:len(docs)]
+    except Exception as exc:
+        logger.warning('LLM rerank failed, keep local order: %s', exc)
+    return docs
+
+
+def _rerank_docs(query: str, docs: list[dict], top_k: int = 5,
+                 llm_rerank: bool = False) -> list[dict]:
+    """RRF-fuse vector rank + keyword rank, then optional LLM rerank.
+
+    ``docs`` must carry ``_idx`` = original vector rank position (0 = best
+    vector match). Returns up to ``top_k`` docs with an extra
+    ``rerank_score`` key; the internal ``_idx`` key is stripped.
+    """
+    if not docs:
+        return []
+    vector_rank = {d['_idx']: i for i, d in enumerate(docs)}
+    kw_scores = [_keyword_similarity(query, d.get('content', '')) for d in docs]
+    kw_order = sorted(range(len(docs)), key=lambda i: kw_scores[i], reverse=True)
+    kw_rank = {idx: rank for rank, idx in enumerate(kw_order)}
+
+    fused = []
+    for d in docs:
+        i = d['_idx']
+        fused.append({
+            **d,
+            # RRF + small keyword boost so lexical hits move up within ties
+            'rerank_score': round(_rrf_score([vector_rank[i], kw_rank[i]]) + kw_scores[i] * 0.01, 4),
+        })
+    fused.sort(key=lambda d: d['rerank_score'], reverse=True)
+    ranked = fused[:top_k]
+    if llm_rerank:
+        ranked = _llm_rerank(query, ranked)
+    for d in ranked:
+        d.pop('_idx', None)
+    return ranked
 
 
 _rag_instance = None
