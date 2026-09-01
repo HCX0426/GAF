@@ -110,6 +110,12 @@ scripts/
 | `generate_architecture_mistakes_summary.py` | Reads `.ai-memory/summaries/architecture-mistakes.md` and writes a curated summary table to `docs/architecture/architecture-mistakes-summary.md`. | `python scripts/lessons/generate_architecture_mistakes_summary.py` | Manual (after arch-mistakes updates) |
 | `match_lessons_by_diff.py` | M3 diff→lesson trigger: matches the just-committed diff (paths + added lines) against lesson front-matter `diff_keywords`, lists related lessons (advisory, exit 0). | `python scripts/lessons/match_lessons_by_diff.py --base HEAD~1 --head HEAD` | post-commit hook (`gaf-lesson-diff-trigger`) |
 
+## ai/ — AI RAG Evaluation
+
+| Script | Purpose | Invocation | Trigger |
+|---|---|---|---|
+| `ai/rag_eval.py` | Phase 3 RAG 检索质量评测: 从 QASession ground-truth 查询计算 Hit Rate @top-k + MRR (difflib 相似度判定命中, 纯本地无 LLM 依赖). | `python scripts/ai/rag_eval.py --top-k 5` / `--similarity 0.3` | Manual (RAG 检索质量回归) |
+
 ## E2E Test Runner
 
 | Script | Purpose | Invocation | Trigger |
