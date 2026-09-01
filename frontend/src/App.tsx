@@ -65,7 +65,6 @@ const BackupPage = lazy(() => import('@/pages/Ops/Backup'));
 const TemplateEffectivenessPage = lazy(() => import('@/pages/Resources/TemplateEffectiveness'));
 const UnattendedControlPage = lazy(() => import('@/pages/Ops/UnattendedControlPage'));
 /** AI sub-pages — independent routes under /ai/* */
-const AiAssistantPanel = lazy(() => import('@/pages/AI/AiAssistantPanel'));
 const QAPanel = lazy(() => import('@/pages/AI/QAPanel'));
 const LogAnalysisPanel = lazy(() => import('@/pages/AI/LogAnalysisPanel'));
 const AIUsageDashboard = lazy(() => import('@/pages/AI/AIUsageDashboard'));
@@ -404,15 +403,7 @@ export default function App() {
                   }
                 />
 
-                {/* AI — 8 independent sub-pages (config + usage moved here from /system/*) */}
-                <Route
-                  path="ai/assistant"
-                  element={
-                    <Lazy>
-                      <AiAssistantPanel />
-                    </Lazy>
-                  }
-                />
+                {/* AI — sub-pages (config + usage moved here from /system/*; AI assistant taken down) */}
                 <Route
                   path="ai/qa"
                   element={

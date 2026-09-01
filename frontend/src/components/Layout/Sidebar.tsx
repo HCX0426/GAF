@@ -137,7 +137,6 @@ const menuItemConfigs: MenuItemConfig[] = [
         type: 'group',
         labelKey: 'sidebar.ai_group_dialog',
         children: [
-          { key: '/ai/assistant', labelKey: 'sidebar.assistant', permission: 'ai.view' },
           { key: '/ai/qa', labelKey: 'sidebar.qa', permission: 'ai.view' },
         ],
       },
@@ -264,7 +263,6 @@ function getSelectedKey(pathname: string): string {
     '/ops/analytics',
     '/ops/sla',
     '/ops/logs',
-    '/ai/assistant',
     '/ai/qa',
     '/ai/skill-editor',
     '/ai/skill-market',
