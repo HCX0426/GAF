@@ -59,7 +59,23 @@ def _get_llm_config():
 
 
 def estimate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
-    """估算 LLM 调用成本 (single price source: gaf_ai.pricing, S3 P2)"""
+    """估算 LLM 调用成本.
+
+    Price resolution order (single source of truth keeps one price per model):
+    1. Custom per-provider price from the active ``LLMConfig``
+       (``input_price`` / ``output_price``, USD per 1K tokens) — overrides.
+    2. Static table ``gaf_ai.pricing`` by model name, else ``default`` row.
+    """
+    try:
+        cfg = _get_llm_config()
+        if cfg is not None and cfg.input_price is not None and cfg.output_price is not None:
+            cost = (input_tokens / 1000) * float(cfg.input_price) + (
+                output_tokens / 1000
+            ) * float(cfg.output_price)
+            return round(cost, 6)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning('estimate_cost custom-price lookup failed: %s', exc)
+
     input_price = PRICE_PER_1K_INPUT.get(model, PRICE_PER_1K_INPUT["default"])
     output_price = PRICE_PER_1K_OUTPUT.get(model, PRICE_PER_1K_OUTPUT["default"])
     cost = (input_tokens / 1000) * float(input_price) + (

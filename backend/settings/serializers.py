@@ -204,6 +204,7 @@ class LLMConfigSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'provider', 'api_key', 'api_key_masked',
             'api_base', 'default_model', 'available_models',
+            'input_price', 'output_price',
             'temperature', 'max_tokens', 'is_active', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']

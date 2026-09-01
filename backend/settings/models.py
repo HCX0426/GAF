@@ -76,6 +76,21 @@ class LLMConfig(models.Model):
         verbose_name='模型列表',
         help_text='该 provider 下可用的模型名称列表',
     )
+    # Custom per-provider pricing (USD per 1K tokens). When set, overrides the
+    # static pricing table (gaf_ai.pricing) for cost estimation. Null = fall
+    # back to the built-in table (TD-424 / usage cost accuracy).
+    input_price = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name='输入单价',
+        help_text='每 1K tokens 的输入价格 (USD)，留空使用内置定价表',
+    )
+    output_price = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name='输出单价',
+        help_text='每 1K tokens 的输出价格 (USD)，留空使用内置定价表',
+    )
     is_active = models.BooleanField(default=False, verbose_name='是否启用 LLM', help_text='标记 LLM 功能是否启用')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间', help_text='记录创建的时间戳')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间', help_text='记录最近一次更新的时间戳')

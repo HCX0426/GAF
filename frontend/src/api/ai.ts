@@ -66,6 +66,9 @@ export interface LlmProviderConfig {
   max_tokens: number;
   /** Model list under this provider (Phase 1 model management). */
   available_models?: string[];
+  /** Custom per-provider pricing (USD per 1K tokens); null = built-in table. */
+  input_price?: number | null;
+  output_price?: number | null;
   is_active: boolean;
   last_tested_at?: string;
   test_status?: 'success' | 'failed' | null;
@@ -228,7 +231,9 @@ export interface AiUsageStats {
   success_rate?: number;
   total_tokens?: number;
   estimated_cost?: number;
+  /** Per-model breakdown from backend `by_model` (tokens + cost_usd). */
   model_distribution?: Array<{ name: string; value: number }>;
+  by_model?: Array<{ model: string; requests: number; tokens: number; cost_usd: number }>;
   daily_trend?: Array<{ date: string; requests: number; tokens: number }>;
 }
 

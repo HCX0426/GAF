@@ -158,6 +158,8 @@ export function AiConfigPage() {
       api_base: p.api_base,
       default_model: p.default_model,
       available_models: Array.isArray(p.available_models) ? p.available_models : [p.default_model].filter(Boolean),
+      input_price: p.input_price ?? null,
+      output_price: p.output_price ?? null,
       temperature: p.temperature ?? 0.7,
       max_tokens: p.max_tokens ?? 4096,
       is_active: p.is_active ?? false,
@@ -193,6 +195,10 @@ export function AiConfigPage() {
         .split('\n')
         .map((m: string) => m.trim())
         .filter(Boolean);
+      // Normalize optional custom prices: '' or missing -> null (use built-in table).
+      payload.input_price = values.input_price === '' || values.input_price == null ? null : Number(values.input_price);
+      payload.output_price =
+        values.output_price === '' || values.output_price == null ? null : Number(values.output_price);
       if (editing?.id) {
         // api_key is write-only + optional: empty on edit means "keep existing"
         if (!values.api_key) delete payload.api_key;
@@ -574,6 +580,24 @@ export function AiConfigPage() {
               extra={t('ailab.help_max_tokens')}
             >
               <Input type="number" min={1} max={128000} />
+            </Form.Item>
+          </Space>
+          <Space className="gaf-w-full" size="middle">
+            <Form.Item
+              name="input_price"
+              label={t('ailab.label_input_price')}
+              className="gaf-flex-1 gaf-m-0"
+              extra={t('ailab.help_price_unit')}
+            >
+              <Input type="number" step={0.0001} min={0} placeholder="0.00015" />
+            </Form.Item>
+            <Form.Item
+              name="output_price"
+              label={t('ailab.label_output_price')}
+              className="gaf-flex-1 gaf-m-0"
+              extra={t('ailab.help_price_unit')}
+            >
+              <Input type="number" step={0.0001} min={0} placeholder="0.0006" />
             </Form.Item>
           </Space>
           <Form.Item name="is_active" label={t('ailab.label_enable_config')} valuePropName="checked">

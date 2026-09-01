@@ -10,7 +10,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from gaf_ai.llm_service import SYSTEM_PROMPT_OPTIMIZE, SYSTEM_PROMPT_PIPELINE, call_llm
+from gaf_ai.llm_service import SYSTEM_PROMPT_OPTIMIZE, SYSTEM_PROMPT_PIPELINE, call_llm, estimate_cost
 from gaf_ai.models import LLMUsageLog
 from gaf_ai.pipeline_guard import validate_and_score
 from gaf_ai.services import get_pipeline_for_user, get_user_execution_history
@@ -266,12 +266,20 @@ def ai_usage_stats_view(request):
 
     model_stats = logs.values('model_name').annotate(
         requests=Count('id'),
-        tokens=Sum('input_tokens') + Sum('output_tokens'),
+        input_tokens=Sum('input_tokens'),
+        output_tokens=Sum('output_tokens'),
     ).order_by('-requests')
-    by_model = [
-        {'model': s['model_name'], 'requests': s['requests'], 'tokens': s['tokens'] or 0}
-        for s in model_stats
-    ]
+    by_model = []
+    for s in model_stats:
+        input_tokens = s['input_tokens'] or 0
+        output_tokens = s['output_tokens'] or 0
+        by_model.append({
+            'model': s['model_name'],
+            'requests': s['requests'],
+            'tokens': input_tokens + output_tokens,
+            # Per-model cost (custom provider price or built-in pricing table).
+            'cost_usd': estimate_cost(s['model_name'], input_tokens, output_tokens),
+        })
 
     total_tokens = sum(s['tokens'] for s in by_model)
     avg_tokens = round(total_tokens / total_requests) if total_requests else 0

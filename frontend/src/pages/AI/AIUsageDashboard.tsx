@@ -36,6 +36,7 @@ interface UsageStats {
 interface ModelDistributionItem {
   name: string;
   value: number;
+  cost_usd?: number;
 }
 
 interface DailyTrendItem {
@@ -79,7 +80,10 @@ export function AIUsageDashboard() {
         success_rate: data.success_rate || 0,
         total_tokens: data.total_tokens || 0,
         estimated_cost: data.estimated_cost || 0,
-        model_distribution: Array.isArray(data.model_distribution) ? data.model_distribution : [],
+        // Backend returns by_model; map to {name, value, cost_usd} for the chart.
+        model_distribution: Array.isArray(data.by_model)
+          ? data.by_model.map((m) => ({ name: m.model, value: m.tokens, cost_usd: m.cost_usd }))
+          : [],
         daily_trend: Array.isArray(data.daily_trend) ? data.daily_trend : [],
       });
     } catch (err) {
@@ -210,7 +214,13 @@ export function AIUsageDashboard() {
                         <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value: unknown) => Number(value).toLocaleString()} />
+                    <Tooltip
+                      formatter={(value: unknown, name: unknown, item: unknown) => {
+                        const p = (item as { payload?: ModelDistributionItem })?.payload;
+                        const cost = p?.cost_usd != null ? `$${p.cost_usd.toFixed(4)}` : '$-';
+                        return [`${Number(value).toLocaleString()} tokens · ${cost}`, name as string];
+                      }}
+                    />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>

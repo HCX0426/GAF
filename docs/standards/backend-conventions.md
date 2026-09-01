@@ -625,6 +625,20 @@ screenshot.capture(hwnd, method='printwindow')
 - 业务代码不直接 `import` Win32 API / X11 / Cocoa
 - 新增平台必须先实现对应 ABC 的所有抽象方法
 
+## LLMConfig 字段约定 (TD-423/TD-424)
+
+`settings.LLMConfig` 为多 provider LLM 配置（每行一个 provider，`is_active` 唯一激活）：
+
+| 字段 | 说明 |
+|------|------|
+| `provider` | openai / deepseek / qwen / ollama / custom |
+| `api_base` / `api_key` | 服务商端点与密钥（`api_key` 加密存储） |
+| `default_model` | 默认模型（各消费方未显式指定时的兜底） |
+| `available_models` | 该 provider 下可用模型列表（JSON array） |
+| `input_price` / `output_price` | 自定义单价（USD/1K tokens，可空）；非空时成本估算优先用它 |
+
+**成本计算规则**：`gaf_ai.llm_service.estimate_cost(model, input_tokens, output_tokens)` 优先读激活 provider 的自定义单价（`input_price`/`output_price` 均非空时），否则按模型名查 `gaf_ai.pricing` 内置表（未收录模型用 `default` 行）。`usage-stats` 的 `by_model` 每项含 `cost_usd`。
+
 ### 11.1 Multi-game 模式安全白名单约束 (Spec A)
 
 **背景**: Spec A 引入 `FeatureFlag.unattended_multi_game_mode` + `resolve_device_methods` 白名单降级, 多游戏并行时禁用非 hwnd-isolated 方法防止串台。
