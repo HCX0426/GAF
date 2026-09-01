@@ -1,7 +1,7 @@
 ---
 summary: 已修复技术债务清单 — ✅ FIXED 条目 (完整详情)
 applies_to: [project]
-last_updated: "2026-08-30 (TD-422 闭环: naming-c-* 前端字段落地 + tsc -b 0 errors)"
+last_updated: "2026-09-01 (TD-423 闭环: AI 页签改造全 3 Phase 完成)"
 ---
 
 # Fixed Tech Debts
@@ -24,6 +24,7 @@ last_updated: "2026-08-30 (TD-422 闭环: naming-c-* 前端字段落地 + tsc -b
 | [TD-419](#L) | 服务管理页 e2e 缺失 + 日志体系分界文档 (✅ FIXED 于 2026-08-29, e2e spec + handbook 指引, spec P4/P5) |
 | [TD-420](#L) | MonitorRule 模型被游戏 UI 规则占用 (✅ FIXED 于 2026-08-29, rule_kind 字段拆分 monitor/game_ui + 数据迁移 + 4 测试) |
 | [TD-422](#L) | 前端类型漂移 11 条 — OpenAPI 重生成后 tsc 仍红 (✅ FIXED 于 2026-08-30, naming-c-* 前端字段落地 + tsc -b 0 errors) |
+| [TD-423](#L) | LLM 多服务商 Provider 配置缺失 + AI 页签分组混乱 (✅ FIXED 于 2026-09-01, AI 页签改造 3 Phase 完成: 多 provider 唯一激活 + 4 分组 + 手写 LangGraph/MCP + RAG rerank/Agent 评测) |
 | [TD-421](#L) | 通知中心输入侧缺口 dev 无新事件 (✅ FIXED 于 2026-08-29, 执行失败/event.alert 打点 + chain-health 接口 + 8 测试) |
 | [TD-413](#L) | gaf-orchestrator SKILL.md 27.6KB 瘦身 (✅ FIXED 于 2026-08-28, 27,655B→18,260B, 9 处冗余外迁, sync_skills 通过) |
 | [TD-414](#L) | N209/N210/N211 补 yn-matrices 条目 (✅ FIXED 于 2026-08-28, _testing.md 2 段 + _misc.md 1 段 + 索引同步, doc_health 0) |
@@ -171,6 +172,15 @@ last_updated: "2026-08-30 (TD-422 闭环: naming-c-* 前端字段落地 + tsc -b
 | [TD-188](#L) | completed-features.md last_updated 过期 (✅ FIXED — Spec 1) |
 | [TD-189](#L) | pending-roadmap.md last_updated 过期 (✅ FIXED — 实际状态正确) |
 | [TD-190](#L) | tech-debt-register.md 计数过期 (✅ FIXED — Spec 1) |
+
+## TD-423: LLM 多服务商 Provider 配置缺失 + AI 页签分组混乱 (✅ FIXED — 2026-09-01)
+
+- 症状: ① `LLMConfig` 单条模型 → 无法多 provider 并存; ② AI 页签 8 子页平铺无分组; ③ assistant/qa 双对话入口历史重叠
+- 修复: AI 页签改造 spec 2026-08-31 全 3 Phase — **Phase1** 多 provider 唯一激活(`set_active`) + Provider 卡片列表 + AI 侧边栏 4 分组; **Phase2** 手写 LangGraph StateGraph(router/tools/responder, 每节点 token) + 轻量 MCP + `TOOL_REGISTRY` + `trajectory` 轨迹落库 + 前端 TrajectoryTimeline 集成于 LogAnalysisPanel; **Phase3** RAG 混合检索 + RRF rerank + `scripts/ai/rag_eval.py`(Hit Rate/MRR) + Agent 评测(`/ai/agent-evaluation/`) + AIUsageDashboard Agent 评测卡片
+- 附带修复 naming-c 遗留: `get_execution_steps` duration float + `_make_step` task_result 字段 (14 项 pre-existing 测试失败归零)
+- 验证: `test_llm_provider.py` 6 + `test_langgraph_graph.py` 20 + `test_rag_rerank.py` 11 + `test_rag_eval.py` 3 + `test_agent_evaluation.py` 5 + `AiConfigPage.test.tsx` 7 + tsc 0 + ruff 0
+- evidence: spec `docs/specs/active/2026-08-31-ai-tab-agent-learning-spec.md` + completed-features C-121
+- commit: `4777135`/`7511ee5`/`338ed1f`/`63aee11`/`170627d`/`a84883f`
 
 ## TD-402: 无人值守链执行器可靠性缺口（帧丢卡死/并发双派/归还竞态） (✅ FIXED — 2026-08-27)
 
