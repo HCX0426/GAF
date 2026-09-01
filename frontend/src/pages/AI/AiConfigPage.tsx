@@ -111,6 +111,9 @@ export function AiConfigPage() {
   const [editing, setEditing] = useState<LlmProviderConfig | null | undefined>(undefined);
 
   const active = providers.find((p) => p.is_active) ?? null;
+  // Live model list from the form's available_models tags input — drives the
+  // default_model Select options so the two fields stay in sync.
+  const modelOptions = Form.useWatch('available_models', form);
 
   /** Load all LLM provider configs from backend */
   const loadProviders = async () => {
@@ -136,7 +139,7 @@ export function AiConfigPage() {
       provider: 'openai',
       api_base: PROVIDER_PRESETS.openai.apiBase,
       default_model: PROVIDER_PRESETS.openai.defaultModel,
-      available_models: PROVIDER_PRESETS.openai.defaultModel,
+      available_models: [PROVIDER_PRESETS.openai.defaultModel],
       temperature: 0.7,
       max_tokens: 4096,
       is_active: false,
@@ -154,7 +157,7 @@ export function AiConfigPage() {
       api_key: '',
       api_base: p.api_base,
       default_model: p.default_model,
-      available_models: (p.available_models ?? [p.default_model]).join('\n'),
+      available_models: Array.isArray(p.available_models) ? p.available_models : [p.default_model].filter(Boolean),
       temperature: p.temperature ?? 0.7,
       max_tokens: p.max_tokens ?? 4096,
       is_active: p.is_active ?? false,
@@ -170,7 +173,7 @@ export function AiConfigPage() {
     if (preset) {
       form.setFieldValue('api_base', preset.apiBase);
       form.setFieldValue('default_model', preset.defaultModel);
-      form.setFieldValue('available_models', preset.defaultModel);
+      form.setFieldValue('available_models', [preset.defaultModel]);
     }
   };
 
@@ -533,16 +536,26 @@ export function AiConfigPage() {
             label={t('ailab.label_default_model')}
             rules={[{ required: true, message: t('ailab.msg_model_name_required') }]}
           >
-            <Input placeholder="gpt-4o-mini / deepseek-chat / qwen-max / llama3" />
+            <Select
+              showSearch
+              placeholder={t('ailab.placeholder_select_default_model')}
+              options={(modelOptions || []).map((m: unknown) => ({
+                value: String(m),
+                label: String(m),
+              }))}
+            />
           </Form.Item>
           <Form.Item
             name="available_models"
             label={t('ailab.label_models_list')}
             extra={t('ailab.msg_models_placeholder')}
           >
-            <Input.TextArea
-              rows={2}
-              placeholder="gpt-4o-mini&#10;gpt-4o&#10;deepseek-chat"
+            <Select
+              mode="tags"
+              placeholder={t('ailab.placeholder_models_tags')}
+              open={false}
+              suffixIcon={null}
+              tokenSeparators={[',', '，', '\n']}
             />
           </Form.Item>
           <Space className="gaf-w-full" size="middle">

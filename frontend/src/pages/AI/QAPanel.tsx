@@ -6,7 +6,7 @@
  * surface to the user instead of silently degrading.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Input, Typography, Spin, Tag, App, Tooltip, Badge, Popconfirm, theme as antTheme } from 'antd';
+import { Button, Input, Typography, Spin, Tag, App, Tooltip, Badge, Popconfirm, Select, theme as antTheme } from 'antd';
 import {
   SendOutlined,
   RobotOutlined,
@@ -20,8 +20,9 @@ import {
 } from '@ant-design/icons';
 
 import { fetchQASessions, fetchQASessionMessages, askQuestion, markAsKnowledge, deleteQASession } from '@/api/ai';
+import { fetchLlmProviderConfig } from '@/api/ai';
 import type { QAMessage } from '@/api/ai';
-import type { QASession } from '@/types/models';
+import type { QASession, QAAskRequest } from '@/types/models';
 import { useTranslation, getLocale } from '@/i18n';
 
 const { TextArea } = Input;
@@ -85,6 +86,9 @@ export function QAPanel() {
   const [sending, setSending] = useState(false);
   const [loadingConvs, setLoadingConvs] = useState(false);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
+  // Model selection from the active LLM provider (available_models / default_model)
+  const [modelOptions, setModelOptions] = useState<Array<{ value: string; label: string }>>([]);
+  const [selectedModel, setSelectedModel] = useState<string | undefined>(undefined);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -122,8 +126,26 @@ export function QAPanel() {
 
   useEffect(() => {
     loadConversations(true);
+    loadModelOptions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /** Load model options from the active LLM provider (Phase 3: QA picks model). */
+  const loadModelOptions = async () => {
+    try {
+      const providers = await fetchLlmProviderConfig();
+      const active = providers.find((p) => p.is_active);
+      if (!active) return;
+      const models = Array.isArray(active.available_models) && active.available_models.length > 0
+        ? active.available_models
+        : [active.default_model].filter(Boolean);
+      const opts = models.map((m: string) => ({ value: m, label: `${m} (${active.provider})` }));
+      setModelOptions(opts);
+      setSelectedModel((prev) => prev ?? opts[0]?.value ?? active.default_model);
+    } catch {
+      // provider load failure should not block QA
+    }
+  };
 
   /** Auto-scroll to latest message */
   useEffect(() => {
@@ -159,9 +181,12 @@ export function QAPanel() {
 
     try {
       const wasNew = activeConvId === null;
-      const session = await askQuestion(
-        activeConvId !== null ? { question: trimmed, session_id: activeConvId } : { question: trimmed },
-      );
+      const payload: QAAskRequest = {
+        question: trimmed,
+        ...(activeConvId !== null ? { session_id: activeConvId } : {}),
+      };
+      if (selectedModel) payload.model = selectedModel;
+      const session = await askQuestion(payload);
       if (wasNew) {
         // Setting activeConvId triggers the useEffect to load messages.
         setActiveConvId(session.id);
@@ -407,6 +432,20 @@ export function QAPanel() {
           className="gaf-py-md gaf-px-lg"
           style={{ borderTop: `1px solid ${token.colorBorder}`, background: token.colorBgLayout }}
         >
+          <div className="gaf-flex gaf-gap-sm gaf-mb-sm">
+            <Select
+              value={selectedModel}
+              onChange={setSelectedModel}
+              options={modelOptions}
+              size="small"
+              style={{ width: 260 }}
+              placeholder={t('ailab.placeholder_select_default_model')}
+              allowClear
+            />
+            <Text type="secondary" className="gaf-text-xs">
+              {t('ailab.help_model_selection')}
+            </Text>
+          </div>
           <div className="gaf-flex gaf-gap-sm">
             <TextArea
               value={inputValue}

@@ -115,7 +115,13 @@ class AskView(APIView):
 
         context_result = build_qa_context(question, extra_context)
         context_text = context_result['context_text']
-        model_name = request.data.get('model', 'gpt-4o-mini')
+        # Model selection: honor an explicit request, else fall back to the
+        # active LLM provider's default_model (not a hard-coded default).
+        model_name = request.data.get('model')
+        if not model_name:
+            from gaf_ai.llm_service import _get_llm_config
+            cfg = _get_llm_config()
+            model_name = cfg.default_model if cfg else 'gpt-4o-mini'
 
         if session_id:
             qs = QASession.objects.all()

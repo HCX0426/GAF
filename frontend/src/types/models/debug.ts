@@ -75,6 +75,8 @@ export interface QAAskRequest {
   question: string;
   context?: Record<string, unknown>;
   session_id?: number;
+  /** Model override — backend falls back to the active provider's default_model. */
+  model?: string;
 }
 
 /** QA ask response — the backend AskView returns a full QASession object. */
