@@ -398,7 +398,7 @@ export function AiConfigPage() {
             {providers.length === 0 && !loading ? (
               <Empty description={t('ailab.msg_no_provider_configured')} />
             ) : (
-              <Space direction="vertical" size="middle" className="gaf-w-full">
+              <Space orientation="vertical" size="middle" className="gaf-w-full">
                 {providers.map((p) => {
                   const preset = PROVIDER_PRESETS[p.provider];
                   return (
@@ -447,7 +447,7 @@ export function AiConfigPage() {
                         </Space>
                       }
                     >
-                      <Space direction="vertical" size={4} className="gaf-w-full">
+                      <Space orientation="vertical" size={4} className="gaf-w-full">
                         <Space size="middle" wrap>
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             <KeyOutlined /> {p.api_key_masked || t('ailab.placeholder_api_key')}
@@ -481,7 +481,7 @@ export function AiConfigPage() {
             type="info"
             showIcon
             icon={<InfoCircleOutlined />}
-            message={t('ailab.help_save_notice')}
+            title={t('ailab.help_save_notice')}
             className="gaf-mt-lg"
           />
         </Card>
