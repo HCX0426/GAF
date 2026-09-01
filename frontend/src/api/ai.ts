@@ -230,7 +230,9 @@ export interface AiUsageStats {
   total_requests?: number;
   success_rate?: number;
   total_tokens?: number;
+  /** Backend key is `cost_estimate_usd` (usage-stats). */
   estimated_cost?: number;
+  cost_estimate_usd?: number;
   /** Per-model breakdown from backend `by_model` (tokens + cost_usd). */
   model_distribution?: Array<{ name: string; value: number }>;
   by_model?: Array<{ model: string; requests: number; tokens: number; cost_usd: number }>;

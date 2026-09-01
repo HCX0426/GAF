@@ -79,7 +79,8 @@ export function AIUsageDashboard() {
         total_requests: data.total_requests || 0,
         success_rate: data.success_rate || 0,
         total_tokens: data.total_tokens || 0,
-        estimated_cost: data.estimated_cost || 0,
+        // Backend returns cost_estimate_usd (fix key contract mismatch).
+        estimated_cost: data.cost_estimate_usd ?? data.estimated_cost ?? 0,
         // Backend returns by_model; map to {name, value, cost_usd} for the chart.
         model_distribution: Array.isArray(data.by_model)
           ? data.by_model.map((m) => ({ name: m.model, value: m.tokens, cost_usd: m.cost_usd }))

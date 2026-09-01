@@ -46,6 +46,7 @@ import {
   updateLlmProviderConfig,
   deleteLlmProviderConfig,
   setActiveLlmProvider,
+  fetchAgentEvaluation,
   testLlmConnection,
   fetchCustomSkills,
   createCustomSkill,
@@ -136,11 +137,26 @@ describe('AI API client', () => {
   describe('LLM provider config', () => {
     it('fetchLlmProviderConfig GETs settings endpoint and unwraps paginated results', async () => {
       (client.get as ReturnType<typeof vi.fn>).mockResolvedValue({
-        data: { count: 1, next: null, previous: null, results: [{ id: 1, provider: 'openai' }] },
+        data: {
+          count: 1,
+          next: null,
+          previous: null,
+          results: [
+            {
+              id: 1,
+              provider: 'openai',
+              available_models: ['gpt-4o', 'gpt-4o-mini'],
+              input_price: 0.00015,
+              output_price: 0.0006,
+            },
+          ],
+        },
       });
       const result = await fetchLlmProviderConfig();
       expect(client.get).toHaveBeenCalledWith('/settings/llm-config/');
-      expect(result).toEqual([{ id: 1, provider: 'openai' }]);
+      expect(result).toEqual([
+        { id: 1, provider: 'openai', available_models: ['gpt-4o', 'gpt-4o-mini'], input_price: 0.00015, output_price: 0.0006 },
+      ]);
     });
 
     it('fetchLlmProviderConfig handles array response', async () => {
@@ -191,6 +207,25 @@ describe('AI API client', () => {
       const result = await setActiveLlmProvider(2);
       expect(client.post).toHaveBeenCalledWith('/settings/llm-config/2/set-active/');
       expect(result.is_active).toBe(true);
+    });
+  });
+
+  // ── Agent Evaluation (Phase 3) ───────────────────────────────
+  describe('agent evaluation', () => {
+    it('fetchAgentEvaluation GETs /ai/agent-evaluation/ with days param', async () => {
+      (client.get as ReturnType<typeof vi.fn>).mockResolvedValue({
+        data: {
+          window_days: 30,
+          total_sessions: 2,
+          completion_rate: 1,
+          avg_latency_seconds: 81,
+          avg_tool_calls_per_session: 9.5,
+        },
+      });
+      const result = await fetchAgentEvaluation({ days: 30 });
+      expect(client.get).toHaveBeenCalledWith('/ai/agent-evaluation/', { params: { days: 30 } });
+      expect(result.total_sessions).toBe(2);
+      expect(result.completion_rate).toBe(1);
     });
   });
 
