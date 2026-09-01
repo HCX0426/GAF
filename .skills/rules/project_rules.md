@@ -4,7 +4,7 @@
 > **注入预算**: 本文件 ≤ 14KB + env-hardrules.md ≤ 4KB，超限由 governance hook 阻塞。
 
 ## AI 元规则文件导航
-**5 层**: rules=宪法+指针 / handbook=L2 / failure-modes=N## 索引 / yn-matrices=Y/N / lessons=历史；决策树权威源=`gaf-orchestrator/SKILL.md`。**加载顺序**: gaf_init L1 → orchestrator L2 handbook → 路由 skill → L3 按需。
+**5 层**: rules=宪法+指针 / handbook=L2 / failure-modes=N## 索引 / yn-matrices=Y/N / lessons=历史；决策树权威源=`gaf-orchestrator/SKILL.md`（加载顺序见 handbook Part 1）。
 ## 0. 执行宪法
 
 | 任务规模 | 三份核心文档 | 教训文档 | 通用规范 | 七维度评估 | 反思分级 | 测试分级 | 加载分级 | 用时测量 |
@@ -40,7 +40,7 @@
 - 后端和前端**独立终端**分别启动，不可合并
 - 打开 GAF 界面必启动 console_monitor.py（`scripts/e2e/scenarios/`）+ 每 2-5min Read log
 - Agent 默认关闭由 backend 自动拉起；测试时 `$env:GAF_AUTO_START_AGENT=1`；backend .py 编辑不需确认
-- Vite dev proxy 必须用 `127.0.0.1`（非 localhost）；agent 单例锁/heartbeat 细节见 lessons/N186-agent-standalone-process-no-pid-lock.md
+- Vite dev proxy 用 `127.0.0.1`；worker 单例锁/heartbeat 见 lessons/N186-agent-standalone-process-no-pid-lock.md
 - 所有服务统一 conda gaf 环境；禁止手动 `python -m src`，必须 `gaf_services.ps1` 管理
 - 临时文件 → `.trash/`；工具缓存 → `.cache/`；pytest/mypy/ruff 从仓库根目录跑
 
@@ -115,7 +115,7 @@
 
 ### 4.1 删除 / 文档驱动 / 浏览器测试
 - 删除优先 Move-Item 到 `.trash/`（已 gitignore）；删除前评估影响范围
-- 重构/新功能前完整阅读三份核心文档相关章节；文档与代码不一致以文档为准；路由/组件树/API 端点严格遵循 api-contract + frontend-conventions
+- 重构/新功能前读三份核心文档相关章节；文档与代码不一致以文档为准；严格遵循 api-contract + frontend-conventions
 - browser-use 测试必须点击全部交互元素，每类至少一次；结果表格记录 ✅/❌ + JS 错误数
 
 ### 4.5 同步检查（强制）
