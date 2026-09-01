@@ -299,3 +299,75 @@ related_files:
 6. 登记新 TD（如有）+ 创建新 lesson（如有可复用经验）
 
 **同根因家族**: N82 (审计错觉) + N91 (hook 失败映射) + N105 (`--no-verify` 透传) + N110 (lint 阻塞) + N114 (hook 误用) + N126 (诚实标记) + N128 (3 步验证) + **N150 (本条 hook 失败根因修复)** — 同根因 (hook 治理缺位)
+
+### ㊷ N215 对话起始未加载 orchestrator Y/N 矩阵 (2026-09-01 补登, workflow)
+
+> **触发条件** (任意一条即触发):
+> - 对话第一条任务消息未先 `Skill(name='gaf-orchestrator')` 判定 task_type
+> - 恢复会话 (summary 续接) 跳过入口判定, 连带收尾 (沉淀/反思) 纪律一起丢
+
+**Y/N 检查表**:
+| # | 检查项 | Y/N | 验证 |
+|:-:|--------|:---:|------|
+| 1 | 每次对话第一条任务消息先判定 task_type 再动手? | | 对话首轮含 orchestrator 判定 |
+| 2 | 恢复会话 (summary 续接) 同样重做入口判定? | | 续接首条消息判定 |
+| 3 | 收尾该 commit 后跑 gaf-lesson-router collect? | | 收尾含 collect |
+
+**AI 必做 (N215 硬规则)**:
+- ✅ 每次对话先 `Skill(name='gaf-orchestrator')` 判定 task_type → 按分支加载 skill+KB 再动手
+- ✅ 恢复会话 (summary 续接) 同样必做; 收尾 commit 后跑 gaf-lesson-router collect
+- ❌ **NEVER 跳过入口判定直接执行任务** (连带收尾纪律一起丢)
+
+**实测基线 (N215 闭环)**:
+- 触发: 2026-08-28 整轮 E2E/文档/沉淀对话无入口判定, 用户追问暴露
+- lesson: `lessons/workflow_2026-08-28_n215-load-orchestrator-at-conversation-start.md`
+
+**同根因家族**: N134 (workflow skill 未触发) + **N215 (本条 入口判定)** —— 同根因 (流程入口未强制)
+
+### ㊹ N217 登录"记住我"失效 Y/N 矩阵 (2026-09-01 补登, workflow)
+
+> **触发条件** (任意一条即触发):
+> - 跨功能迭代期间用户高频基础流程 (登录/记住我/鉴权恢复) 未纳入回归
+> - antd Form.Item 直接子元素是非受控容器 (div/span), value/onChange 不注入受控组件
+
+**Y/N 检查表**:
+| # | 检查项 | Y/N | 验证 |
+|:-:|--------|:---:|------|
+| 1 | 跨功能迭代把用户高频基础流程 (登录/注册/鉴权恢复) 纳入每轮回归清单? | | 回归清单含登录 |
+| 2 | antd Form.Item 直接子元素是受控组件 (含 name + valuePropName)? | | Form.Item 子元素为 Checkbox/Input |
+| 3 | 免登录持久化 (remember_me → refresh token 存储) 实测验证? | | 勾选后刷新仍登录 |
+
+**AI 必做 (N217 硬规则)**:
+- ✅ 跨功能迭代必回归用户高频基础流程 (登录/注册/鉴权恢复)
+- ✅ antd Form.Item 直接子元素必须是受控组件 (name + valuePropName 的 Checkbox/Input)
+- ❌ **NEVER Form.Item 直接子元素用非受控容器 (UI 与表单值脱节)**
+
+**实测基线 (N217 闭环)**:
+- 触发: 2026-08-29 用户反馈 "不是可以记住账号吗，为啥每次都要登录"
+- lesson: `lessons/workflow_2026-08-29_n217-login-remember-me-regression.md`
+
+**同根因家族**: N135 (浏览器实测登录) + **N217 (本条 基础流程回归盲区)** —— 同根因 (高频基础流程验证缺位)
+
+### ㊺ N219 今日日程"计划排期"显示成"待执行" Y/N 矩阵 (2026-09-01 补登, workflow)
+
+> **触发条件** (任意一条即触发):
+> - 计划型展示 (引擎推导排期) 用执行型状态语义 (pending) 误导用户
+> - 前端拼接 device→account→chain 对空字段无条件 `a → b → c` 渲染空段箭头
+
+**Y/N 检查表**:
+| # | 检查项 | Y/N | 验证 |
+|:-:|--------|:---:|------|
+| 1 | 未触发计划用 planned (计划中) 而非 pending (待执行)? | | 状态语义区分 |
+| 2 | 前端拼接对空字段做条件渲染, 禁止无条件箭头? | | 空字段不渲染箭头 |
+| 3 | 计划型/执行型状态在前端文案与后端枚举语义一致? | | 文案与枚举对齐 |
+
+**AI 必做 (N219 硬规则)**:
+- ✅ 计划型展示状态语义与执行型区分 — 未触发计划用 planned 非 pending
+- ✅ 前端拼接 device→account→chain 对空字段做条件渲染
+- ❌ **NEVER 计划排期用 "待执行" 语义 (误导为任务排队却不跑) / 无条件渲染空段箭头**
+
+**实测基线 (N219 闭环)**:
+- 触发: 2026-08-29 用户追问 "今日日程那没问题吗?" (双箭头中间空白 + 标待执行)
+- lesson: `lessons/workflow_2026-08-29_n219-today-schedule-planned-vs-pending.md`
+
+**同根因家族**: N218 (统计类卡片数字核对) + **N219 (本条 展示状态语义)** —— 同根因 (前端展示与真实状态脱节)

@@ -369,4 +369,52 @@ const stopStream = useCallback(() => {
 
 **同根因家族**: N154/N155 (黑屏家族, 窗口/设备状态失效场景) + **N211 (本条 窗口动态绑定)** —— 同根因 (设备状态以静态假定, 缺动态重连机制)
 
+### ㊸ N216 Agent 假离线 (僵尸 consumer) Y/N 矩阵 (2026-09-01 补登, agent-protocol)
+
+> **触发条件** (任意一条即触发):
+> - 状态灯显示 agent 未启动, 但 agent 心跳新鲜
+> - 日志出现 "心跳超时 15xxx s" (秒数递增) 的僵尸 consumer
+
+**Y/N 检查表**:
+| # | 检查项 | Y/N | 验证 |
+|:-:|--------|:---:|------|
+| 1 | status 与 last_heartbeat 矛盾 + 心跳超时秒数递增 = 僵尸连接? | | 日志心跳超时秒数 |
+| 2 | 僵尸连接用重启后端进程树 (`gaf_daemon.py restart`) 即清? | | 重启后状态恢复 |
+| 3 | 治本: Agent 连接加 `active_channel` 字段做最新连接仲裁? | | 代码含 active_channel |
+
+**AI 必做 (N216 硬规则)**:
+- ✅ status 与心跳矛盾 + 超时秒数递增 → 判僵尸连接, 重启后端进程树即清
+- ✅ 治本方案: 连接加 `active_channel` 字段仲裁最新连接
+- ❌ **NEVER 把僵尸连接造成的假离线当真实设备故障排查**
+
+**实测基线 (N216 闭环)**:
+- 触发: 2026-08-28 状态灯未启动但心跳新鲜 (idle↔offline 抖动)
+- lesson: `lessons/agent-protocol_2026-08-28_n216-zombie-consumer-false-offline.md`
+
+**同根因家族**: N211 (窗口设备动态绑定/失效重连) + **N216 (本条 连接状态仲裁)** —— 同根因 (状态假定静态, 缺动态仲裁)
+
+### ㊷ N213 DRF 装饰器顺序 Y/N 矩阵 (2026-09-01 补登, api-design)
+
+> **触发条件** (任意一条即触发):
+> - 新增 DRF FBV 端点后全站 500, 日志指向 urls import 链
+> - `@permission_classes` 写在 `@api_view` 之上
+
+**Y/N 检查表**:
+| # | 检查项 | Y/N | 验证 |
+|:-:|--------|:---:|------|
+| 1 | 新 DRF FBV 装饰器顺序: extend_schema → api_view → permission_classes? | | 装饰器自下而上顺序 |
+| 2 | permission_classes (policy) 在 api_view 之下? | | 代码位置 |
+| 3 | 后端 500 + 日志指 urls import 链先查装饰器顺序? | | 排查路径 |
+
+**AI 必做 (N213 硬规则)**:
+- ✅ 新 DRF FBV 装饰器顺序: extend_schema → api_view → permission_classes (policy 在 api_view 之下)
+- ✅ 后端 500 + 日志指 urls import 链 → 先查装饰器顺序
+- ❌ **NEVER @permission_classes 写在 @api_view 之上 (import 期 TypeError 全站 500)**
+
+**实测基线 (N213 闭环)**:
+- 触发: 2026-08-28 新增模板匹配端点致全站 500
+- lesson: `lessons/misc_2026-08-28_n213-drf-decorator-order.md`
+
+**同根因家族**: N136 (URL 路由重复前缀) + **N213 (本条 DRF 装饰器)** —— 同根因 (DRF 端点声明顺序/契约)
+
 ---

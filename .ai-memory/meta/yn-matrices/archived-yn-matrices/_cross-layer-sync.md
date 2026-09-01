@@ -100,5 +100,30 @@ source: Split from yn-matrices.md (Phase 4 Task 4.2)
 - 写前端 API client 前，先用 `curl`/Playwright/DRF browseable API 确认真实返回形状
 - 表格组件白屏时优先检查 `dataSource` 是否为数组
 
+### N220 命名归一化批量重命名 + 行尾符伪影 Y/N 矩阵 (2026-09-01 补登, cross-layer-sync)
+
+> **触发条件** (任意一条即触发):
+> - 批量重命名 (目录/符号/线协议/DB 字段/前端类型) 跨多文件执行
+> - 字节级批量替换把 CRLF→LF, git status 显示 M 但 git diff 内容为空
+
+**Y/N 检查表**:
+| # | 检查项 | Y/N | 验证 |
+|:-:|--------|:---:|------|
+| 1 | 命名归一化按 spec 级顺序 (符号→目录 git mv→线协议→DB 字段→前端类型→文档)? | | 阶段顺序执行 |
+| 2 | 词边界正则保护标识符/契约键 (不做子串误伤)? | | 替换结果 grep 抽查 |
+| 3 | 真值重生成 (OpenAPI 等) 暴露的存量 drift 当场登记 TD? | | TD 登记 |
+| 4 | 判断真实改动看 `git diff --stat` 内容而非仅 status? | | diff 内容非空 |
+
+**AI 必做 (N220 硬规则)**:
+- ✅ 命名归一化按"评估稿 spec 级顺序 → 5 层 sweep → 文档"执行; 词边界正则保护标识符
+- ✅ 真值重生成暴露 drift 当场登记 TD; 判断真实改动看 `git diff --stat` 内容
+- ❌ **NEVER 用子串正则误伤标识符 / 凭 git status 判定无真实改动 (行尾符伪影)**
+
+**实测基线 (N220 闭环)**:
+- 触发: 2026-08-30 naming 系列 A→B→C→G→D/E/F→OQ-9 全量收口 (3-pass 字节级替换 CRLF→LF, 55 文件 status M 但 diff 空; OpenAPI 重生成暴露前端 drift 11 条 → TD-422)
+- lesson: `lessons/cross-layer-sync_2026-08-30_n220-batch-naming-normalization-line-ending-artifact.md`
+
+**同根因家族**: N106 (路径漂移) + N112 (跨层字段同步) + **N220 (本条 批量重命名)** —— 同根因 (跨层引用/契约同步缺位)
+
 ---
 

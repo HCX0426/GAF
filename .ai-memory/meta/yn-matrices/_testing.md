@@ -345,5 +345,51 @@ class Handler:
 
 **同根因家族**: N196 (实机测试四步流程) + **N210 (本条 E2E 前置构造)** —— 同根因 (E2E 前置准备不完整)
 
+### ㊵ N212 Playwright E2E 脚本三坑 Y/N 矩阵 (2026-09-01 补登, testing)
+
+> **触发条件** (任意一条即触发):
+> - Playwright 脚本用 `urljoin` 拼接 URL / 页面外请求 (probe/fetch) 不带 Authorization
+> - antd5 Modal 关闭后残留隐藏 DOM 干扰元素判定
+
+**Y/N 检查表**:
+| # | 检查项 | Y/N | 验证 |
+|:-:|--------|:---:|------|
+| 1 | URL 用 f-string 直拼, 禁用 `urljoin` (会吞路径段)? | | 脚本 URL 构造无 urljoin |
+| 2 | 页面外请求 (probe/fetch) 手动带 Authorization (sessionStorage access_token)? | | 请求头含 token |
+| 3 | DOM 判定用 `:visible` 而非 count (防隐藏 DOM 误判)? | | 选择器带 :visible |
+
+**AI 必做 (N212 硬规则)**:
+- ✅ E2E 脚本 URL 直拼 f-string; 页面外请求手动带 Authorization; 判定用 `:visible`
+- ❌ **NEVER 用 urljoin 拼路径 / 页面外请求不带 token / 用 count 判 DOM**
+
+**实测基线 (N212 闭环)**:
+- 触发: 2026-08-28 full_routes 首跑 + I-06 复核 (urljoin 吞路径段 / context.request 不共享 localStorage JWT / Modal 残留 DOM)
+- lesson: `lessons/misc_2026-08-28_n212-playwright-e2e-script-pitfalls.md`
+
+**同根因家族**: N135 (浏览器实测) + **N212 (本条 E2E 脚本坑)** —— 同根因 (E2E 脚本可靠性)
+
+### ㊶ N214 E2E 环境造数四坑 Y/N 矩阵 (2026-09-01 补登, testing)
+
+> **触发条件** (任意一条即触发):
+> - E2E 自造 429 (throttle) / cv2 纯色模板病态 / 雷电 ldconsole+adb 双视角重复注册 / 遗留假设备阻塞预检
+
+**Y/N 检查表**:
+| # | 检查项 | Y/N | 验证 |
+|:-:|--------|:---:|------|
+| 1 | 造数前查 throttle 额度是否被测试总量打爆 (先查设置)? | | throttle 配置 + 测试量 |
+| 2 | 匹配测试图带纹理 (纯色图匹配病态)? | | 测试图非纯色 |
+| 3 | 设备多数据源先归一再去重? | | 设备列表去重 |
+| 4 | 数据库遗留假记录定期清理? | | 预检设备清空 |
+
+**AI 必做 (N214 硬规则)**:
+- ✅ 造数前四查: throttle 额度 / 测试图纹理 / 设备多源归一 / 遗留假记录清理
+- ❌ **NEVER 测试自造 throttle 限制 / 用纯色图做匹配测试**
+
+**实测基线 (N214 闭环)**:
+- 触发: 2026-08-28 全量测试 + 匹配端点 + 模拟器补测
+- lesson: `lessons/testing_2026-08-28_n214-e2e-env-data-hazards.md`
+
+**同根因家族**: N210 (E2E 前置构造) + **N214 (本条 环境造数)** —— 同根因 (E2E 环境准备不完整)
+
 ---
 
