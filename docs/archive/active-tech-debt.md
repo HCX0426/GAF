@@ -1,7 +1,7 @@
 ---
 summary: 活跃技术债务清单 — 🔧 待修/待办/待决 和 🚧 进行中 条目 (完整详情)
 applies_to: [project]
-last_updated: "2026-09-01 (TD-423 闭环: AI 页签改造全 3 Phase 完成)"
+last_updated: "2026-09-01 (TD-424 登记: 对外 API Key 无鉴权消费点僵尸)"
 ---
 
 # Active Tech Debts (待修 / 进行中)
@@ -11,7 +11,7 @@ last_updated: "2026-09-01 (TD-423 闭环: AI 页签改造全 3 Phase 完成)"
 > 本文件只包含真正活跃的技术债务（🔧 待修/待办/待决 和 🚧 进行中）。
 > 已关闭条目（✅ FIXED / ❌ WONTFIX / ❌ INVALIDATED / ❌ EVALUATED）已迁移到 `fixed.md` 或 `wontfix.md`。
 >
-> **状态**: ✅ 0 项待修 (TD-423 已闭环; 全部 TD 迁移至 fixed/wontfix)
+> **状态**: 🔧 1 项待修 (TD-424, 2026-09-01 登记)
 
 ## TD 处理顺序 (2026-07-18 spec-26 强化)
 
@@ -45,6 +45,21 @@ last_updated: "2026-09-01 (TD-423 闭环: AI 页签改造全 3 Phase 完成)"
 - **验证标准**: <how to verify the fix>
 - **何时修**: <when to fix>
 -->
+
+---
+
+## TD-424: 对外 API Key 管理无鉴权消费点（僵尸 CRUD） (🔧 待修)
+
+- **状态**: 🔧 待修
+- **优先级**: P2
+- **登记时间**: 2026-09-01
+- **来源**: 2026-09-01 用户审查"系统 API Key 管理与 AI 模块是否冗余"——评估确认与 `LLMConfig` 用途不同（**不冗余**），但发现 `APIKey` 无生产消费点
+- **症状**: `accounts.APIKey`（[models.py](backend/accounts/models.py#L248)）+ `/system/api-keys` 页面提供完整 CRUD（key_hash/权限/IP 白名单/调用计数/过期），但全仓无任何 middleware / authentication backend / 业务代码消费该密钥做鉴权
+- **根因**: 早期规划"对外 API 开放"能力未完成，CRUD 先行、鉴权接入未落地
+- **影响**: 用户可在界面创建 API key 但无法用其调用任何接口（功能形同虚设）；与 AI 模块 `LLMConfig.api_key` 概念混淆（两者都叫 API Key 但用途不同：对外密钥 vs LLM 服务商密钥）
+- **修复方案**: 二选一: ① 若确需对外 API 能力, 接入鉴权（DRF authentication backend 校验 key_hash + 权限 + IP 白名单 + call_count 递增 + 过期）; ② 若暂无对外开放需求, 从侧边栏隐藏/移除该页面 + 清理/保留 APIKey 模型
+- **验证标准**: 方案①: 用创建的 API key 能调用受保护接口且 call_count 递增; 方案②: 移除后无死引用（grep APIKey 仅剩模型定义或已删）
+- **何时修**: 用户确认对外 API 是否有开放需求时（当前无消费点, 不影响任何现有功能）
 
 ---
 
