@@ -57,9 +57,9 @@ last_updated: "2026-09-01 (TD-424 登记: 对外 API Key 无鉴权消费点僵�
 - **症状**: `accounts.APIKey`（[models.py](backend/accounts/models.py#L248)）+ `/system/api-keys` 页面提供完整 CRUD（key_hash/权限/IP 白名单/调用计数/过期），但全仓无任何 middleware / authentication backend / 业务代码消费该密钥做鉴权
 - **根因**: 早期规划"对外 API 开放"能力未完成，CRUD 先行、鉴权接入未落地
 - **影响**: 用户可在界面创建 API key 但无法用其调用任何接口（功能形同虚设）；与 AI 模块 `LLMConfig.api_key` 概念混淆（两者都叫 API Key 但用途不同：对外密钥 vs LLM 服务商密钥）
-- **修复方案**: 二选一: ① 若确需对外 API 能力, 接入鉴权（DRF authentication backend 校验 key_hash + 权限 + IP 白名单 + call_count 递增 + 过期）; ② 若暂无对外开放需求, 从侧边栏隐藏/移除该页面 + 清理/保留 APIKey 模型
-- **验证标准**: 方案①: 用创建的 API key 能调用受保护接口且 call_count 递增; 方案②: 移除后无死引用（grep APIKey 仅剩模型定义或已删）
-- **何时修**: 用户确认对外 API 是否有开放需求时（当前无消费点, 不影响任何现有功能）
+- **修复方案**: 已实现 `accounts.APIKeyAuthentication`（[authentication.py](backend/accounts/authentication.py)）— sha256 key_hash 校验 + is_active + 过期 + IP 白名单 + call_count 递增，8 项测试通过；按"暂不对外开放"决策，**尚未接入任何公开端点**
+- **验证标准**: 接入端点后，用创建的 API key 能调用受保护接口且 call_count 递增; 当前鉴权后端单测 8 项通过
+- **何时修**: 对外 API 有开放需求时，把 `APIKeyAuthentication` 加入目标视图的 `authentication_classes`（2026-09-01 已实现功能代码）
 
 ---
 
