@@ -12,7 +12,7 @@ related_files:
 created_by: AI
 priority: high
 # lessons_count: counts all lesson files in lessons/ root (excludes README.md + archived-early/; includes archived N30 in root); synced by sync_ai_memory.py
-lessons_count: 74
+lessons_count: 75
 active_n_count: 40
 # retired_n_count: M0.M 闭环 N## (硬约束沉淀到 rules/skills, 在 failure-modes.md §Retired; 2026-08-28 校准: 实测 §Retired 索引行 26 条, 旧注释值 43 计错(含家族子条目数误加)已修正)
 retired_n_count: 26
@@ -48,7 +48,7 @@ next_n_id: 221
 |-------|------|---------|-------|-----------|
 | `workflow` | 工作流治理 (commit/hook/skill 删除/临时文件/加载机制/持续评估循环/脚本性能/主动并行+真沉淀/spec 用时测量/TD 修复方案验证/subagent 结果落地/单对话批量 spec 单 commit/分级测试/AI 思维链纠偏/反思分级/元评估闭环/规则退役/循环模式不问继续/bug 排查三维根因评估/节点观测性/测试覆盖盲区/AI 主导开发治理必要性元层认知/M2 激活率复盘触发闭环/文档归属判定/调度协调 L0/对话起始入口判定/基础流程回归盲区+antd Form.Item 间接子元素坑/计划排期与执行状态语义分离+拼接防空段) | N95, N105, N108, N117, N121, N122, N123, N124, N125, N134, N140, N149, N164, N166, N171, N172, N173, N174, N175, N176, N177, N178, N179, N180, N181, N182, N183, N184, N185, N189, N198, N200, N201, N208, N215, N217, N219 | 30 | N105, N134 (N165/N169/N170 已退役见 §Retired) |
 | `ai-autonomy` | AI 自决 (决策/节奏/入口/推进/超时/架构决策/优先级排序/主动用 subagent/任务归属硬约束/AskUserQuestion 边界) | N109, N111, N161+N163, N172, N193, N206 | 6 | N109, N161+N163 |
-| `honest-status` | 文档诚实标记 (虚报✅/Mock/审计/虚构实现) | N126, N129, N157 | 3 | N126 |
+| `honest-status` | 文档诚实标记 (虚报✅/Mock/审计/虚构实现) + 功能型模块审计逐功能核对数据链路 (2026-09-01) | N126, N129, N157 | 4 | N126 |
 | `cross-layer-sync` | 跨层同步 (路径漂移/前后端字段/标识符同步/复制重命名/认证 blob/DRF 分页/批量命名归一化+行尾符伪影) | N106, N112, N142, N143, N152, N220 | 6 | — |
 | `concurrency` | 并发状态管理 | N116 | 1 | — |
 | `testing` | 测试套件环境依赖 + 重构验证 + e2e + Python import 验证 + pytest-django 拖慢 + 实机测试工作流 + 服务未重启假绿 + E2E 前置构造而非跳过 + E2E 脚本坑 + E2E 环境造数 | N118, N133, N135, N156+N147, N194, N196, N209, N210, N212, N214 | 10 | N135, N156+N147 |

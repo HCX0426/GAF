@@ -129,6 +129,18 @@
 - ✅ commit message 不写规则编号 (N208): 写 N## 被 M2 当声称核验 diff 证据, 无证据触发 `REVIEW_TRIGGERED`; 仅 diff 真有证据才写; 沉淀效率 3 优化: frontmatter 必填+Glob 验证路径+Grep 定位并行 Edit
 - 完整清单见 `project_rules.md §3.8` + `lessons/` 同名条目
 
+### 功能型模块审计检查清单（2026-09-01 沉淀）
+
+> 触发: meta_audit / 审计 AI、配置、用量、问答等**功能型模块**时。静态结构审计（页面存在/完成/冗余）
+> 会漏功能正确性问题（硬编码默认、前后端键名不匹配、后端能力与前端交互脱节、prompt 无上下文）。
+> 完整反模式见 `lessons/honest-status_2026-09-01-audit-verify-data-chain.md`。
+
+- ❌ 只确认"页面存在/调用了哪些 API/是否完成" → ✅ 逐功能核对数据链路
+- ① 模型/数据来源: grep `'gpt-4o-mini'` / `request.data.get('model'` / `.first()` 硬编码兜底
+- ② 前后端契约: 后端返回键 vs 前端读取键逐一比对（如 `by_model` vs `model_distribution`）
+- ③ 后端能力 ≠ 前端交互: 字段/接口存在不代表 UI 已实现（如 `available_models` 后端有但前端未用）
+- ④ 浏览器实测每个交互: 输入 → 输出（模型下拉是否反映配置、图表是否为空、tooltip 是否有数据）
+
 ### spec/plan 用时测量（N173 — 强制, Wave 1 hook 强制 2026-07-26）
 
 - ❌ 禁止 spec/plan 不测用时 / 只报 hash+测试数不报 duration → ✅ 必记 `start_ts`(首调用前)/`end_ts`(commit后)/`duration`, 报告含是否基线内+超基线根因
