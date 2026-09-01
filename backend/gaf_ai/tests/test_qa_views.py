@@ -303,6 +303,26 @@ class AskViewTests(QAViewTestBase):
         )
 
     @mock.patch('gaf_ai.llm_service.call_llm')
+    def test_ask_uses_active_provider_default_model(self, mock_call_llm):
+        """AskView without model param falls back to the active LLMConfig default_model."""
+        from settings.models import LLMConfig
+
+        LLMConfig.objects.create(
+            provider='openai', default_model='deepseek-ai/DeepSeek-V4-Flash', is_active=True,
+        )
+        mock_call_llm.return_value = {
+            'content': 'ok', 'model': 'deepseek-ai/DeepSeek-V4-Flash',
+            'input_tokens': 1, 'output_tokens': 1, 'cost': 0.0, 'route': 'preferred',
+        }
+        self._login(self.admin)
+        resp = self.client.post('/api/v2/qa/ask/', {'question': 'hi'}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        _, kwargs = mock_call_llm.call_args
+        self.assertEqual(kwargs['model'], 'deepseek-ai/DeepSeek-V4-Flash')
+        session = QASession.objects.latest('id')
+        self.assertEqual(session.model_name, 'deepseek-ai/DeepSeek-V4-Flash')
+
+    @mock.patch('gaf_ai.llm_service.call_llm')
     def test_ask_llm_failure_records_error(self, mock_call_llm):
         """When call_llm raises LLMAPIError, session.answer records the failure."""
         from gaf_ai.qa_llm_client import LLMAPIError
