@@ -101,16 +101,23 @@ status: active
 - 可观测性：Agent 执行 trace 落库（节点/工具/耗时/token），`/ai/usage` 展示
 
 **测试**：RAG rerank 单测（top-k 重排正确性）+ eval 脚本冒烟（真实代码库 QA 集）+ Agent 评测接口测试
-**JD 收获**：RAG 全链路（能说"混合检索+chunk 优化把命中率从 X→Y"）、Agent 评测体系、成本/延迟优化、可观测性
-**验收**：RAG 命中率有可量化提升（Hit Rate 报告）；Agent 评测有指标看板；trace 可视化可用
+
+- `test_rag_rerank.py` 11 项：`_rerank_docs` RRF 融合排序（keyword 强命中上移）、top_k 截断、`_llm_rerank` 失败兜底
+- `test_rag_eval.py` 3 项：`_relevant` 相关性判定（token 级重叠防短串误判）+ Hit Rate @k / MRR 计算
+- `test_agent_evaluation.py` 5 项：会话聚合（完成率/延迟/token/成本）+ trajectory 工具调用统计 + `/agent-evaluation/` API 端点
+- 修复 naming-c 遗留：`get_execution_steps` duration float 字段 + `_make_step` task_result 字段名（此前 14 项 pre-existing 失败归零）
+
+**JD 收获**：RAG 全链路（混合检索 + RRF rerank，可产出 Hit Rate 报告）、Agent 评测体系、成本/延迟优化、可观测性
+
+**验收**：`scripts/ai/rag_eval.py` 产出 Hit Rate / MRR 报告（本地 difflib 判定，无 LLM 成本）；`/ai/agent-evaluation/` 提供 Agent 评测指标；`AIUsageDashboard` 展示 Agent 评测卡片；trace 可视化由 Phase 2 轨迹系统支撑
 
 ## 4.0 阶段状态表
 
 | Phase | 状态 | 完成 commit | 验收证据 |
 |-------|------|------------|---------|
-| Phase 1 多服务商 LLM 配置 | ✅ | 本 spec Phase 1 commit | backend `test_llm_provider.py` 8 项 + frontend `AiConfigPage.test.tsx` 7 项 + tsc 0 + ruff 0 |
-| Phase 2 手写 LangGraph + MCP | ✅ 后端核心 + 前端轨迹均完成 | 本 spec Phase 2 后端 commit + 前端子阶段 commit | backend `test_langgraph_graph.py` 20 项 + `test_skill_tool_adapter.py` 32 项 + `test_agent.py`(RunAgentAnalysisTask + AgentSessionStatus) 20 项 + ruff 0；手写 `StateGraph`(router/tools/responder，每节点 token) + 轻量 MCP(`MCPServer/MCPClient`) + `TOOL_REGISTRY`；前端 `TrajectoryTimeline` + `TrajectoryStep` + `LogAnalysisPanel` 集成 + `TrajectoryTimeline.test.tsx` 3 项 + tsc 0 + prettier 0 |
-| Phase 3 RAG rerank + 评测 | ⏳ 未开始 | - | - |
+| Phase 1 多服务商 LLM 配置 | ✅ | 2026-08-31 `4777135`/`d40b5eb` | backend `test_llm_provider.py` 6 项 + frontend `AiConfigPage.test.tsx` 7 项 + tsc 0 + ruff 0 |
+| Phase 2 手写 LangGraph + MCP | ✅ 后端核心 + 前端轨迹均完成 | 2026-08-31 `7511ee5`/`95b5e1d`/`85fd1af` | 手写 `StateGraph`(router/tools/responder，每节点 token) + 轻量 MCP(`MCPServer/MCPClient`) + `TOOL_REGISTRY`；前端 `TrajectoryTimeline` 集成于 `LogAnalysisPanel`；前端重构 `a84883f`：`AnomalyPatternPanel` 并入 `LogAnalysisPanel` 第 3 tab + 模型下拉读激活 provider |
+| Phase 3 RAG rerank + 评测 | ✅ 已完成 | 2026-09-01 `338ed1f`(rag rerank) / `63aee11`(rag_eval) / `170627d`(agent eval) | `test_rag_rerank.py` 11 项 + `test_rag_eval.py` 3 项 + `test_agent_evaluation.py` 5 项 + `scripts/ai/rag_eval.py` 冒烟 + `/ai/agent-evaluation/` API + `AIUsageDashboard` Agent 评测卡片 |
 
 ## 5. 学习路线（配合执行）
 
