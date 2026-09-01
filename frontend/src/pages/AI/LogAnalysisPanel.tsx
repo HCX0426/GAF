@@ -28,6 +28,7 @@ import { fetchExecutions } from '@/api/tasks';
 import { fetchExecutionAnalysis, analyzeExecutionWithAgent, fetchAgentSessionStatus } from '@/api/ai';
 import type { AgentAnalysisResult } from '@/api/ai';
 import { TrajectoryTimeline } from '@/components/Ai/TrajectoryTimeline';
+import { AnomalyPatternTab } from '@/pages/AI/AnomalyPatternPanel';
 import { fetchDebugLogs, analyzeDebugLog, fetchAnalysisResults } from '@/api/debug';
 import { fetchSkills } from '@/api/skills';
 import type { DebugLogArchive, LLMAnalysisResult, AnalysisStatus, SkillDefinition } from '@/types/models';
@@ -685,16 +686,16 @@ function ArchiveAnalysisTab() {
   );
 }
 
-/** LogAnalysisPanel — unified LLM log analysis entry (execution + archive) */
+/** LogAnalysisPanel — unified LLM log analysis entry (execution + archive + anomaly) */
 export function LogAnalysisPanel() {
   const t = useTranslation();
-  const [activeTab, setActiveTab] = useState<'execution' | 'archive'>('execution');
+  const [activeTab, setActiveTab] = useState<'execution' | 'archive' | 'anomaly'>('execution');
 
   return (
     <PageWrapper>
       <Tabs
         activeKey={activeTab}
-        onChange={(k) => setActiveTab(k as 'execution' | 'archive')}
+        onChange={(k) => setActiveTab(k as 'execution' | 'archive' | 'anomaly')}
         items={[
           {
             key: 'execution',
@@ -715,6 +716,16 @@ export function LogAnalysisPanel() {
               </span>
             ),
             children: <ArchiveAnalysisTab />,
+          },
+          {
+            key: 'anomaly',
+            label: (
+              <span>
+                <WarningOutlined />
+                <span style={{ marginLeft: 6 }}>{t('ailab.tab_anomaly')}</span>
+              </span>
+            ),
+            children: <AnomalyPatternTab />,
           },
         ]}
       />

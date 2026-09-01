@@ -70,7 +70,6 @@ const QAPanel = lazy(() => import('@/pages/AI/QAPanel'));
 const LogAnalysisPanel = lazy(() => import('@/pages/AI/LogAnalysisPanel'));
 const AIUsageDashboard = lazy(() => import('@/pages/AI/AIUsageDashboard'));
 const CustomSkillEditor = lazy(() => import('@/pages/AI/CustomSkillEditor'));
-const AnomalyPatternPanel = lazy(() => import('@/pages/AI/AnomalyPatternPanel'));
 const AiConfigPage = lazy(() => import('@/pages/AI/AiConfigPage'));
 const SkillMarketPage = lazy(() => import('@/pages/AI/SkillMarket'));
 // Spec v3 §2.5.1: GameProfile promoted to top-level menu (/game-profiles).
@@ -419,14 +418,6 @@ export default function App() {
                   element={
                     <Lazy>
                       <QAPanel />
-                    </Lazy>
-                  }
-                />
-                <Route
-                  path="ai/anomaly"
-                  element={
-                    <Lazy>
-                      <AnomalyPatternPanel />
                     </Lazy>
                   }
                 />

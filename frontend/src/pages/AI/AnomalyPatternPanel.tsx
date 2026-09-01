@@ -32,7 +32,6 @@ import {
 
 import { detectAnomalies } from '@/api/ai';
 import { useTranslation } from '@/i18n';
-import { PageWrapper } from '@/components/Common/PageWrapper';
 import type { GlobalToken } from 'antd/es/theme/interface';
 
 const { Text, Paragraph } = Typography;
@@ -87,7 +86,11 @@ const CATEGORY_LABELS: Record<string, string> = {
   unknown: 'ailab.category_unknown',
 };
 
-export function AnomalyPatternPanel() {
+/**
+ * Anomaly Pattern Discovery Tab (merged into LogAnalysisPanel as the
+ * "anomaly" tab — detects recurring failure patterns from execution logs).
+ */
+export function AnomalyPatternTab() {
   const t = useTranslation();
   const { token } = antTheme.useToken();
   const severityConfig = getSeverityConfig(token);
@@ -121,7 +124,7 @@ export function AnomalyPatternPanel() {
   };
 
   return (
-    <PageWrapper>
+    <div className="gaf-p-xl gaf-h-full gaf-overflow-y-auto">
       <Card
         size="small"
         title={
@@ -324,8 +327,8 @@ export function AnomalyPatternPanel() {
       )}
 
       {!result && !detecting && <Empty description={t('ailab.empty_set_params')} />}
-    </PageWrapper>
+    </div>
   );
 }
 
-export default AnomalyPatternPanel;
+export default AnomalyPatternTab;

@@ -25,18 +25,11 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAiLabStore } from '@/stores/useAiLabStore';
 import { listPipelines } from '@/api/pipelines';
-import { optimizePipeline } from '@/api/ai';
+import { fetchLlmProviderConfig, optimizePipeline } from '@/api/ai';
 import { useTranslation } from '@/i18n';
 
 const { TextArea } = Input;
 const { Text } = Typography;
-
-const MODEL_OPTIONS = [
-  { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
-  { value: 'gpt-4o', label: 'GPT-4o' },
-  { value: 'deepseek-chat', label: 'DeepSeek Chat' },
-  { value: 'qwen-max', label: 'Qwen Max' },
-];
 
 /** Generate user bubble style with design token */
 const getBubbleStyleUser = (tokenColorPrimary: string): React.CSSProperties => ({
@@ -85,6 +78,7 @@ export function AiAssistantPanel() {
 
   const [inputValue, setInputValue] = useState('');
   const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
+  const [modelOptions, setModelOptions] = useState<Array<{ value: string; label: string }>>([]);
   const [activeSubTab, setActiveSubTab] = useState('chat');
   const [pipelines, setPipelines] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null);
@@ -97,7 +91,29 @@ export function AiAssistantPanel() {
   /** Load available pipelines for optimization */
   useEffect(() => {
     loadPipelines();
+    loadModelOptions();
   }, []);
+
+  /** Load model options from the active LLM provider config (Phase 1
+   * multi-provider) instead of a hard-coded preset list, so the dropdown
+   * reflects the providers actually configured in AiConfigPage. */
+  const loadModelOptions = async () => {
+    try {
+      const providers = await fetchLlmProviderConfig();
+      const active = providers.find((p) => p.is_active);
+      const opts = providers
+        .filter((p) => p.default_model)
+        .map((p) => ({ value: p.default_model, label: `${p.default_model} (${p.provider})` }));
+      setModelOptions(opts);
+      if (active?.default_model) {
+        setSelectedModel(active.default_model);
+      } else if (opts.length > 0) {
+        setSelectedModel(opts[0].value);
+      }
+    } catch (err) {
+      console.error('AI model options load failed:', err);
+    }
+  };
 
   const loadPipelines = async () => {
     try {
@@ -317,9 +333,11 @@ export function AiAssistantPanel() {
               <Select
                 value={selectedModel}
                 onChange={setSelectedModel}
-                options={MODEL_OPTIONS}
+                options={modelOptions.length > 0 ? modelOptions : undefined}
+                placeholder={modelOptions.length === 0 ? t('ailab.msg_no_provider_configured') : undefined}
                 size="small"
-                style={{ width: 160 }}
+                style={{ width: 200 }}
+                disabled={modelOptions.length === 0}
               />
             </Space>
             <Button icon={<ClearOutlined />} size="small" onClick={clearConversation} disabled={messages.length === 0}>

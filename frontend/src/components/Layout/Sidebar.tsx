@@ -146,7 +146,6 @@ const menuItemConfigs: MenuItemConfig[] = [
         type: 'group',
         labelKey: 'sidebar.ai_group_analysis',
         children: [
-          { key: '/ai/anomaly', labelKey: 'sidebar.anomaly', permission: 'ai.view' },
           { key: '/ai/log-analysis', labelKey: 'sidebar.log_analysis', permission: 'ai.view' },
         ],
       },
@@ -267,7 +266,6 @@ function getSelectedKey(pathname: string): string {
     '/ops/logs',
     '/ai/assistant',
     '/ai/qa',
-    '/ai/anomaly',
     '/ai/skill-editor',
     '/ai/skill-market',
     '/ai/log-analysis',
