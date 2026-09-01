@@ -6,7 +6,7 @@ key_decisions:
   - 文档归属强制二选一，跨业务+架构的文档放 architecture/cross-cutting/
   - spec 目录单一化：docs/specs/{active,archived}/
   - 旧路径零兼容：原 general/ + superpowers/ + governance/ 三目录已删除（P0 重构后）
-last_updated: 2026-07-26
+last_updated: 2026-09-01
 ---
 
 # GAF docs/ 知识库
@@ -45,7 +45,7 @@ last_updated: 2026-07-26
 |----|------|------|
 | 前端层 | [`architecture/frontend/`](architecture/frontend/) | 待新文档填入 |
 | 后端层 | [`architecture/backend/`](architecture/backend/) | 待新文档填入 |
-| Agent 层 | [`architecture/agent/`](architecture/agent/) | 待新文档填入 |
+| Worker 层 | [`architecture/worker/`](architecture/worker/) | 待新文档填入 |
 | Desktop 层 | [`architecture/desktop/`](architecture/desktop/) | Electron 部署设计 |
 | 横切关注点 | [`architecture/cross-cutting/`](architecture/cross-cutting/) | 并发 / pre-commit / 数据流 |
 | 架构根 | [`architecture/`](architecture/) | 总览 / 最优方案 / 业务×架构映射 |

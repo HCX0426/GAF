@@ -4,13 +4,13 @@ Verifies that the WebSocket channel through which ``task.result`` messages
 flow is healthy, and that the device-center UI (which would surface task
 results) renders without JS errors.
 
-The I1 fix lives in ``backend/agents/consumers.py``:
-  - handler_map now includes ``'task.result': self._handle_task_result``
-  - ``_handle_task_result`` dispatches to ``_handle_task_completed`` (success=True)
-    or ``_handle_task_failed`` (success=False) based on the ``success`` flag
+The I1 fix lives in ``backend/protocol/consumers.py`` (WorkerConsumer):
+  - handler_map includes ``MessageType.TASK_RESULT: self._handle_task_result``
+  - ``_handle_task_result`` persists the result via ``_db_update_execution_result``
+    (success flag + error_msg + elapsed_time) and releases concurrency/device state
 
 This script does NOT trigger a real task (no device is attached). Instead it:
-  1. Confirms the I1 handler is registered in consumers.py (static check)
+  1. Confirms the I1 handler is registered in protocol/consumers.py (static check)
   2. Logs in via the browser
   3. Opens the device center page and verifies it renders
   4. Hooks ``window.WebSocket`` before page load to observe the WS lifecycle
@@ -34,7 +34,7 @@ import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-CONSUMERS_PATH = REPO_ROOT / "backend" / "agents" / "consumers.py"
+CONSUMERS_PATH = REPO_ROOT / "backend" / "protocol" / "consumers.py"
 SCREENSHOT_PATH = REPO_ROOT / ".trash" / "e2e_screenshot.png"
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://127.0.0.1:5173")
@@ -102,25 +102,22 @@ WS_PROBE_INIT_SCRIPT = r"""
 
 
 def _check_i1_handler_registered() -> tuple[bool, str]:
-    """Static check: confirm ``task.result`` handler is wired in consumers.py."""
+    """Static check: confirm ``task.result`` handler is wired in protocol/consumers.py."""
     if not CONSUMERS_PATH.exists():
         return False, f"consumers.py not found at {CONSUMERS_PATH}"
     src = CONSUMERS_PATH.read_text(encoding="utf-8")
-    has_mapping = "'task.result': self._handle_task_result" in src
-    has_handler = "def _handle_task_result(self, data):" in src
-    has_dispatch_success = "self._handle_task_completed(data)" in src
-    has_dispatch_fail = "self._handle_task_failed(data)" in src
-    if has_mapping and has_handler and has_dispatch_success and has_dispatch_fail:
-        return True, "task.result handler registered + dispatches to completed/failed"
+    has_mapping = "MessageType.TASK_RESULT: self._handle_task_result" in src
+    has_handler = "async def _handle_task_result(self, frame):" in src
+    has_persist = "await self._db_update_execution_result(" in src
+    if has_mapping and has_handler and has_persist:
+        return True, "task.result handler registered + persists execution result"
     missing = []
     if not has_mapping:
         missing.append("handler_map entry missing")
     if not has_handler:
         missing.append("_handle_task_result method missing")
-    if not has_dispatch_success:
-        missing.append("success dispatch missing")
-    if not has_dispatch_fail:
-        missing.append("failure dispatch missing")
+    if not has_persist:
+        missing.append("result persist (_db_update_execution_result) missing")
     return False, "; ".join(missing)
 
 
@@ -154,7 +151,7 @@ def main() -> int:
 
     # Static check first (does not require the browser).
     i1_ok, i1_detail = _check_i1_handler_registered()
-    results.append(("I1 handler registered in consumers.py", "PASS" if i1_ok else "FAIL"))
+    results.append(("I1 handler registered in protocol/consumers.py", "PASS" if i1_ok else "FAIL"))
     print(f"[STATIC] I1 handler check: {i1_detail}")
 
     browser = None

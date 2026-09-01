@@ -2,10 +2,10 @@
 summary: architecture/ 架构视角索引（5 层 + 横切）
 applies_to: ['architecture', 'navigation']
 key_decisions:
-  - 五层架构：frontend / backend / agent / desktop / cross-cutting
+  - 五层架构：frontend / backend / worker / desktop / cross-cutting
   - 架构根放总览类文档（overview / optimal-solution / features-overview）
   - 跨层文档放 cross-cutting/
-last_updated: 2026-07-26
+last_updated: 2026-09-01
 ---
 
 # architecture/ 架构视角索引
@@ -27,7 +27,7 @@ last_updated: 2026-07-26
 |----|------|--------|------|
 | 前端层 | [`frontend/`](frontend/) | 0 | 待新文档填入 |
 | 后端层 | [`backend/`](backend/) | 0 | 待新文档填入 |
-| Agent 层 | [`agent/`](agent/) | 0 | 待新文档填入 |
+| Worker 层 | [`worker/`](worker/) | 0 | 待新文档填入 |
 | Desktop 层 | [`desktop/`](desktop/) | 1 | 部署设计（Electron） |
 | 横切关注点 | [`cross-cutting/`](cross-cutting/) | 2 | 并发设计 / pre-commit 阶段 |
 
