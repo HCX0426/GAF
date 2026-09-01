@@ -28,7 +28,7 @@ d3_count_drift:
   patterns:
     - regex: "(\\d+)\\s+(?:条\\s+)?Active\\s+N##"
       counter: "count_active_n_in_failure_modes"
-    - regex: "(\\d+)\\s+docs"
+    - regex: "(\\d+)\\s+docs(?![a-zA-Z])"
       counter: "count_docs_in_directory"
     - regex: "(\\d+)\\s+个\\s+sub-file"
       counter: "count_yn_matrices_subfiles"
