@@ -5,7 +5,7 @@ task_type: documentation / refactor
 status: ✅ 已归档
 start_ts: 2026-08-17T14:40:00+08:00
 end_ts: 2026-08-17T15:15:00+08:00
-commit_hash: -
+commit_hash: '-'
 source: N180 元评估 (用户 "ai的大脑...你评估下") — 弱项 W1-W5 立即修, W6 登记 TD
 applies_to: [.ai-memory/meta/failure-modes.md, .ai-memory/lessons/README.md, .ai-memory/meta/yn-matrices/_testing.md, .ai-memory/meta/archived-lessons.md, scripts/lessons/promote_lessons.py]
 archived_at: 2026-08-17T15:20:00+08:00

@@ -3,7 +3,7 @@ spec_id: spec-88
 title: TD-336 — bug 排查三维根因评估规则体系补全 (4 新 N## + 3 强化 + 5 文档)
 created: 2026-07-22
 status: ✅ done
-commit: -
+commit: '-'
 related_td: [TD-336]
 related_n: [N182, N183, N184, N185, N150, N167]
 depends_on: []

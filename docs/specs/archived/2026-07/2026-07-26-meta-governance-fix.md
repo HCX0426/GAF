@@ -13,7 +13,7 @@ priority: high
 owner: AI
 related_td: 'TD-309 (重开), TD-342 (新登记: spec-context 机制缺位)'
 completed_at: 2026-07-26
-completed_commit: -
+completed_commit: '-'
 ---
 
 # spec-2026-07-26-meta-governance-fix — meta 治理三件套

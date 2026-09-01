@@ -15,7 +15,7 @@ priority: high
 owner: AI
 related_td: []
 completed_at: 2026-07-26
-completed_commit: -
+completed_commit: '-'
 ---
 
 # spec-2026-07-26-trae-specs-plans-merge — .trae/specs + .trae/plans 合并到 docs/

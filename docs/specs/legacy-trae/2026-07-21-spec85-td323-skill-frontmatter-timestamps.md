@@ -3,7 +3,7 @@ spec_id: spec-85
 title: TD-323 — SKILL.md frontmatter 时间戳自动化
 created: 2026-07-21
 status: ✅ done
-commit: -
+commit: '-'
 related_td: [TD-323]
 related_n: []
 depends_on: []

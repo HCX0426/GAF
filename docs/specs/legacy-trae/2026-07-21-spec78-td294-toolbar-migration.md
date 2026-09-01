@@ -4,7 +4,7 @@ title: TD-294 Phase 4b — 高优 5 文件 toolbar → gaf-toolbar utility class
 created: 2026-07-21
 status: ✅ done
 td: TD-294 (Phase 4b/4)
-commit: -
+commit: '-'
 ---
 
 # spec-78: TD-294 Phase 4b — toolbar → gaf-toolbar

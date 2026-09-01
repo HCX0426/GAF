@@ -6,7 +6,7 @@ created: 2026-07-20
 last_updated: 2026-07-20
 related: TD-282 (spec-39 Phase 7 关联)
 n167_score: 15/15 (3 dimensions, medium modification)
-commit: -
+commit: '-'
 ---
 
 # Spec-38: hook 按 maintainer 模式差异化校验

@@ -14,7 +14,7 @@ priority: high
 owner: AI
 related_td: TD-341
 completed_at: 2026-07-26
-completed_commit: -
+completed_commit: '-'
 ---
 
 # spec-2026-07-26-td341 — ref/ 与 docs/ 职责合并

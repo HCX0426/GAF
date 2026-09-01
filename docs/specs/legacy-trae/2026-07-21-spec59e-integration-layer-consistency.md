@@ -7,7 +7,7 @@ status: ✅ completed
 task_type: documentation
 n167_score: 14/15 (3 维 1/2/7, A 领先 B 2 分 < 5 阈值, 用户授权)
 ai_self_decide: false (用户授权 A)
-commit: -
+commit: '-'
 ---
 
 ## 阶段状态表

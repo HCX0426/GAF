@@ -6,7 +6,7 @@ created: 2026-07-20
 last_updated: 2026-07-20
 related: spec-39 (TD-281 fix), spec-44 (plan-44 status), spec-53 (L3-1 scan that found these)
 n167_score: 15/15 (3 dimensions, medium modification)
-commit: -
+commit: '-'
 ---
 
 # Spec-54: TD-281 状态迁移 + plan-44 状态同步 + B-9~B-14 新 TD 登记

@@ -3,7 +3,7 @@ spec_id: spec-84
 title: TD-322 — spec 编号归一 (同号多版本歧义)
 created: 2026-07-21
 status: ✅ done
-commit: -
+commit: '-'
 related_td: [TD-322]
 related_n: []
 depends_on: []

@@ -3,7 +3,7 @@ spec_id: spec-112
 title: TD-330 sub-spec 20 — AuditLogPage + LogCenterPage hex color → antd token 治理
 created: 2026-07-22
 status: ✅ done
-commit: -
+commit: '-'
 related_td: [TD-330]
 related_n: [N167, N151]
 depends_on: [spec-111]

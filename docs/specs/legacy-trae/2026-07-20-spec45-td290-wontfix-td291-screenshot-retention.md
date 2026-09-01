@@ -6,7 +6,7 @@ created: 2026-07-20
 last_updated: 2026-07-20
 related: TD-291 (wontfix → FIXED 重新开放); TD-290 已 spec-39 wontfix 闭环, 不处理
 n167_score: 9/9 (3 dimensions, medium modification, AI 自决 + 用户授权方案 B)
-commit: -
+commit: '-'
 ---
 
 # Spec-45: TD-291 screenshot_retention_gb wontfix 重新开放 + 实施

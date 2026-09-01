@@ -3,7 +3,7 @@ spec_id: spec-90
 title: TD-325 — 治理指标 dashboard (当前快照版)
 created: 2026-07-22
 status: ✅ done
-commit: -
+commit: '-'
 related_td: [TD-325]
 related_n: [N167, N151]
 depends_on: [spec-89]

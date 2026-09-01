@@ -3,7 +3,7 @@ spec_id: spec-89
 title: TD-326 — spec 流程可视化依赖图
 created: 2026-07-22
 status: ✅ done
-commit: -
+commit: '-'
 related_td: [TD-326]
 related_n: [N167, N151]
 depends_on: []

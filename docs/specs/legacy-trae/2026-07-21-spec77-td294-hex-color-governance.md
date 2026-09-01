@@ -4,7 +4,7 @@ title: TD-294 Phase 4a — 4 文件 ~22 处 hex 颜色 → antd design token
 created: 2026-07-21
 status: ✅ done
 td: TD-294 (Phase 4a/4)
-commit: -
+commit: '-'
 ---
 
 # spec-77: TD-294 Phase 4a — hex 颜色治理

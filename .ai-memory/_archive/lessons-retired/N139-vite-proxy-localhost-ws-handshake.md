@@ -13,7 +13,7 @@ related_files:
   - frontend/src/hooks/useNotificationWebSocket.ts
 created_by: AI
 added_at: 2026-07-02
-example_commit: -
+example_commit: '-'
 level: L1
 n_id: N139
 topic: platform-env

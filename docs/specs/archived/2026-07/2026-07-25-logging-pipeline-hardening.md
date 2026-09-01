@@ -29,7 +29,7 @@ scope:
   - backend/debug/services.py
 estimated_loc: 800
 actual_loc: 850
-commit: - (阶段 1-4 全部完成, 含 N190 数据流断点修复)
+commit: '- (阶段 1-4 全部完成, 含 N190 数据流断点修复)'
 ---
 
 # 日志与 Pipeline 加固设计规格

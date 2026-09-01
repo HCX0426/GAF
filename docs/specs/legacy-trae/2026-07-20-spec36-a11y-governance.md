@@ -6,7 +6,7 @@ created: 2026-07-20
 last_updated: 2026-07-20
 related: TD-270, TD-271, TD-272 (spec-35 L3-1 扫描发现)
 n167_score: 15/15 (3 dimensions, medium modification)
-commit: -
+commit: '-'
 ---
 
 # Spec-36: a11y 治理 — TD-270 aria-label + TD-271 响应式审计 + TD-272 PageWrapper 审计

@@ -3,7 +3,7 @@ spec_id: spec-87
 title: TD-331 — 代码-文档因果绑定 pre-commit hook
 created: 2026-07-22
 status: ✅ done
-commit: -
+commit: '-'
 related_td: [TD-331]
 related_n: [N167]
 depends_on: []

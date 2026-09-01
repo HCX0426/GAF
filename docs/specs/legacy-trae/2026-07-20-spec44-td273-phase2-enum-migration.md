@@ -6,7 +6,7 @@ created: 2026-07-20
 last_updated: 2026-07-20
 related: TD-273 (Phase 2 of 2; Phase 1 = spec-40)
 n167_score: 9/9 (3 dimensions, medium modification, AI 自决)
-commit: -
+commit: '-'
 ---
 
 # Spec-44: TD-273 Phase 2 — agent 字符串字面量全量迁移到 enum

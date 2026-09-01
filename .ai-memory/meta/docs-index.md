@@ -10,6 +10,7 @@ related_files:
   - .skills/skills/gaf-orchestrator/SKILL.md
 created_by: AI
 generated: 2026-08-28
+last_manual_edit: 2026-08-28
 ---
 
 # GAF docs/ 设计文档索引（auto-generated）

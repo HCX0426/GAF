@@ -3,7 +3,7 @@ spec_id: spec-92
 title: TD-327 — e2e run_all.py 接入 CI (weekly job + artifact + 通知)
 created: 2026-07-22
 status: ✅ done
-commit: -
+commit: '-'
 related_td: [TD-327]
 related_n: [N167, N151]
 depends_on: []

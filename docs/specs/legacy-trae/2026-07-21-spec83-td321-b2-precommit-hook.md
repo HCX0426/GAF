@@ -3,7 +3,7 @@ spec_id: spec-83
 title: TD-321 — B2 大修改 pre-commit hook 强制
 created: 2026-07-21
 status: ✅ done
-commit: -
+commit: '-'
 related_td: [TD-321]
 related_n: [N151]
 depends_on: []

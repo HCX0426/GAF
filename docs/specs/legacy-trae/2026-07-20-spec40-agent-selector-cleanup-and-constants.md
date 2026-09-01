@@ -6,7 +6,7 @@ created: 2026-07-20
 last_updated: 2026-07-20
 related: TD-288 (full close), TD-273 (Phase 1 of 2; Phase 2 = spec-44)
 n167_score: 9/9 (3 dimensions, medium modification, AI 自决)
-commit: -
+commit: '-'
 ---
 
 # Spec-40: TD-288 AgentSelector 清理 + TD-273 Phase 1

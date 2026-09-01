@@ -5,7 +5,7 @@ task_type: refactor / new_feature
 status: ✅ 已归档
 start_ts: 2026-08-17T15:30:00+08:00
 end_ts: 2026-08-17T15:50:00+08:00
-commit_hash: -
+commit_hash: '-'
 source: TD-364 (s28 N180 元评估 W6) — M2 激活率只测"声称 N## 的 commit", 未声称的 commit 有覆盖率盲区
 applies_to: [scripts/hooks/check_claimed_rules.py, scripts/tests/test_check_claimed_rules.py, docs/archive/active-tech-debt.md]
 archived_at: 2026-08-17T15:55:00+08:00

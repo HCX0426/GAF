@@ -3,7 +3,7 @@ spec_id: spec-118
 title: TD-330 sub-spec 26 — 5 文件 hex color → antd token 治理 (RecordingStepper/Editor/RecordingsPage/AccountLoginTester/Monitors index)
 created: 2026-07-22
 status: ✅ done
-commit: -
+commit: '-'
 related_td: [TD-330]
 related_n: [N167, N151]
 depends_on: [spec-117]

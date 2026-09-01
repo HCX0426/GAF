@@ -1429,7 +1429,7 @@ describe('validateTask API', () => {
 // frontend/src/api/tasks.ts (追加)
 export interface CheckItem {
   check: string;
-  status: 'pass' | 'fail' | 'warn';
+  status: ''pass' | 'fail' | 'warn';'
   message: string;
   node_id: string | null;
   suggestion: string;

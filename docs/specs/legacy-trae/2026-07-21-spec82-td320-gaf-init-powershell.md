@@ -3,7 +3,7 @@ spec_id: spec-82
 title: TD-320 — gaf_init.ps1 PowerShell 等价版本
 created: 2026-07-21
 status: ✅ done
-commit: -
+commit: '-'
 related_td: [TD-320]
 related_n: []
 depends_on: []

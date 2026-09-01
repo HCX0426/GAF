@@ -3,7 +3,7 @@ spec_id: spec-86
 title: TD-324 — N181 月度退役机制自动化
 created: 2026-07-22
 status: ✅ done
-commit: -
+commit: '-'
 related_td: [TD-324]
 related_n: [N181]
 depends_on: []

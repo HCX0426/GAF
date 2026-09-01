@@ -6,7 +6,7 @@ created: 2026-07-20
 last_updated: 2026-07-20
 related: TD-276 (wontfix), TD-278 (fixed), TD-290 (wontfix), TD-291 (wontfix)
 n167_score: N/A (小修改批量, < 50 行 diff per TD, 豁免 7 维度评分)
-commit: -
+commit: '-'
 ---
 
 # Spec-39: 小 TD 批量治理

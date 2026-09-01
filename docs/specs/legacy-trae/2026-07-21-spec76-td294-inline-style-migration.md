@@ -4,7 +4,7 @@ title: TD-294 Phase 3b — 批量替换 4 文件 50 处 inline style → classNa
 created: 2026-07-21
 status: ✅ done
 td: TD-294 (Phase 3b/4)
-commit: -
+commit: '-'
 ---
 
 # spec-76: TD-294 Phase 3b — 批量替换 inline style → className

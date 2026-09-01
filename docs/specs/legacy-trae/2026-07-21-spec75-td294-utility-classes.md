@@ -4,7 +4,7 @@ title: TD-294 Phase 3a — 扩展 utility class 体系 (Phase 3 前置依赖)
 created: 2026-07-21
 status: ✅ done
 td: TD-294 (Phase 3a/4, 前置依赖)
-commit: -
+commit: '-'
 ---
 
 # spec-75: TD-294 Phase 3a — 扩展 utility class 体系

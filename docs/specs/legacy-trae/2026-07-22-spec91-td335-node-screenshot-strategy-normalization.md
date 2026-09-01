@@ -3,7 +3,7 @@ spec_id: spec-91
 title: TD-335 — agent 识别节点截图获取策略归一化 (长期, 文档化 + OCR 错误信息清理)
 created: 2026-07-22
 status: ✅ done
-commit: -
+commit: '-'
 related_td: [TD-335]
 related_n: [N167, N151, N182, N183]
 depends_on: [spec-88]

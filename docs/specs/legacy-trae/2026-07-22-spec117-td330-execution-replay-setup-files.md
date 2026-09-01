@@ -3,7 +3,7 @@ spec_id: spec-117
 title: TD-330 sub-spec 25 — ExecutionReplay.tsx + 3 Setup 文件 hex color → antd token 治理
 created: 2026-07-22
 status: ✅ done
-commit: -
+commit: '-'
 related_td: [TD-330]
 related_n: [N167, N151]
 depends_on: [spec-116]
