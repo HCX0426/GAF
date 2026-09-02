@@ -7,11 +7,10 @@ Phase 1 (2026-08-08, Task 1.2):
 
 # PipelineEngine — the core pipeline execution engine
 # StateMachineEngine — StateMachine execution engine wrapper
-from engine.state_machine_engine import StateMachineEngine
-
 # TaskExecutor — unified entry point for all task types
 from engine.executor import BaseEngine, PipelineEngineAdapter, TaskExecutor
 from engine.pipeline_engine import MAX_STEP_TIMEOUT, PipelineEngine, PipelineResult
+from engine.state_machine_engine import StateMachineEngine
 
 __all__ = [
     "PipelineEngine",
