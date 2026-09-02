@@ -22,6 +22,8 @@ import os
 import shutil
 from datetime import datetime, timedelta
 
+logger = logging.getLogger(__name__)
+
 
 class DateRotatingFileHandler(logging.Handler):
     """按日期分桶的日志轮转 Handler.
