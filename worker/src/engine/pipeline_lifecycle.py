@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import threading
 from collections.abc import Callable
@@ -376,7 +377,7 @@ class PipelineSetupMixin:
         Args:
             json_str: Pipeline JSON 字符串
         """
-        data = __import__('json').loads(json_str)
+        data = json.loads(json_str)
         self.load(data)
 
     def validate(self) -> list[ValidationError]:

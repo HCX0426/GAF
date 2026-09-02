@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import os
@@ -337,7 +338,7 @@ def system_status_view(request):
 
         today = timezone.now().date()
         today_start = timezone.make_aware(
-            __import__('datetime').datetime.combine(today, __import__('datetime').time.min),
+            datetime.datetime.combine(today, datetime.time.min),
         )
         today_completed = TaskExecution.objects.filter(
             status=TaskExecution.Status.SUCCESS,
