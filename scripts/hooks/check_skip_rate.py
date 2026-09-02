@@ -12,6 +12,7 @@ Data sources:
 - Git log for commit timestamps and subjects.
 - GAF/.gaf_audit.log for BYPASS records.
 """
+# ruff: noqa: I001  # _encoding_safe must stay first; do not reorder imports
 # Bootstrap: make scripts/ importable when this file lives in a subdir.
 import sys as _sys
 from pathlib import Path as _Path
@@ -19,6 +20,8 @@ from pathlib import Path as _Path
 _SCRIPTS_DIR = _Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_DIR) not in _sys.path:
     _sys.path.insert(0, str(_SCRIPTS_DIR))
+
+import _encoding_safe  # noqa: E402,F401  (must be first; reconfigures stdout to UTF-8)
 
 import argparse  # noqa: E402
 import re  # noqa: E402
