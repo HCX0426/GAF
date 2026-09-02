@@ -41,6 +41,7 @@ import contextlib
 import hashlib
 import logging
 import os
+import threading
 import time
 
 import numpy as np
@@ -51,6 +52,7 @@ logger = logging.getLogger(__name__)
 # the same connection pool. None = tried and failed; absent = not tried.
 _REDIS_CLIENT = None  # type: ignore[type-arg]
 _REDIS_TRIED = False
+_REDIS_LOCK = threading.Lock()
 
 
 def _get_redis_client():
@@ -62,12 +64,15 @@ def _get_redis_client():
     global _REDIS_CLIENT, _REDIS_TRIED
     if _REDIS_TRIED:
         return _REDIS_CLIENT
-    _REDIS_TRIED = True
-    try:
-        import redis  # type: ignore[import-not-found]
-    except ImportError:
-        logger.info("ScreenshotCache: redis-py not installed, using in-memory backend")
-        return None
+    with _REDIS_LOCK:
+        if _REDIS_TRIED:
+            return _REDIS_CLIENT
+        _REDIS_TRIED = True
+        try:
+            import redis  # type: ignore[import-not-found]
+        except ImportError:
+            logger.info("ScreenshotCache: redis-py not installed, using in-memory backend")
+            return None
     url = os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/0")
     try:
         client = redis.Redis.from_url(url, socket_connect_timeout=0.5, socket_timeout=0.5)
@@ -328,6 +333,7 @@ class ScreenshotCache:
 # at import time (which would slow test collection / cold starts and could
 # spam logs if Redis is unavailable during import).
 _default_cache: ScreenshotCache | None = None
+_default_cache_lock = threading.Lock()
 
 
 def get_default_cache() -> ScreenshotCache:
@@ -341,5 +347,7 @@ def get_default_cache() -> ScreenshotCache:
     """
     global _default_cache
     if _default_cache is None:
-        _default_cache = ScreenshotCache()
+        with _default_cache_lock:
+            if _default_cache is None:
+                _default_cache = ScreenshotCache()
     return _default_cache

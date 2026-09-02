@@ -37,7 +37,44 @@ $ErrorActionPreference = "Continue"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 $GafRoot = Resolve-Path "$PSScriptRoot/.."
-$PythonExe = "D:\code\environment\conda\envs\gaf\python.exe"
+
+# Auto-discover the conda gaf python.exe (mirrors gaf_init.ps1 discovery).
+function Get-GafPython {
+    # 1. CONDA_PREFIX points at the active env's install root.
+    if ($env:CONDA_PREFIX -and (Test-Path "$env:CONDA_PREFIX\python.exe")) {
+        return "$env:CONDA_PREFIX\python.exe"
+    }
+    # 2. Resolve conda.exe location to derive the default envs dir.
+    $condaExe = Get-Command conda -ErrorAction SilentlyContinue
+    if ($condaExe) {
+        try {
+            $envs = & $condaExe.Source env list 2>$null | Select-String -Pattern "\sgaf\s" 
+            if ($envs) {
+                $gafPath = ($envs[0].Line -split "\s+")[0]
+                if ($gafPath -and (Test-Path "$gafPath\python.exe")) {
+                    return "$gafPath\python.exe"
+                }
+            }
+        } catch { }
+    }
+    # 3. Fall back to common install locations.
+    $candidates = @(
+        "D:\code\environment\conda\envs\gaf\python.exe",
+        "D:\code\environment\Miniconda3\envs\gaf\python.exe",
+        "$env:USERPROFILE\Miniconda3\envs\gaf\python.exe",
+        "$env:USERPROFILE\Anaconda3\envs\gaf\python.exe"
+    )
+    foreach ($cand in $candidates) {
+        if ($cand -and (Test-Path $cand)) { return $cand }
+    }
+    # 4. Last resort: rely on python on PATH.
+    return $null
+}
+
+$PythonExe = Get-GafPython
+if (-not $PythonExe) {
+    $PythonExe = "python"
+}
 $DaemonScript = Join-Path $GafRoot "scripts\gaf_daemon.py"
 
 switch ($Action) {

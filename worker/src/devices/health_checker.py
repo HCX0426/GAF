@@ -390,7 +390,8 @@ class DeviceHealthChecker:
             return None
         except subprocess.TimeoutExpired:
             return None
-        except Exception:
+        except Exception as exc:
+            logger.warning("adb devices probe failed: %s", exc, exc_info=True)
             return None
 
     def _fire_callback(self, device_id: str, old_status: str, new_status: str) -> None:

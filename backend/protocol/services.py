@@ -269,7 +269,7 @@ def set_agent_offline(agent_id, channel=None):
     ).update(
         status=TaskExecution.Status.FAILED,
         error_message="Agent 断开连接，任务中断",
-        completed_at=__import__('django').utils.timezone.now(),
+        completed_at=django_timezone.now(),
     )
     if affected:
         logger.info(

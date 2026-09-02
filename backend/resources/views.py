@@ -42,6 +42,24 @@ from resources.validators import validate_resource_pack, validate_resource_pack_
 logger = logging.getLogger(__name__)
 
 
+def _safe_extract_zip(zf: zipfile.ZipFile, dest_dir: str) -> None:
+    """Extract a ZIP file with path-traversal validation (zip-slip prevention).
+
+    Validates that every member path resolves within ``dest_dir`` before
+    extraction, preventing malicious archives from writing outside the
+    target directory via ``../../`` sequences.
+    """
+    dest_path = Path(dest_dir).resolve()
+    for info in zf.infolist():
+        target = (dest_path / info.filename).resolve()
+        if not str(target).startswith(str(dest_path)):
+            raise ValueError(
+                f"Refusing to extract '{info.filename}': path traversal detected "
+                f"(resolves outside {dest_dir})"
+            )
+    zf.extractall(dest_dir)
+
+
 # TD-268: path params used by roi_task/roi_delete actions are not
 # ResourcePack model fields — declare them per action so spectacular does
 # not default to "string" with a warning.
@@ -185,7 +203,7 @@ class ResourcePackViewSet(AuditMixin, viewsets.ModelViewSet):
         temp_dir = tempfile.mkdtemp(prefix='gaf_import_')
         try:
             with zipfile.ZipFile(zip_file, 'r') as zf:
-                zf.extractall(temp_dir)
+                _safe_extract_zip(zf, temp_dir)
 
             pack_dir = _find_pack_root(temp_dir)
             validation = validate_resource_pack_structure(pack_dir)

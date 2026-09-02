@@ -8,9 +8,11 @@ import importlib.util
 import io
 import json
 import logging
+import sys
 import zipfile
 from pathlib import Path
 
+import django
 from django.conf import settings
 from django.db import transaction
 from django.db.migrations.recorder import MigrationRecorder
@@ -669,8 +671,8 @@ def generate_diagnostic(request):
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
             info = {
                 'generated_at': django_now().isoformat(),
-                'django_version': __import__('django').VERSION,
-                'python_version': __import__('sys').version,
+                'django_version': django.VERSION,
+                'python_version': sys.version,
                 'debug_mode': settings.DEBUG,
                 'database_engine': settings.DATABASES['default']['ENGINE'],
                 'user': str(request.user) if request.user.is_authenticated else 'anonymous',

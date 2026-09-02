@@ -1,5 +1,9 @@
 """通知与 Webhook 配置 REST API。"""
 
+import ipaddress
+import socket
+from urllib.parse import urlparse
+
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiTypes, extend_schema
 from gaf_core.audit_constants import AuditAction, AuditResourceType
@@ -13,6 +17,43 @@ from rest_framework.response import Response
 from accounts.permissions import RoleBasedPermission
 from config.app_info import WEBHOOK_TIMEOUT
 from notifications.models import AlertRule, Notification, NotificationPreference, WebhookConfig
+
+# SSRF protection: block private/loopback/internal network targets.
+_BLOCKED_NETWORKS = [
+    ipaddress.ip_network('127.0.0.0/8'),      # loopback
+    ipaddress.ip_network('10.0.0.0/8'),        # Class A private
+    ipaddress.ip_network('172.16.0.0/12'),     # Class B private
+    ipaddress.ip_network('192.168.0.0/16'),    # Class C private
+    ipaddress.ip_network('169.254.0.0/16'),    # link-local
+    ipaddress.ip_network('::1/128'),           # IPv6 loopback
+    ipaddress.ip_network('fc00::/7'),          # IPv6 ULA
+]
+
+
+def _is_safe_webhook_url(url: str) -> bool:
+    """Validate that a webhook URL does not target internal/private networks.
+
+    Prevents SSRF by blocking loopback, private, and link-local addresses.
+    """
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return False
+    if parsed.scheme not in ('http', 'https'):
+        return False
+    hostname = parsed.hostname
+    if not hostname:
+        return False
+    # Resolve hostname to IP and check against blocked networks.
+    try:
+        resolved = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC)
+    except (socket.gaierror, OSError):
+        return False
+    for _, _, _, _, sockaddr in resolved:
+        ip = ipaddress.ip_address(sockaddr[0])
+        if any(ip in net for net in _BLOCKED_NETWORKS):
+            return False
+    return True
 
 
 class NotificationViewSet(AuditMixin, viewsets.ModelViewSet):
@@ -153,14 +194,23 @@ class WebhookConfigViewSet(AuditMixin, viewsets.ModelViewSet):
     @audit_action(AuditAction.EXECUTE, AuditResourceType.WEBHOOK_CONFIG)
     def test_webhook(self, request, pk=None):
         """发送测试消息到指定 Webhook。"""
+        from django.utils import timezone
+
         webhook = self.get_object()
         import requests as req
+
+        # SSRF protection: reject URLs targeting internal networks.
+        if not _is_safe_webhook_url(webhook.url):
+            return Response(
+                {'status': 'error', 'message': 'Webhook URL targets a private/internal network (SSRF blocked)'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             test_payload = {
                 'title': 'GAF Webhook 测试',
                 'body': '如果您收到此消息，说明 Webhook 配置正确。',
-                'timestamp': str(__import__('django').utils.timezone.now()),
+                'timestamp': str(timezone.now()),
             }
             resp = req.post(webhook.url, json=test_payload, timeout=WEBHOOK_TIMEOUT)
             if resp.status_code < 400:

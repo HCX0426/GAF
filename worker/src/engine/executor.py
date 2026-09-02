@@ -14,6 +14,7 @@ by registering additional engines in ``TaskExecutor.engines``.
 from __future__ import annotations
 
 import logging
+import threading
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -22,12 +23,16 @@ from core.result import AutoResult
 # Lazy import for StateMachineEngine to avoid circular dependency
 # (state_machine_engine.py imports BaseEngine from this module).
 _state_machine_engine: Any = None
+_state_machine_engine_lock = threading.Lock()
+
 
 def _get_state_machine_engine() -> BaseEngine:
     global _state_machine_engine
     if _state_machine_engine is None:
-        from engine.state_machine_engine import StateMachineEngine
-        _state_machine_engine = StateMachineEngine()
+        with _state_machine_engine_lock:
+            if _state_machine_engine is None:
+                from engine.state_machine_engine import StateMachineEngine
+                _state_machine_engine = StateMachineEngine()
     return _state_machine_engine
 
 logger = logging.getLogger(__name__)

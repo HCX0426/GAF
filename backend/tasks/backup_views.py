@@ -8,6 +8,7 @@ import shutil
 import tempfile
 import zipfile
 from io import BytesIO
+from pathlib import Path
 
 from django.conf import settings
 from django.core.management import call_command
@@ -19,6 +20,24 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
+
+
+def _safe_extract_zip(zf: zipfile.ZipFile, dest_dir: str) -> None:
+    """Extract a ZIP file with path-traversal validation (zip-slip prevention).
+
+    Validates that every member path resolves within ``dest_dir`` before
+    extraction, preventing malicious archives from writing outside the
+    target directory via ``../../`` sequences.
+    """
+    dest_path = Path(dest_dir).resolve()
+    for info in zf.infolist():
+        target = (dest_path / info.filename).resolve()
+        if not str(target).startswith(str(dest_path)):
+            raise ValueError(
+                f"Refusing to extract '{info.filename}': path traversal detected "
+                f"(resolves outside {dest_dir})"
+            )
+    zf.extractall(dest_dir)
 
 
 @extend_schema(
@@ -117,7 +136,7 @@ def restore_backup(request):
                 f.write(chunk)
 
         with zipfile.ZipFile(zip_path, 'r') as zf:
-            zf.extractall(temp_dir)
+            _safe_extract_zip(zf, temp_dir)
 
         # Match create_backup's database.json filename. Use loaddata (symmetric
         # with dumpdata) instead of cursor.execute to prevent arbitrary SQL

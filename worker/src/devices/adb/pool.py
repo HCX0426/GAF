@@ -31,7 +31,12 @@ class AdbPool:
         return cls._instance
 
     def __init__(self) -> None:
-        # 延迟初始化，避免在 import 时触发 adbutils 导入
+        # 延迟初始化，避免在 import 时触发 adbutils 导入。
+        # Guarded so repeated __init__ (triggered by singleton reuse) does
+        # not reset an already-populated pool.
+        if getattr(self, "_core_initialized", False):
+            return
+        self._core_initialized = True
         self._initialized = False
         self._pool: dict[str, object] = {}  # serial -> AdbDevice
         self._lock_pool = threading.Lock()
@@ -111,11 +116,14 @@ class AdbPool:
 
 # 全局单例
 _pool: AdbPool | None = None
+_pool_lock = threading.Lock()
 
 
 def get_adb_pool() -> AdbPool:
     """获取全局 ADB 连接池单例"""
     global _pool
     if _pool is None:
-        _pool = AdbPool()
+        with _pool_lock:
+            if _pool is None:
+                _pool = AdbPool()
     return _pool

@@ -319,6 +319,11 @@ class CustomMatchNode(PipelineNode):
                     "float": float, "str": str, "bool": bool, "range": range,
                 }}
             else:
+                logger.warning(
+                    "custom_match node %s: safe_mode=False grants full eval() "
+                    "access — ensure pipeline configs come from trusted sources only",
+                    self.id,
+                )
                 eval_globals = {}
             eval_locals = {"results": results}
             verdict = bool(eval(expression, eval_globals, eval_locals))

@@ -7,6 +7,7 @@ import os
 import subprocess
 import tempfile
 import zipfile
+from pathlib import Path
 
 import yaml
 from django.conf import settings
@@ -23,6 +24,24 @@ from accounts.permissions import RoleBasedPermission
 from .models import PluginPackage, PluginSandbox
 
 logger = logging.getLogger(__name__)
+
+
+def _safe_extract_zip(zf: zipfile.ZipFile, dest_dir: str) -> None:
+    """Extract a ZIP file with path-traversal validation (zip-slip prevention).
+
+    Validates that every member path resolves within ``dest_dir`` before
+    extraction, preventing malicious archives from writing outside the
+    target directory via ``../../`` sequences.
+    """
+    dest_path = Path(dest_dir).resolve()
+    for info in zf.infolist():
+        target = (dest_path / info.filename).resolve()
+        if not str(target).startswith(str(dest_path)):
+            raise ValueError(
+                f"Refusing to extract '{info.filename}': path traversal detected "
+                f"(resolves outside {dest_dir})"
+            )
+    zf.extractall(dest_dir)
 
 
 def _log_plugin_audit(request, action, resource_id, details):
@@ -245,7 +264,7 @@ class PluginInstallView(APIView):
             os.makedirs(extract_dir, exist_ok=True)
 
             with zipfile.ZipFile(pkg.package_path, 'r') as zf:
-                zf.extractall(extract_dir)
+                _safe_extract_zip(zf, extract_dir)
 
             pkg.is_installed = True
             pkg.installed_at = timezone.now()
