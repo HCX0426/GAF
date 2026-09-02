@@ -3,8 +3,8 @@ summary: GAF E2E 测试计划 — 全功能测试用例清单（前置条件/步
 applies_to_code_paths:
   - frontend/src/
   - backend/
-  - agent/
-last_updated: 2026-08-29
+  - worker/
+last_updated: 2026-09-01
 ---
 
 # GAF E2E 测试计划
@@ -31,7 +31,7 @@ last_updated: 2026-08-29
 | `devices_control_mode` | `scripts/e2e/scenarios/devices_control_mode.py` | E-06 | 控制模式选择器渲染/切换（TD-015 回归） |
 | `ai_qa_chat` | `scripts/e2e/scenarios/ai_qa_chat.py` | I-03 | LLM 问答真实链（commit - 回归） |
 | mock spec.ts×4 | `frontend/e2e/auth|devices|tasks|system/*.spec.ts` | 快速回归 (CI 友好, mock 前端); system/services 服务管理 TD-419 J-10 | 不依赖后端，供开发期快速验证 ✅ |
-| 环境依赖（已实测 2026-08-28） | 有真实模拟器/设备时手动补测 | E-02(雷电模拟器已扫+注册上线), E-05(模拟器实例+启停按钮已验), K-01~K-03(3 条核心链路已真实执行: exec 90 success / 匹配真实化 / unattended session 13) | 环境齐时均已手动实证；D-09 录制仍需 Agent 端（规格内），其余全自动 |
+| 环境依赖（已实测 2026-08-28） | 有真实模拟器/设备时手动补测 | E-02(雷电模拟器已扫+注册上线), E-05(模拟器实例+启停按钮已验), K-01~K-03(3 条核心链路已真实执行: exec 90 success / 匹配真实化 / unattended session 13) | 环境齐时均已手动实证；D-09 录制仍需 Worker 端（规格内），其余全自动 |
 | 统计对账抽查（月度手动, N218） | `docs/health/e2e-test-plan.md` B-04/B-05（DB 对照, 浏览器实测） | B-04, B-05 | 统计卡片数字与 DB 对账 + 记住我免登录回归 — 见"月度全量"命令补充步骤 |
 
 ### 执行命令（月度全量）
@@ -59,7 +59,7 @@ conda run -n gaf python scripts/e2e/run_all.py
 |------|:---:|------|------|:---:|
 | 通知 notifications | 0 | 真实推送依赖业务事件(任务完成/告警触发), 环境从未跑出通知 | DB 兜底(5 条含 3 分类) | 5 |
 | 插件 plugins | 0 | 从未上传安装过插件包 | DB 兜底(2 包+2 hook) | 2 |
-| SLA 指标 | 0 | 依赖 Agent 真实截图/OCR 上报, 此前无在线 Agent | DB 兜底(5 条) | 5 |
+| SLA 指标 | 0 | 依赖 Worker 真实截图/OCR 上报, 此前无在线 Worker | DB 兜底(5 条) | 5 |
 | 监控事件 | 0 | 依赖监控规则触发(OCR 失配等), 未跑出 | DB 兜底(3 条 3 级) | 3 |
 | 标注 annotations | 0 | 从未用标注工具画过 | DB 兜底(2 条关联 sweep_daily 模板) | 2 |
 | 分组 groups | 0 | 从未创建过分组 | DB 兜底(3 条 owner=admin) | 3 |
@@ -134,8 +134,8 @@ conda run -n gaf python scripts/e2e/run_all.py
 | ID | 测试项 | 前置条件 | 操作步骤 | 期望结果 | 状态 |
 |----|--------|---------|----------|---------|:---:|
 | E-01 | 设备列表渲染+搜索+视图 | 有设备 | 开 /devices，卡片/列表切换 | 渲染正常 | ✅ CURR |
-| E-02 | 扫描模拟器 | Agent 在线 | 点"扫描模拟器" | ✅ 2026-08-28 实测: 单一雷电模拟器(ldconsole 视角 127.0.0.1:5555 + adb 视角 emulator-5554 为同实例别名), 注册为 LDPlayer 并上线; 误注册的重复设备已撤销 | ✅ (真实实例) |
-| E-03 | 扫描窗口+Register | Agent 在线 | 点"扫描窗口"→选窗口→Register | ✅ REGISTER 成功(Endfield 在线, R2 复测)；D3 失败根因=当时无在线 Agent | ✅ CURR (R2+2026-08-28 Chrome-Browser 注册佐证) |
+| E-02 | 扫描模拟器 | Worker 在线 | 点"扫描模拟器" | ✅ 2026-08-28 实测: 单一雷电模拟器(ldconsole 视角 127.0.0.1:5555 + adb 视角 emulator-5554 为同实例别名), 注册为 LDPlayer 并上线; 误注册的重复设备已撤销 | ✅ (真实实例) |
+| E-03 | 扫描窗口+Register | Worker 在线 | 点"扫描窗口"→选窗口→Register | ✅ REGISTER 成功(Endfield 在线, R2 复测)；D3 失败根因=当时无在线 Worker | ✅ CURR (R2+2026-08-28 Chrome-Browser 注册佐证) |
 | E-04 | 测试截图 | 设备在线 | 选在线设备→测试截图 | ⚠️ 截图按钮 R37-P1-C5 已移除, 入口迁至 /resources/annotation 实时标注 | ✅ 迁移闭环(标注页截图流+真实匹配预览) |
 | E-05 | 模拟器生命周期 | 有实例 | /devices/emulators 启停按钮 | ✅ 2026-08-28 实测: LDPlayer 实例显示 + 健康检查/刷新/发送按钮可用 | ✅ (真实实例) |
 | E-06 | 窗口管理-保存配置 | 有窗口 | /devices/windows 存配置 | 保存 loading 正常 | ✅ CURR |
@@ -207,14 +207,14 @@ conda run -n gaf python scripts/e2e/run_all.py
 | J-07 | 备份 | 管理员 | /system/backup 全量备份+恢复 | ✅ 真实备份成功+zip 下载; 定时备份入口已加(scheduled_backup 每日 02:30) | ✅ CURR-R4 |
 | J-08 | 功能开关 | — | /system/feature-flags 新建(灰度 100→50) | 3 条数据+灰度生效 | ✅ CURR |
 | J-09 | 审计日志 | 有记录 | /system/audit-log 筛选+详情抽屉 | 201 条 11 页；详情 JSON | ✅ CURR |
-| J-10 | 服务管理 | 管理员 | /system/services 5 服务卡片渲染 + 查看日志 Drawer + 仅报错过滤 + 健康快照计数 | 卡片含 redis/backend/agent/frontend/daemon; 服务报错计数仅统计真实服务故障(前端 error_boundary 上报行不计入) | ✅ 2026-08-29 (TD-419 mock spec 2 例 + 健康快照噪声修复后实测 count=0) |
+| J-10 | 服务管理 | 管理员 | /system/services 5 服务卡片渲染 + 查看日志 Drawer + 仅报错过滤 + 健康快照计数 | 卡片含 redis/backend/worker/frontend/daemon; 服务报错计数仅统计真实服务故障(前端 error_boundary 上报行不计入) | ✅ 2026-08-29 (TD-419 mock spec 2 例 + 健康快照噪声修复后实测 count=0) |
 
 ## K. 核心链路 (3)
 
 | ID | 测试项 | 前置条件 | 操作步骤 | 期望结果 | 状态 |
 |----|--------|---------|----------|---------|:---:|
-| K-01 | 创建任务→执行 | Agent 在线 | UI 建 Pipeline→验证→保存→选真实设备→执行 | ✅ 2026-08-28 真实执行链路打通过: F6 修执行按钮 → POST pipeline/2/execute → agent 派发 → LDPlayer 模拟器执行 completion (exec 90 success, 含 result_data) | ✅ (真实执行) |
-| K-02 | 设备→截图→模板匹配 | Agent+设备在线 | 选在线设备→截图→模板匹配 | 注册链路 ✅(Endfield/Chrome-Browser/LDPlayer 在线)；截图入口=R37-P1-C5 迁至标注页实时标注(截图流)；匹配预览 R37-P2 已真实化(后端 cv2 端点, 前端当前帧+选中框裁剪) | ✅ (R37-P2 已真实化) |
+| K-01 | 创建任务→执行 | Worker 在线 | UI 建 Pipeline→验证→保存→选真实设备→执行 | ✅ 2026-08-28 真实执行链路打通过: F6 修执行按钮 → POST pipeline/2/execute → worker 派发 → LDPlayer 模拟器执行 completion (exec 90 success, 含 result_data) | ✅ (真实执行) |
+| K-02 | 设备→截图→模板匹配 | Worker+设备在线 | 选在线设备→截图→模板匹配 | 注册链路 ✅(Endfield/Chrome-Browser/LDPlayer 在线)；截图入口=R37-P1-C5 迁至标注页实时标注(截图流)；匹配预览 R37-P2 已真实化(后端 cv2 端点, 前端当前帧+选中框裁剪) | ✅ (R37-P2 已真实化) |
 | K-03 | 定时任务→无人值守 | 设备绑定 | 建 Cron→预热→无人值守 start | ✅ 2026-08-28 全链路打通: Cron 创建 ✅ → Chrome-Browser 注册在线 ✅ → preflight can_start ✅ → 真实 start (session 13 running, dispatched_count=1, chain_exec 49) → stop ✅ | ✅ (真实启动) |
 
 ---

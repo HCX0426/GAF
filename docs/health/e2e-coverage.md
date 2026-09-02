@@ -3,8 +3,8 @@ summary: GAF 全功能 E2E 覆盖追踪 — 每日 UI 实测 + 核心链路真�
 applies_to_code_paths:
   - frontend/src/
   - backend/
-  - agent/
-last_updated: 2026-08-28
+  - worker/
+last_updated: 2026-09-01
 ---
 
 # GAF E2E 覆盖追踪
@@ -28,7 +28,7 @@ last_updated: 2026-08-28
 |----|------|:---:|------|------|
 | D1 | 登录/Setup/工作台/游戏档案 | 6 | ✅ 4 / ⚠️ 3 | 4 页已测, 2 BUG 登记 |
 | D2 | 任务 | 6 | ⚠️ 6 | 2 高 BUG: 编辑页未预填 + pipeline/:id 未预载 |
-| D3 | 设备 | 4 | ⚠️ 4 | 无在线 Agent 影响验证; Register 报 TraeWork CN 失败 |
+| D3 | 设备 | 4 | ⚠️ 4 | 无在线 Worker 影响验证; Register 报 TraeWork CN 失败 |
 | D4 | 资源+账户 | 5 | ✅ 5 | 全可点, 0 业务错误; 新增弃用: InputNumber.addonAfter + useForm 未绑定 |
 | D5 | 运维 | 7 (11路由) | ⚠️ 7 | 🔴2 渲染崩溃: UnattendedLogViewer + DailySummaryCarousel |
 | D6 | AI | 8 | ✅ 8 | 全可点 0 业务错误; 仅 antd List/Alert 弃用 |
@@ -93,7 +93,7 @@ last_updated: 2026-08-28
 | 22 | /ops/executions | 执行监控 | 刷新/4 tab(列表 89 条: 状态过滤/日期/分页/行详情; 每日报告导出; 无人值守日志; 今日摘要) | 同* | 0 | 🔴 | 🔴BUG: 无人值守日志 tab 崩溃 `logs.forEach is not a function`; 今日摘要 tab 崩溃 `items.map is not a function` |
 | 23 | /ops/scheduler | 定时任务 | 创建 modal(Cron 编辑器 分/时/日/月/星期)/DAG 编排(React Flow+缩放+添加节点 modal)/排序类型 | 同* | 0 | ✅ | 排序类型仅"周期/单次"; 无账户轮换/执行计划预览入口(或为子路由) |
 | 24 | /ops/monitors | 监控告警 | 全局静默/自动刷新/7 tab(监控规则/告警规则含静默时段/事件含升级时间/恢复日志/趋势/健康度/诊断) | 同* | 0 | ✅ | 全可点; 无活跃告警→确认按钮空态 |
-| 25 | /ops/analytics | 数据分析 | 4 指标卡(89 执行/67.4% 成功)/步骤耗时排行/执行趋势表/本周概况/Agent 性能对比 | 同* | 0 | ✅ | 无热力图/周报/回放入口(可能归他页) |
+| 25 | /ops/analytics | 数据分析 | 4 指标卡(89 执行/67.4% 成功)/步骤耗时排行/执行趋势表/本周概况/Worker 性能对比 | 同* | 0 | ✅ | 无热力图/周报/回放入口(可能归他页) |
 | 26 | /ops/sla | SLA 监控 | 指标卡(截图 P50/P99/OCR P50)/SLA 明细表 | 同* | 0 | ✅ | 无数据空态; 无显式筛选 |
 | 27 | /ops/logs | 日志中心 | 8 Tab 全切(时间线 257 条/应用含 trace_id/审计/恢复/消息帧/LLM/崩溃/归档) | 同* | 0 | ✅ | 应用日志页 WS "实时推送未连接" |
 
@@ -136,7 +136,7 @@ last_updated: 2026-08-28
 
 | # | 链路 | 步骤 | 状态 |
 |---|------|------|------|
-| 1 | 创建任务 → 执行 | UI 建 Pipeline → 保存 → 真实设备执行 | ✅ 真实执行通过: pipeline e2e-manual-n1138 → agent 派发 → LDPlayer 模拟器执行 completion (**exec 90 success** 含 result_data); F6 修执行按钮 + canExecute |
+| 1 | 创建任务 → 执行 | UI 建 Pipeline → 保存 → 真实设备执行 | ✅ 真实执行通过: pipeline e2e-manual-n1138 → worker 派发 → LDPlayer 模拟器执行 completion (**exec 90 success** 含 result_data); F6 修执行按钮 + canExecute |
 | 2 | 设备 → 截图 → 模板匹配 | 选设备 → 截图 → 模板匹配 | ✅ 注册链路 Endfield/Chrome-Browser/LDPlayer 全在线; 截图入口=标注页实时标注截图流; 匹配预览 **R37-P2 已真实化**(后端 cv2 端点实测坐标精确召回) |
 | 3 | 定时任务 → 无人值守 | 建 Cron → 预热 → 无人值守 start | ✅ 全链路打通: Cron 创建 ✅ → 设备注册在线 ✅ → preflight can_start=True ✅ → **真实 start session 13 (dispatched_count=1, chain exec 49)** → stop ✅ |
 
@@ -157,15 +157,15 @@ last_updated: 2026-08-28
 | D1 | 游戏档案 | 🔴 高 | 绑定弹窗（添加任务/任务链/账户）取消按钮显示未翻译 `common.cancel` | 绑定弹窗 i18n | ✅ F1 已修 |
 | D1 | 工作台 | 🟠 中 | antd `List` + `Notification.message()` 弃用告警（console 记为 error 级），后者在 WebSocketProvider onReconnectFailed 触发 | WSProvider.tsx L43 | ✅ M5: notification.message→title 已修; List 各使用处已迁移为原生 map(AlertSummary/ExecutionQueuePreview/UnattendedControlBar/PreflightChecklist), 无残留 import |
 | D1 | 工作台 | 🟠 中 | recharts `width/height=-1` 图表容器渲染告警（执行趋势不渲染） | dashboard 趋势图 | ✅ M6 已修(minWidth/minHeight=1) |
-| D1 | 工作台 | 🟠 中 | WebSocket 重连失败 10 次告警（实时推送可能停更）——需查后端 WS 端口/agent 连接 | backend WS | ✅ M3 排查完成: token 过期非 bug, 告警带重连恢复自动关闭, 保留为设计行为 |
+| D1 | 工作台 | 🟠 中 | WebSocket 重连失败 10 次告警（实时推送可能停更）——需查后端 WS 端口/worker 连接 | backend WS | ✅ M3 排查完成: token 过期非 bug, 告警带重连恢复自动关闭, 保留为设计行为 |
 | D2 | 任务编辑 | 🔴 高 | 编辑态未预填：/tasks/16/edit 打开既有任务名称/描述为空 → 校验必失败 | tasks 编辑页加载逻辑 | ✅ F2 已修 |
 | D2 | Pipeline 详情 | 🔴 高 | /tasks/pipeline/:id 直接访问未预载数据（画布 0 节点、名称仍"未命名流水线"） | pipeline 详情路由加载 | ✅ F3 已修 |
 | D2 | 任务/编辑/市场 | 🟠 中 | i18n key 未翻译大量残留：tasks.editor_save/editor_mode_pipeline/editor_add_step/editor_step_list_title/validation_task_name_required/form_enabled_label | frontend i18n locales | ✅ M4 已修(tasks.* 三语补齐) |
 | D2 | Pipeline 编辑器 | 🟠 中 | "模板"按钮被顶部状态栏元素遮挡拦截坐标点击；动作列窄视口无横向滚动提示 | PipelineEditorPage 布局 | ✅ 关闭(2026-08-28): gaf-toolbar 已 flex-wrap + Tasks/ScheduledTasks 表格已有横向滚动; 探索时遮挡为瞬态视口问题无代码缺陷 |
 | D2 | 全局 | 🟠 中 | console 出现 `SyntaxError: Unexpected token '...'`（来源未定位） | 待定位 | ✅ M8: npm run build 复跑无 SyntaxError 消除 |
 | D2 | 全局 | 🟡 低 | antd Spin "tip" 弃用告警（新增，未在 D1） | 待定位 | ✅ M5 已修(tip→description) |
-| D3 | 设备列表 | 🟠 中 | 点 Register 报 `TraeWork CN registration failed`（后端无在线 Agent 相关？） | devices register 流程 | ✅ 已解决: R2 根因=当时无在线 Agent; 2026-08-28 Chrome-Browser/Endfield 均注册成功佐证 |
-| D3 | 设备列表 | 🟠 中 | 扫描模拟器/测试截图/刷新画面流均提示无在线 Agent/设备离线（环境无 agent，验证受限） | 环境限制 | ✅ 已解决: agent-00dc7742 在线(E-03 窗口注册成功, 2026-08-28 Chrome-Browser 注册佐证); 模拟器扫描仍需真实实例 |
+| D3 | 设备列表 | 🟠 中 | 点 Register 报 `TraeWork CN registration failed`（后端无在线 Worker 相关？） | devices register 流程 | ✅ 已解决: R2 根因=当时无在线 Worker; 2026-08-28 Chrome-Browser/Endfield 均注册成功佐证 |
+| D3 | 设备列表 | 🟠 中 | 扫描模拟器/测试截图/刷新画面流均提示无在线 Worker/设备离线（环境无 worker，验证受限） | 环境限制 | ✅ 已解决: agent-00dc7742 在线(E-03 窗口注册成功, 2026-08-28 Chrome-Browser 注册佐证); 模拟器扫描仍需真实实例 |
 | D3 | 全局 | 🟠 中 | ERR_ABORTED×4：init/scan/register/monitors.status（同一会话反复出现，可能轮询/双渲染中止） | frontend 请求中止 | ✅ 关闭(2026-08-28): 定性为 AbortController 主动取消/页面导航中止的浏览器标准日志, 非功能性故障; M8 已消 SyntaxError 部分, M2 已处理 429 轮询 |
 | D5 | 执行监控 | 🔴 高 | 无人值守日志 tab 崩溃：`TypeError: logs.forEach is not a function`（接口空态返回非数组） | UnattendedLogViewer | ✅ F4 已修 |
 | D5 | 执行监控 | 🔴 高 | 今日摘要 tab 崩溃：`TypeError: items.map is not a function`（同上） | DailySummaryCarousel | ✅ F5 已修 |
@@ -180,10 +180,10 @@ last_updated: 2026-08-28
 | R1 | 模板标注 | 🔴 高 | 造 2 条标注(关联 GAF Default 包 sweep_daily/金币本.png)后页面仍空态：选 GAF Default 下拉后无模板/无标注 | 标注页 templates 数据源 | ✅ F8 数据在, 复测选对模板即显示 |
 | R1 | 分组管理 | 🔴 高 | DB 有 3 组(Main/Alt/Farm, owner=admin)但分组页显示"暂无分组"；且"所有账户已分组"与"暂无分组"文案矛盾 | 分组 API/前端 | ✅ F9 已修 |
 | R1 | 通知中心 | 🟡 低 | 通知行只显标题+分类+时间，不渲染正文 body 文本 | 通知列表行 | ✅ M7 已修(serializer 增 content alias=body, 前端渲染 content) |
-| R1 | SLA | 🟡 低 | OCR P50 卡 0.0ms（截图有值 OCR 无）——数据侧或前端 | SLA 指标 | ✅ 前端已修: 无数据显示 '-'（之前 0.0ms 误导）; 根因=agent 端无 ocr_latency 上报链路, 数据缺席非前端错 |
+| R1 | SLA | 🟡 低 | OCR P50 卡 0.0ms（截图有值 OCR 无）——数据侧或前端 | SLA 指标 | ✅ 前端已修: 无数据显示 '-'（之前 0.0ms 误导）; 根因=worker 端无 ocr_latency 上报链路, 数据缺席非前端错 |
 | R2 | 设备 | 🟠 中 | 设备卡"测试截图"按钮已被移除(R37-P1-C5)，截图入口迁移至 /resources/annotation 实时标注 Tab | devices UI | ✅ 已确认(2026-08-28): 标注页实时标注 tab 已有真实截图流 + 本轮新增真实模板匹配预览, 迁移闭环 |
 | R2 | 匹配预览 | 🟠 中 | "匹配预览"返回硬编码 mock 结果(100,150)95%，非真实模板库匹配（R37-P2 待做全量集成） | annotation 匹配预览 | ✅ 已真实化(2026-08-28): 后端新增 POST /resources/template-match-preview/（cv2.matchTemplate + NMS, 阈值0.8）+ 前端当前帧/选中框裁剪→真实匹配, 后端不可用回退 mock; 实测坐标精确召回 |
-| R2 | 设备注册 | ✅ 已解决 | D3 的 "TraeWork CN registration failed" 根因=当时无在线 Agent；R2 有 agent 时 Endfield 注册成功并在线 | 环境根因 | 已关闭 |
+| R2 | 设备注册 | ✅ 已解决 | D3 的 "TraeWork CN registration failed" 根因=当时无在线 Worker；R2 有 worker 时 Endfield 注册成功并在线 | 环境根因 | 已关闭 |
 | R3 | Scheduler | 🔴 高 | 创建定时任务成功后 handleCreate 抛 `TypeError: .slice is not a function`(ScheduledTasks/index.tsx:229)——未阻止创建但报错 | ScheduledTasks/index.tsx L229 | ✅ F10 已修 |
 | R3 | 全局 | 🟠 中 | monitors/status 高频轮询触发 429 限流 → HeaderStatusIndicator 报错 | 前端轮询策略 | ✅ M2 已修: 30s 轮询 + AbortController + 429 静默忽略 |
 | R3 | 无人值守 | 🟠 中 | 预检"设备在线检测"失败项不可忽略(Chrome-Browser/LDPlayer 离线)→ K-03 无法完成启动 | 环境设备离线 | ✅ 已解决(2026-08-28): 开独立 Chrome 实例(`--user-data-dir` 独立 profile)→ scan?type=windows 取 hwnd → POST devices/register 置 online → DB 绑定 BrowserCycle-E2E profile; preflight?game_profile_id 按 profile 过滤仅查 1 设备 online, **can_start=True**; LDPlayer 模拟器无实例不在该 profile 不阻塞 |
@@ -191,7 +191,7 @@ last_updated: 2026-08-28
 | R4 | 扫描模拟器 | 🟠 中 | 无头环境无运行模拟器, 扫描弹窗 85% 后 ERR_ABORTED 不自动关 | 需真实模拟器 | ✅ 已测(2026-08-28 用户开雷电模拟器): 单一实例(ldconsole 127.0.0.1:5555 / adb emulator-5554 为同实例别名), 注册为 LDPlayer 上线; dbg-dev 遗留设备已清理 + 误注册重复设备已撤销, 预检 device_online=pass can_start=True |
 | R4 | 登录-错误密码 | ✅ | 错误密码提示"用户名或密码错误"且不跳转(文案为 login.wrong_credentials) | 预期行为 | 已关闭 |
 | R4 | 备份 | ✅ | 真实创建全量备份成功 + zip 下载 | J-07 | 已关闭 |
-| AUT | ADB 日志 WS | 🔴 高 | full_routes 首跑：连 /ws/devices/{id}/adb-logs/ 握手失败「Sent non-empty 'Sec-WebSocket-Protocol' header but responded empty」——设备无 adb_serial / 加载失败分支 `accept()` 未 echo subprotocol | agents/consumers.py AdbLogStreamConsumer | ✅ 已修(2026-08-28): 三处 accept 统一 echo chosen subprotocol; 复测 46 PASS |
+| AUT | ADB 日志 WS | 🔴 高 | full_routes 首跑：连 /ws/devices/{id}/adb-logs/ 握手失败「Sent non-empty 'Sec-WebSocket-Protocol' header but responded empty」——设备无 adb_serial / 加载失败分支 `accept()` 未 echo subprotocol | workers/worker_consumers.py AdbLogStreamConsumer | ✅ 已修(2026-08-28): 三处 accept 统一 echo chosen subprotocol; 复测 46 PASS |
 | AUT | 执行回放 | 🔴 高 | full_routes 首跑：/ops/executions/{id}/replay 调 `GET /tasks/task-executions/{id}/replay/` 404——TaskExecutionViewSet 无 replay action，前端回放入口指向不存在的端点（页面空态兜底不崩溃） | backend/tasks/execution_views.py + frontend/executions.ts | ✅ 已修(2026-08-28): ViewSet 添加 replay action——steps 时间线(序/名/状态/耗时/帧窗) + screenshot_path 文件读 base64 帧；复测 47/47 PASS |
 | 2026-08-29 | 服务管理 | 🟠 中 | 服务页 backend 卡片误报"2 条报错"(latest=`ReferenceError: CalendarOutlined is not defined`)——前端错误边界自动上报行([error_boundary] 视图落后端日志)被服务健康计数计入; 来源为开发期 HMR 窗口瞬时前端报错(含历史 getRememberMe 同型行), 非 backend 服务故障 | scripts/services/health.py _NOISE_PATTERNS | ✅ 已修(2026-08-29): _NOISE_PATTERNS 增加 [error_boundary] + `ReferenceError:.*is not defined`; scripts/tests 补 2 断言; daemon 重启后健康快照 backend count=0; 前端错误在 console 捕获/前端错误上报链路独立追踪, 不再污染服务健康 |
 
