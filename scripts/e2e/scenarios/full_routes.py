@@ -83,9 +83,7 @@ ROUTES: list[dict] = [
     {"path": "/ops/sla", "ids": "H-12", "group": "运维"},
     {"path": "/ops/logs", "ids": "H-13", "group": "运维"},
     # I. AI
-    {"path": "/ai/assistant", "ids": "I-01/02", "group": "AI"},
     {"path": "/ai/qa", "ids": "I-03", "group": "AI"},
-    {"path": "/ai/anomaly", "ids": "I-04", "group": "AI"},
     {"path": "/ai/skill-editor", "ids": "I-05", "group": "AI"},
     {"path": "/ai/skill-market", "ids": "I-06", "group": "AI"},
     {"path": "/ai/log-analysis", "ids": "I-07", "group": "AI"},

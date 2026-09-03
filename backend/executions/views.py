@@ -714,7 +714,7 @@ def step_heatmap_view(request):
             'step_name': name,
             'total': s['total'],
             'success_rate': round(s['success_count'] / s['total'] * 100, 1) if s['total'] else 0,
-            'avg_duration': round(s['avg_duration'].total_seconds(), 2) if s['avg_duration'] else 0,
+            'avg_duration': round(s['avg_duration'], 2) if s['avg_duration'] else 0,
         })
 
     return Response({'results': result})

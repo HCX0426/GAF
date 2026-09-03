@@ -308,7 +308,7 @@ export function LoginPage() {
                     />
                   </Form.Item>
                   <div className="gaf-flex-between">
-                    <Form.Item name="remember_me" valuePropName="checked" initialValue={getRememberMeDefault()} className="gaf-m-0">
+                    <Form.Item name="remember_me" valuePropName="checked" className="gaf-m-0">
                       <Checkbox>{t('login.remember_me')}</Checkbox>
                     </Form.Item>
                     <Button type="link" onClick={() => setResetModalOpen(true)} className="gaf-p-0 gaf-text-13">

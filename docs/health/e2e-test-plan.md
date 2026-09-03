@@ -26,7 +26,7 @@ last_updated: 2026-09-01
 
 | 自动化场景 | 载体 | 覆盖用例 ID | 说明 |
 |-----------|------|------------|------|
-| `full_routes` | `scripts/e2e/scenarios/full_routes.py`（真实后端 headless） | A-01~A-04, B-01~B-03, C-01~C-06, D-01~D-10, E-01~E-08, F-01~F-06, G-01~G-04, H-01~H-04/H-07~H-13, I-01~I-09, J-01~J-11 | 全 46 路由 smoke：登录 → 逐路由访问 → URL/侧边栏/内容/崩溃/console error 判定；动态路由自动探测真实 id |
+| `full_routes` | `scripts/e2e/scenarios/full_routes.py`（真实后端 headless） | A-01~A-04, B-01~B-03, C-01~C-06, D-01~D-10, E-01~E-08, F-01~F-06, G-01~G-04, H-01~H-04/H-07~H-13, I-03/I-05~I-08, J-01~J-11 | 全 46 路由 smoke：登录 → 逐路由访问 → URL/侧边栏/内容/崩溃/console error 判定；动态路由自动探测真实 id |
 | `browser_login` | `scripts/e2e/scenarios/browser_login.py` | A-01 | 真实登录跳转 + 0 JS error |
 | `devices_control_mode` | `scripts/e2e/scenarios/devices_control_mode.py` | E-06 | 控制模式选择器渲染/切换（TD-015 回归） |
 | `ai_qa_chat` | `scripts/e2e/scenarios/ai_qa_chat.py` | I-03 | LLM 问答真实链（commit - 回归） |
@@ -100,8 +100,8 @@ conda run -n gaf python scripts/e2e/run_all.py
 | B-01 | 仪表盘渲染 | 已登录 | 打开 /dashboard | 今日进度/设备网格/队列/告警/趋势 9 面板渲染 | ✅ CURR (M6 已修 recharts -1) |
 | B-02 | 面板拖拽 + 快捷操作 | 已登录 | 拖 1 面板；点创建任务/导入市场/设备管理/快速执行 | 拖拽生效；跳对应页 | ✅ CURR |
 | B-03 | 顶栏主题/DPI/语言 | 已登录 | 切主题 3 态；DPI 下拉；语言下拉 | 主题生效；下拉可展开 | ✅ CURR |
-| B-04 | 统计卡片数字对账 DB (N218) | 已登录, 造带状态数据 | ① 直连 DB 数 TaskExecution 各 status 行数 ② 对 API `?status=running/failed/success` 各发一次比对 count ③ 核对工作台卡片: 运行任务/今日执行/成功率 | 卡片数字与 DB 真实值一致; "无任务在跑时运行任务≈0" | ✅ 2026-08-29 (N218 修复后: running 0/failed 26/无参 91, 卡片"运行任务 0") |
-| B-05 | 记住我持久化 + 免登录 (N217) | 已登录勾选记住我 | ① 登录后查 localStorage: remember_me=1 + refresh_token ② 清 sessionStorage(模拟关浏览器) ③ 刷新/重开页面 | 自动跳 dashboard 免登录; checkbox 默认勾选 | ✅ 2026-08-29 (修复 e004db3 后实测) |
+| B-04 | 统计卡片数字对账 DB (N218) | 已登录, 造带状态数据 | ① 直连 DB 数 TaskExecution 各 status 行数 ② 对 API `?status=running/failed/success` 各发一次比对 count ③ 核对工作台卡片: 运行任务/今日执行/成功率 | 卡片数字与 DB 真实值一致; "无任务在跑时运行任务≈0" | ✅ 2026-08-29 (N218 修复后: running 0/failed 26/无参 91, 卡片"运行任务 0") + 2026-09-03 复测 (DB failed 26/success 71/total 100, API ?status 全 MATCH, 卡片"运行任务 0" ✅) |
+| B-05 | 记住我持久化 + 免登录 (N217) | 已登录勾选记住我 | ① 登录后查 localStorage: remember_me=1 + refresh_token ② 清 sessionStorage(模拟关浏览器) ③ 刷新/重开页面 | 自动跳 dashboard 免登录; checkbox 默认勾选 | ✅ 2026-08-29 (修复 e004db3 后实测) + 2026-09-03 复测 (勾选默认✅, remember_me=1✅, 清 sessionStorage 刷新免登录进 dashboard✅, 0 JS err) |
 
 ## C. 游戏档案 GameProfiles (6)
 
@@ -181,14 +181,13 @@ conda run -n gaf python scripts/e2e/run_all.py
 | H-13 | 日志中心 8 Tab | 有日志 | /ops/logs 逐 Tab 切换 | 全正常；应用日志 WS"未连接"提示 | ✅ CURR |
 | H-14 | 核心链路-定时任务→无人值守 | 设备绑定 | 建 Cron→预热→无人值守 start | 同 K-03（2026-08-28 全链路已真实验证）: Cron ✅ → 设备在线 ✅ → preflight can_start ✅ → start session 13 (dispatched 1) → stop ✅ | ✅ (真实启动) |
 
-## I. AI (8)
+## I. AI (5)
+
+> AI 重构后已下线：AI 助手(/ai/assistant, I-01/I-02)与异常发现(/ai/anomaly, I-04)页面已移除/合并，full_routes 同步删除对应路由。
 
 | ID | 测试项 | 前置条件 | 操作步骤 | 期望结果 | 状态 |
 |----|--------|---------|----------|---------|:---:|
-| I-01 | 助手输入/发送 | LLM 配置 | /ai/assistant 输入→发送按钮启用 | 输入后发送启用；未真实调用 | ✅ CURR |
-| I-02 | 自然语言创建/智能优化 tab | — | 切 tab；Pipeline 下拉 | tab 可切；下拉含 cycle-wait-pipeline | ✅ CURR |
 | I-03 | 智能问答 | — | /ai/qa 提问框+新建 | 输入可用；空会话态 | ✅ CURR |
-| I-04 | 异常发现 | — | /ai/anomaly 时间范围 5 档+设备+检测 | 下拉/按钮可用；未触发 | ✅ CURR |
 | I-05 | Skill 编辑器 | — | /ai/skill-editor YAML+保存+模板 | 填名启用保存；模板 3 类 | ✅ CURR |
 | I-06 | Skill 市场 | — | /ai/skill-market 发布弹窗 | ✅ 2026-08-28 复核定案: modal 取消/X/Esc 三通道均正常关闭(此前"取消需 Esc"为自动化误判——antd5 关闭后保留隐藏 DOM) | ✅ CURR |
 | I-07 | AI 配置 | — | /ai/config provider 4+下拉 | 字段全可用 | ✅ CURR |
@@ -230,3 +229,4 @@ conda run -n gaf python scripts/e2e/run_all.py
 | 2026-08-28 | 全量终验 | run_all.py 11 场景 | **11/11 全绿**(128s): 7 治理场景 + browser_login/devices_control_mode/ai_qa_chat + full_routes 47/47; 修复 bug_fix(N118 出清后断言泛化) + cross_repo('跨工作区' 措辞演进) 两处测试断言 |
 | 2026-08-29 | B-04/B-05 新增 + 实测 | 统计对账 + 记住我回归 | N218 修复前"运行任务 91"为假(全表 count), 修复后 running 0/failed 26/无参 91, 卡片"运行任务 0" ✅; N217 修复后记住我默认勾选 + 清 sessionStorage 刷新自动进 dashboard ✅ |
 | 2026-08-29 | J-10 服务管理 + 健康快照噪声修复 | 服务管理页 + scan_log_errors | 服务页 backend 卡片误报"2 条报错"(前端 error_boundary 上报行计入服务错误) → health.py _NOISE_PATTERNS 排除 [error_boundary]/ReferenceError 未定义 → 快照 count=0 ✅; frontend/e2e/system/services.spec.ts 2 例 + full_routes 新增 /system/services |
+| 2026-09-03 | 月度全量 | run_all.py 11 场景 + B-04/B-05 | 首轮 8/11（5 FAIL：remember_me Form initialValues 重复警告×4 + /ops/analytics step-heatmap 500 + 已下线路由 /ai/assistant、/ai/anomaly 重定向）；修复后 **11/11 全绿**：Login 去重 initialValue + step-heatmap float 秒数 + full_routes 删除下线 AI 路由（46 路由）；B-04 统计对账 DB/API 全 MATCH + B-05 记住我免登录复测 ✅ |
