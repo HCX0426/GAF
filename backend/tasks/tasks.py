@@ -610,9 +610,20 @@ def execute_scheduled_task(scheduled_task_id):
     custom_task = scheduled_task.custom_task
 
     if task:
+        # 定时触发自动绑定一个在线设备：pipeline 任务通常在设备上执行
+        # (uia/window 节点需要 window handle)。ScheduledTask 未配设备时
+        # 默认取第一个在线设备，否则执行会因 device_info=None 而失败。
+        from workers.models import Device
+
+        device = (
+            Device.objects.filter(status=Device.Status.ONLINE).first()
+            if Device.objects.filter(status=Device.Status.ONLINE).exists()
+            else None
+        )
         execution = TaskExecution.objects.create(
             task=task,
             status=TaskExecution.Status.PENDING,
+            device=device,
         )
         dispatch_task.delay(execution.id, trace_id=str(uuid.uuid4()))
     elif custom_task:

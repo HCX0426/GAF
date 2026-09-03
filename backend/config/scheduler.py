@@ -123,6 +123,76 @@ def _job_wrapper(task_path: str):
         logger.exception("APScheduler job failed: %s", task_path)
 
 
+def _scheduled_task_job(scheduled_task_id):
+    """Run a DB ScheduledTask via APScheduler (eager mode replaces Celery Beat)."""
+    try:
+        from tasks.tasks import execute_scheduled_task
+
+        execute_scheduled_task(scheduled_task_id)
+    except Exception:
+        logger.exception("APScheduler ScheduledTask job failed: %s", scheduled_task_id)
+
+
+def _register_db_scheduled_tasks(scheduler: BackgroundScheduler) -> int:
+    """Register DB ScheduledTask records as APScheduler jobs.
+
+    In eager mode APScheduler replaces Celery Beat, but only the static
+    beat_schedule was wired — DB ScheduledTask (registered via
+    django_celery_beat PeriodicTask in celery mode) were never triggered.
+    Here we register them directly so cron/one-time schedules fire in eager
+    mode too (N###: eager APScheduler missing DB ScheduledTask).
+    """
+    try:
+        from tasks.models import ScheduledTask
+    except Exception:
+        logger.warning("读取 ScheduledTask 失败，跳过数据库定时任务注册")
+        return 0
+
+    registered = 0
+    try:
+        # 启动时若表未就绪（迁移前）容忍一次
+        tasks = list(ScheduledTask.objects.filter(is_enabled=True))
+    except Exception as exc:
+        logger.warning("查询 ScheduledTask 失败: %s", exc)
+        return 0
+
+    for st in tasks:
+        job_id = f"scheduled_task_{st.id}"
+        try:
+            if st.schedule_type == ScheduledTask.ScheduleType.ONE_TIME and st.scheduled_time:
+                from apscheduler.triggers.date import DateTrigger
+
+                trigger = DateTrigger(run_date=st.scheduled_time)
+            elif st.schedule_type == ScheduledTask.ScheduleType.PERIODIC and st.cron_expression:
+                parts = st.cron_expression.strip().split()
+                if len(parts) != 5:
+                    logger.error("无效 cron 表达式（需要5段）: %s", st.cron_expression)
+                    continue
+                minute, hour, dom, month, dow = parts
+                # APScheduler day_of_week: 0=Monday..6=Sunday; 标准 cron: 0=Sunday.
+                # 映射 cron dow -> APScheduler (sun=6, mon=0, ... sat=5).
+                dow_map = {"0": "sun", "1": "mon", "2": "tue", "3": "wed", "4": "thu", "5": "fri", "6": "sat"}
+                if dow != "*":
+                    dow = ",".join(dow_map.get(p.strip(), p.strip()) for p in dow.split(","))
+                trigger = CronTrigger(minute=minute, hour=hour, day=dom, month=month, day_of_week=dow)
+            else:
+                continue
+            scheduler.add_job(
+                _scheduled_task_job,
+                trigger=trigger,
+                args=[st.id],
+                id=job_id,
+                name=job_id,
+                replace_existing=True,
+                misfire_grace_time=60,
+            )
+            registered += 1
+            logger.info("APScheduler registered DB ScheduledTask: %s (cron=%s)", job_id, st.cron_expression)
+        except Exception as exc:
+            logger.warning("注册 ScheduledTask %s 失败: %s", st.id, exc)
+    return registered
+
+
 def start_scheduler() -> BackgroundScheduler | None:
     """Start the APScheduler background scheduler.
 
@@ -172,8 +242,12 @@ def start_scheduler() -> BackgroundScheduler | None:
         )
         logger.info("APScheduler registered: %s (%s, every %s)", name, task_path, schedule)
 
+    # Register DB ScheduledTask records too (eager APScheduler previously
+    # ignored them — only the static beat_schedule was wired).
+    db_count = _register_db_scheduled_tasks(_scheduler)
+
     _scheduler.start()
-    logger.info("APScheduler started (%d jobs)", len(beat_schedule))
+    logger.info("APScheduler started (%d static + %d DB jobs)", len(beat_schedule), db_count)
     return _scheduler
 
 

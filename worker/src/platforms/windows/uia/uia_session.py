@@ -27,6 +27,17 @@ _CONTROL_TYPES = {
 
 def _uia():
     import uiautomation as auto
+
+    # CoInitialize is idempotent (S_FALSE when already initialized on this
+    # thread). Worker executes pipeline nodes on background threads where
+    # COM may not be initialized — without this, UIA calls raise
+    # `[WinError -2147221008] 尚未调用 CoInitialize`.
+    try:
+        import ctypes
+
+        ctypes.windll.ole32.CoInitialize(None)  # noqa: F841
+    except Exception:  # noqa: BLE001 — best effort; uiautomation re-tries internally
+        pass
     return auto
 
 
