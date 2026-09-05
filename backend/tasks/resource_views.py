@@ -302,10 +302,16 @@ class MarketplaceViewSet(AuditMixin, viewsets.ModelViewSet):
             defaults={"rating": rating, "comment": comment},
         )
 
-        reviews = item.reviews.all()
-        item.rating_count = reviews.count()
-        item.rating_avg = round(sum(r.rating for r in reviews) / item.rating_count, 1) if item.rating_count > 0 else 0
-        item.save(update_fields=["rating_count", "rating_avg"])
+        # E2/P1-5: aggregate via the DB inside a transaction so concurrent
+        # reviews can't lose updates (the old code read-modify-wrote in Python).
+        from django.db import transaction
+        from django.db.models import Avg, Count
+
+        with transaction.atomic():
+            agg = item.reviews.aggregate(total=Count("rating"), avg=Avg("rating"))
+            item.rating_count = agg["total"] or 0
+            item.rating_avg = round(agg["avg"], 1) if agg["avg"] is not None else 0
+            item.save(update_fields=["rating_count", "rating_avg"])
 
         return Response(MarketplaceReviewSerializer(review).data)
 
