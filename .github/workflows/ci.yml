@@ -60,6 +60,34 @@ jobs:
           conda activate gaf
           pytest backend/ -n auto --maxfail=20 -q
 
+  # P0-2/D2 (评审 2026-09-05): CI 环境走 dev.txt, 从未导入过
+  # config.settings.prod — "requirements 有、pyproject 无" 的依赖漂移
+  # (whitenoise / APScheduler 两次踩坑) 只能到裸机部署才暴露。
+  # 本 job 安装 prod 专有依赖后校验 prod 中间件链与静态存储可导入。
+  check-prod-config:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: "3.11"
+          activate-environment: gaf
+          environment-file: environment.yml
+          auto-activate-base: false
+      - name: Install prod-only deps
+        shell: pwsh
+        run: |
+          conda activate gaf
+          pip install "whitenoise>=6.7,<7.0"
+      - name: Verify prod settings importable
+        shell: pwsh
+        run: |
+          conda activate gaf
+          python ../scripts/check_prod_settings.py
+
   test-frontend:
     needs: lint-frontend
     runs-on: windows-latest
@@ -123,11 +151,30 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Type check
-        run: npx tsc --noEmit
+        # P0-3b (B2): `tsc --noEmit` was a no-op here (root tsconfig has
+        # files:[]). `tsc -b` walks the project references and is a real check.
+        run: npx tsc -b
+
+  # P0-4 (B3): gate the production build itself — type-check passing does not
+  # imply vite build passes. playwright-e2e now depends on this job.
+  build-frontend:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm ci
+      - name: Build (tsc -b && vite build)
+        run: npm run build
 
   # TD-333: Playwright E2E job (前端真实浏览器 E2E, 区别于 e2e-weekly 的 Python 脚本式)
   playwright-e2e:
-    needs: typecheck-frontend
+    needs: [typecheck-frontend, build-frontend]
     runs-on: windows-latest
     defaults:
       run:
