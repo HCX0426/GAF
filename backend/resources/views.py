@@ -259,6 +259,28 @@ class ResourcePackViewSet(AuditMixin, viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # S3/P1-2: restrict imports to the project tree (or explicit allowlist
+        # via GAF_RESOURCE_IMPORT_ROOTS, os.pathsep-separated). Without this, a
+        # manage-permission user could copy arbitrary server-local directories
+        # (e.g. ~/.ssh) into the downloadable resources tree.
+        resolved_source = Path(directory_path).resolve()
+        allowed_roots = [Path(settings.BASE_DIR).resolve().parent]
+        extra_roots = os.getenv("GAF_RESOURCE_IMPORT_ROOTS", "")
+        for raw in extra_roots.split(os.pathsep):
+            if raw.strip():
+                allowed_roots.append(Path(raw.strip()).resolve())
+        if not any(
+            resolved_source == root or root in resolved_source.parents
+            for root in allowed_roots
+        ):
+            return Response(
+                {
+                    'detail': '目录不在允许的导入范围内（项目根目录或 GAF_RESOURCE_IMPORT_ROOTS 白名单）',
+                    'directory': str(resolved_source),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         validation = validate_resource_pack_structure(directory_path)
         if not validation["valid"]:
             return Response(
