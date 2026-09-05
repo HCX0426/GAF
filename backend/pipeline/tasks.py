@@ -256,6 +256,9 @@ def advance_chain_execution(chain_execution_id):
 
     from tasks.models import TaskExecution
 
+    # NOTE: select_for_update() is a no-op on SQLite (single-machine default,
+    # Django 5.2). Chain advance is guarded by the status checks below, so a
+    # double-advance is prevented by the terminal-status guard. Tracked as C1.
     with transaction.atomic():
         try:
             chain_exec = TaskChainExecution.objects.select_for_update().select_related(

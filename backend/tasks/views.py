@@ -601,8 +601,9 @@ class TaskBulkActionView(APIView):
             )
 
 
-        # Lock matched rows so count + mutation is atomic and concurrent
-        # bulk requests cannot interleave (TOCTOU race on task_ids set).
+        # NOTE: select_for_update() is a no-op on SQLite (single-machine default).
+        # The bulk enable/disable/delete below uses .update() (atomic write), so it
+        # stays consistent without a row lock. Tracked as C1.
         with transaction.atomic():
             tasks = Task.objects.select_for_update().filter(pk__in=task_ids)
             affected = tasks.count()

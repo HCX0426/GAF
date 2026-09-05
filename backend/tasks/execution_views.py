@@ -267,8 +267,10 @@ def execution_intervene_view(request, pk):
 
     try:
         with transaction.atomic():
-            # Lock the execution row to prevent concurrent intervention
-            # race conditions (pause/resume/cancel/skip_step/fail_step).
+            # NOTE: select_for_update() is a no-op on SQLite (single-machine
+            # default under Django 5.2). Concurrent manual intervention is rare in
+            # single-machine mode; the .save() below is a single-row WAL-serialized
+            # write, so double-intervention is unlikely. Tracked as C1.
             execution = TaskExecution.objects.select_for_update().get(pk=pk)
 
             # Non-admin users can only intervene on their own executions

@@ -158,6 +158,7 @@ function ExecutionAnalysisTab() {
         summary: t('ailab.msg_deep_analyze_failed', { message: errMsg }),
         suggestions: [],
         total_tokens: 0,
+        trajectory: [],
         error: errMsg,
       });
     } finally {

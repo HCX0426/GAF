@@ -203,14 +203,14 @@ const menuItemConfigs: MenuItemConfig[] = [
 /** Translate config keys to current locale labels recursively. */
 function translateMenuItems(items: MenuItemConfig[], locale: SupportedLocale): MenuItemType[] {
   return items.map((item) => {
-    const translated: MenuItemType = {
+    const translated = {
       key: item.key,
       icon: item.icon,
       label: t(item.labelKey, locale),
       permission: item.permission,
       roles: item.roles,
       type: item.type,
-    };
+    } as MenuItemType;
     if (item.children) {
       translated.children = translateMenuItems(item.children, locale);
     }

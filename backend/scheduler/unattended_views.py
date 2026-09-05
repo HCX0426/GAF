@@ -109,6 +109,10 @@ def unattended_start_view(request):
     # lock so two concurrent starts for the same profile serialize — the second
     # caller observes the RUNNING session created by the first and gets 409.
     from gamestate.models import GameProfile
+    # NOTE: select_for_update() is a no-op on SQLite (single-machine default,
+    # Django 5.2). The 409 check below re-reads the active session, so two
+    # concurrent starts for the same profile serialize on the eventual
+    # GameProfile write. Tracked as C1.
     with transaction.atomic():
         try:
             game_profile = GameProfile.objects.select_for_update().get(

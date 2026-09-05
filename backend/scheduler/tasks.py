@@ -43,7 +43,11 @@ def tick_unattended_session():
         logger.debug("tick_unattended_session: outside time window, skipping")
         return
 
-    # Lock active sessions to prevent concurrent ticks (multi-worker safety)
+    # NOTE: select_for_update(skip_locked=True) is a no-op on SQLite
+    # (single-machine default, Django 5.2) — two concurrent ticks could both
+    # process the same RUNNING session. In single-machine default (eager) mode
+    # there is no concurrency; if running celery mode with concurrency>1, add an
+    # atomic claim (flip status to a transient PROCESSING) here. Tracked as C1.
     with transaction.atomic():
         sessions = UnattendedSession.objects.select_for_update(
             skip_locked=True,
@@ -261,6 +265,8 @@ def _process_chain_completion(session, chain_exec):
     from django.db import transaction
     from pipeline.models import TaskChainExecution
 
+    # NOTE: select_for_update() is a no-op on SQLite (single-machine default,
+    # Django 5.2). The status checks below guard re-entry. Tracked as C1.
     with transaction.atomic():
         session = UnattendedSession.objects.select_for_update().get(pk=session.pk)
 
