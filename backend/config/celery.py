@@ -26,6 +26,14 @@ app.conf.beat_schedule = {
         'task': 'tasks.heartbeat.check_dispatch_acks',
         'schedule': 10.0,
     },
+    # TD-425 (2026-09-05): 链执行卡死清理 — TaskChainExecution 卡 running
+    # 超阈值且无活跃节点执行 → 僵尸, 置 FAILED 解除 device_busy 阻塞.
+    # (链完成依赖 advance 钩子, 节点执行从未终态/advance 未触发时链永久
+    # running, 会永久阻塞该设备后续所有派发.)
+    'check-stuck-chains': {
+        'task': 'tasks.heartbeat.check_stuck_chains',
+        'schedule': 60.0,
+    },
     # S2 (2026-08-16): 应用级卡死检测 — RUNNING ExecutionStep 超
     # freezeTimeoutSeconds 触发 handle_app_freeze (restart_app 等).
     # scheduler/tasks.py 是标准 tasks.py 命名, autodiscover_tasks()

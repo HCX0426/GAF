@@ -25,6 +25,12 @@ logger = logging.getLogger(__name__)
 DISPATCH_ACK_TIMEOUT_SECONDS = 10
 DISPATCH_MAX_ATTEMPTS = 3
 
+# TD-425 (2026-09-05): 链执行卡死清理 — TaskChainExecution 卡 running 超
+# 该阈值且无活跃(PENDING/RUNNING)节点执行 → 判定僵尸链. 链完成依赖
+# advance_chain_execution (从最后完成的节点执行推进); 节点执行从未终态或
+# advance 未被触发时链永久 running, device_busy 永久阻塞该设备后续派发.
+CHAIN_STUCK_TIMEOUT_SECONDS = 1800  # 30min
+
 
 def mark_agent_devices_offline(agent) -> int:
     """Agent 离线 → 其管理的窗口 (Device) 联动离线 (一致性, 2026-08-27).
@@ -270,3 +276,74 @@ def check_dispatch_acks():
             )
         else:
             _fail_execution_dispatch_timeout(execution)
+
+
+@shared_task(acks_late=True, max_retries=3, retry_backoff=30)
+def check_stuck_chains():
+    """扫描并清理卡死的 TaskChainExecution (TD-425, 2026-09-05).
+
+    背景: 链执行完成依赖 ``advance_chain_execution`` — 它从链的最后完成节点
+    执行 (SUCCESS/FAILED) 决定推进或终止. 若节点执行从未到达终态 (派发帧
+    丢失且 execution 级扫描也未覆盖) 或 advance 从未被触发 (结果帧丢失),
+    链永久卡在 running → ``device_busy`` 检查永久跳过该设备, 阻塞后续所有
+    派发 (无人值守 / DAG / dispatch_routine).
+
+    本任务每 60s (config/celery.py beat) 扫描:
+    - status=RUNNING 且 ``started_at`` (auto_now_add, 永不 NULL) 超过阈值
+    - 且关联节点执行均非活跃 (无 PENDING/RUNNING TaskExecution) → 僵尸链
+    - 僵尸链置 FAILED — ``post_save`` signal 自动触发
+      ``on_chain_execution_completed`` 更新无人值守 session / 恢复计数.
+
+    有活跃节点执行的链 = 任务仍在执行 (可能是长任务), 一律跳过不清理.
+    """
+    from gaf_core.error_codes import NodeErrorCode
+    from pipeline.models import TaskChainExecution
+    from pipeline.tasks import _fail_chain
+
+    from tasks.models import TaskExecution
+
+    threshold = timezone.now() - timedelta(seconds=CHAIN_STUCK_TIMEOUT_SECONDS)
+    stuck = list(
+        TaskChainExecution.objects.filter(
+            status=TaskChainExecution.Status.RUNNING,
+            started_at__lt=threshold,
+        ).only("id", "status", "started_at", "device_id", "chain_id")
+    )
+    if not stuck:
+        return
+
+    # 关联活跃节点执行的链 (PENDING/RUNNING) = 仍在执行, 不清理.
+    active_chain_ids = set(
+        TaskExecution.objects.filter(
+            chain_execution_id__in=[c.id for c in stuck],
+            status__in=[
+                TaskExecution.Status.PENDING,
+                TaskExecution.Status.RUNNING,
+            ],
+        ).values_list("chain_execution_id", flat=True)
+    )
+
+    cleaned = 0
+    for chain in stuck:
+        if chain.id in active_chain_ids:
+            logger.info(
+                "check_stuck_chains: chain %s running>阈值但有活跃节点执行, 跳过",
+                chain.id,
+            )
+            continue
+        _fail_chain(
+            chain,
+            (
+                f"链执行卡死超时清理 (running > {CHAIN_STUCK_TIMEOUT_SECONDS}s, "
+                "无活跃节点执行)"
+            ),
+            error_code=NodeErrorCode.UNKNOWN.value,
+        )
+        cleaned += 1
+        logger.warning(
+            "check_stuck_chains: chain %s 卡死已清理 -> FAILED (chain=%s device=%s)",
+            chain.id, chain.chain_id, chain.device_id,
+        )
+
+    if cleaned:
+        logger.info("check_stuck_chains: 本轮清理 %d 条卡死链", cleaned)

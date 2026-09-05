@@ -13,7 +13,8 @@ from unittest.mock import AsyncMock, patch
 
 from django.test import TestCase
 from django.utils import timezone
-from workers.factories import WorkerFactory
+from pipeline.models import TaskChain, TaskChainExecution
+from workers.factories import DeviceFactory, WorkerFactory
 
 from tasks.factories import TaskExecutionFactory
 from tasks.models import TaskExecution
@@ -232,3 +233,80 @@ class TestHeartbeatReleasesSlot(TestCase):
         execution.refresh_from_db()
         self.assertEqual(execution.status, TaskExecution.Status.FAILED)
         mock_release.assert_called_once_with(agent.agent_id, str(execution.id))
+
+
+class TestCheckStuckChains(TestCase):
+    """TD-425 (2026-09-05): check_stuck_chains 链级卡死清理.
+
+    链卡 running 超阈值且无活跃节点执行 → 置 FAILED, 解除 device_busy 阻塞;
+    有活跃节点执行 (长任务) / 未超阈值 → 一律跳过.
+    """
+
+    @staticmethod
+    def _make_chain(started_hours_ago=2, with_active_exec=False):
+        chain = TaskChain.objects.create(name="stuck-chain", is_enabled=True)
+        dev = DeviceFactory.create()
+        tce = TaskChainExecution.objects.create(
+            chain=chain,
+            device=dev,
+            agent_id="agent-x",
+            status=TaskChainExecution.Status.RUNNING,
+        )
+        # started_at is auto_now_add; rewind it to simulate a long-stuck chain.
+        TaskChainExecution.objects.filter(pk=tce.pk).update(
+            started_at=timezone.now() - timedelta(hours=started_hours_ago)
+        )
+        tce.refresh_from_db()
+        if with_active_exec:
+            TaskExecutionFactory.create(
+                status=TaskExecution.Status.RUNNING,
+                chain_execution=tce,
+            )
+        return tce
+
+    def test_stuck_chain_without_active_exec_is_failed(self):
+        from tasks.heartbeat import check_stuck_chains
+
+        tce = self._make_chain(started_hours_ago=2)
+        check_stuck_chains()
+
+        tce.refresh_from_db()
+        self.assertEqual(tce.status, TaskChainExecution.Status.FAILED)
+        self.assertIn("卡死", tce.error_message)
+        self.assertIsNotNone(tce.completed_at)
+
+    def test_stuck_chain_with_active_exec_skipped(self):
+        from tasks.heartbeat import check_stuck_chains
+
+        tce = self._make_chain(started_hours_ago=2, with_active_exec=True)
+        check_stuck_chains()
+
+        tce.refresh_from_db()
+        self.assertEqual(tce.status, TaskChainExecution.Status.RUNNING)
+
+    def test_recent_chain_not_cleaned(self):
+        from tasks.heartbeat import check_stuck_chains
+
+        # started_at 未超过阈值 (started now) → 不清理
+        tce = self._make_chain(started_hours_ago=0)
+        check_stuck_chains()
+
+        tce.refresh_from_db()
+        self.assertEqual(tce.status, TaskChainExecution.Status.RUNNING)
+
+    def test_success_chain_untouched(self):
+        from tasks.heartbeat import check_stuck_chains
+
+        chain = TaskChain.objects.create(name="done-chain", is_enabled=True)
+        dev = DeviceFactory.create()
+        tce = TaskChainExecution.objects.create(
+            chain=chain,
+            device=dev,
+            agent_id="agent-x",
+            status=TaskChainExecution.Status.SUCCESS,
+            completed_at=timezone.now(),
+        )
+        check_stuck_chains()
+
+        tce.refresh_from_db()
+        self.assertEqual(tce.status, TaskChainExecution.Status.SUCCESS)
