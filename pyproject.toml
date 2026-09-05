@@ -40,6 +40,11 @@ dependencies = [
     # 此前仅 backend/requirements/base.txt 声明, pyproject 缺失导致
     # 用 pyproject 安装的环境缺依赖 (TD 配置漂移).
     "apscheduler>=3.10,<4.0",
+    # D2 (评审 2026-09-05): config/settings/prod.py 的中间件与
+    # STATICFILES_STORAGE 引用 whitenoise, 此前仅 backend/requirements/prod.txt
+    # 声明 — 与 APScheduler 同类的 "requirements 有、pyproject 无" 配置漂移,
+    # 裸机 prod 环境首个请求即 ModuleNotFoundError.
+    "whitenoise>=6.7,<7.0",
 ]
 
 [project.optional-dependencies]

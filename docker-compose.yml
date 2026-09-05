@@ -40,7 +40,7 @@ services:
       sh -c "
         python manage.py migrate --noinput &&
         python manage.py collectstatic --noinput &&
-        gunicorn --config gunicorn.conf.py config.wsgi:application
+        daphne -b 0.0.0.0 -p 8000 config.asgi:application
       "
 
   celery-worker:

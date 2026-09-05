@@ -1,17 +1,22 @@
 [Unit]
-Description=GAF Backend (gunicorn WSGI)
+Description=GAF Backend (daphne ASGI — WebSocket/Channels 可用)
 After=network.target postgresql.service redis-server.service
 Wants=postgresql.service redis-server.service
 
 [Service]
-Type=notify
+# Type=simple (not notify): gunicorn 支持 sd_notify, daphne 不会发送
+# READY=1, 用 notify 会在 TimeoutStartSec 后被 systemd 误杀。
+Type=simple
 User=gaf
 Group=gaf
 WorkingDirectory=/opt/gaf/backend
 EnvironmentFile=/opt/gaf/backend/.env.prod
 Environment=DJANGO_SETTINGS_MODULE=config.settings.prod
-ExecStart=/opt/gaf/venv/bin/gunicorn --config gunicorn.conf.py config.wsgi:application
-ExecReload=/bin/kill -s HUP $MAINPID
+# D1 (评审 2026-09-05): 原 gunicorn config.wsgi 为纯 WSGI, WebSocket 路由
+# (agents/notifications/protocol) 全部只挂在 config/asgi.py, Worker 无法连接。
+# daphne 走 ASGI, http 请求经 asgi.py 的 django_asgi_app 同样可用。
+# 绑定 127.0.0.1:8000 — 由 nginx 反代对外 (D3), 不要直接暴露。
+ExecStart=/opt/gaf/venv/bin/daphne -b 127.0.0.1 -p 8000 config.asgi:application
 KillMode=mixed
 TimeoutStopSec=30
 Restart=on-failure
