@@ -7,7 +7,7 @@
 
 - redis:    redis-cli PING → PONG
 - backend:  ``/api/v2/accounts/init/health/`` (SystemHealthView, 无认证) → HTTP 200 且 db/redis pass
-- worker:   DB 查询 Worker.last_heartbeat 距今 < 30s 且 status ∈ {idle, online}
+- worker:   DB 查询 Worker.last_heartbeat 距今 < 30s 且 status ∈ {idle, online, busy}（busy = 正常执行中，心跳新鲜即健康）
 - frontend: ``http://127.0.0.1:<port>`` HTTP 200 (vite dev server)
 
 用法:
@@ -64,7 +64,10 @@ DEFAULT_FRONTEND_PORT = 5173
 
 # Agent 心跳新鲜度阈值 (与 backend workers/worker_runtime _is_agent_connected_via_db 对齐)
 WORKER_HEARTBEAT_STALE_SECONDS = 30
-WORKER_HEALTHY_STATUSES = {"idle", "online"}
+# busy = agent 正在执行任务 (正常状态, 心跳新鲜即健康); 假死由 fresh 兜底
+# (busy + 心跳陈旧 → 仍判不健康触发重启)。2026-09-05: 曾漏掉 busy 导致
+# daemon 在执行任务中途把 worker 当不健康重启, 中断所有执行入口。
+WORKER_HEALTHY_STATUSES = {"idle", "online", "busy"}
 
 
 @dataclass
@@ -252,7 +255,8 @@ def _native_log_paths(name: str) -> list[Path]:
             return []
         logs = sorted(day.rglob("*.log"), key=lambda p: p.stat().st_mtime, reverse=True)
         return logs[:4]
-    if name == "worker":
+    if name in ("worker", "agent"):
+        # agent 进程 == worker (同一进程), 原生日志统一在 worker/system/worker.log.
         day = _latest_day_dir("worker/system")
         if day is None:
             return []

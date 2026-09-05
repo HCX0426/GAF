@@ -10,7 +10,7 @@
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -147,9 +147,9 @@ class TestScanLogErrors:
         assert result['files'] == []
 
     def test_fallback_to_native_log(self, isolated_debug, tmp_path):
-        # 构造原生日志: debug/<date>/agent/system/agent.log
+        # 构造原生日志: agent 进程 == worker, 日志在 debug/<date>/worker/system/worker.log
         day = tmp_path / '20260829'
-        agent_log = day / 'agent' / 'system' / 'agent.log'
+        agent_log = day / 'worker' / 'system' / 'worker.log'
         agent_log.parent.mkdir(parents=True)
         agent_log.write_text('INFO ok\nERROR native-fail\n', encoding='utf-8')
         result = health.scan_log_errors('agent')
@@ -181,3 +181,42 @@ class TestWriteSnapshot:
         health.write_health_snapshot(snapshot)
         payload = (tmp_path / 'health-status.json').read_text(encoding='utf-8')
         assert '"log_errors"' not in payload
+
+
+class TestCheckWorker:
+    """check_worker: busy 是正常执行状态 (2026-09-05 回归)。
+
+    曾因 WORKER_HEALTHY_STATUSES 不含 busy → daemon 在执行任务中途把
+    worker 当不健康重启, 中断所有执行入口 (exec 372 "Agent 断开连接").
+    """
+
+    @staticmethod
+    def _check(status: str, hb_age_seconds: float):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        fake = MagicMock()
+        fake.is_local = True
+        fake.status = status
+        fake.last_heartbeat = timezone.now() - timedelta(seconds=hb_age_seconds)
+        mworker = MagicMock()
+        mworker.objects.filter.return_value.first.return_value = fake
+        with (
+            patch.object(health, 'BACKEND_DIR', '/unused'),
+            patch('django.setup'),
+            patch('workers.models.Worker', mworker),
+        ):
+            return health.check_worker({})
+
+    def test_busy_fresh_is_healthy(self):
+        result = self._check('busy', hb_age_seconds=2)
+        assert result.healthy is True
+
+    def test_busy_stale_is_unhealthy(self):
+        result = self._check('busy', hb_age_seconds=60)
+        assert result.healthy is False
+
+    def test_idle_fresh_is_healthy(self):
+        result = self._check('idle', hb_age_seconds=2)
+        assert result.healthy is True
