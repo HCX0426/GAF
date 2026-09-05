@@ -14,13 +14,15 @@
 │   ├── rules/                规则层（env-hardrules / project_rules）
 │   └── README.md             本索引（opencode 始终注入）
 ├── .trae/                    skills|rules → junction → .skills/（Trae 自动扫描）
-└── .opencode/                skills|rules → junction → .skills/（opencode 自动扫描）
+├── .opencode/                skills|rules → junction → .skills/（opencode 自动扫描）
+└── .workbuddy/               skills → 真实副本（WorkBuddy 自动扫描；junction 受阻，仅 cp -r 同步）
 ```
 
 | 入口 | 技能发现方式 | 规则加载方式 |
 |------|------------|------------|
 | `.trae/` | Trae 自动扫描 `.trae/skills/`（junction） | `.trae/rules/` junction，Layer 1 始终加载 |
 | `.opencode/` | opencode 自动扫描 `.opencode/skills/`（junction） | `opencode.json` `instructions` 注入 `rules/env-hardrules.md` + `rules/project_rules.md`（始终加载） |
+| `.workbuddy/` | WorkBuddy 自动扫描 `.workbuddy/skills/`（真实副本，非 junction） | `.workbuddy/memory/` 派生副本（规则仍以 `.skills/rules/` 为权威源） |
 
 路径铁律：文档内部一律使用相对路径（如 `../../rules/project_rules.md`），禁止带 IDE 目录名（`.trae/`、`.opencode/`）或绝对路径。junction 后三兄弟目录（`skills/` `rules/`）同级，从任一入口进入相对路径都能解析。
 
@@ -35,11 +37,14 @@
 | Testing & Quality | 4 | TDD、调试、验证、节点诊断 |
 | Documentation | 2 | 中文文档与审查（显式 /command 触发） |
 | Git & CI | 2 | 中文 commit 规范、国内 Git 平台（显式 /command 触发） |
+| Review & Audit | 1 | GAF 架构评审 runbook（WorkBuddy 层真实副本，显式触发） |
 | External Tools | 1 | 内置全局 playwright-best-practices（Trae 提供） |
 | Web & UI | 2 | 内置全局 web-dev / skills-overview（Trae 提供） |
-| 合计 | 18 | 15 个位于 `.skills/skills/`，3 个为 Trae 内置全局 |
+| 合计 | 19 | 15 个位于 `.skills/skills/`，3 个为 Trae 内置全局，1 个为 WorkBuddy 层副本 |
 
 > 2026-08-20 治理评估（TD-375）：11 个 0 引用 skill（brainstorming / executing-plans / finishing-a-development-branch / subagent-driven-development / using-git-worktrees / using-superpowers / requesting-code-review / receiving-code-review / mcp-builder / workflow-runner / writing-skills）移出，git 历史可追溯。原因：边界规则"必须先走 gaf-orchestrator" + 决策树白名单只 load gaf-* + 6 方法论，这些 skill 永远无法被加载，但 description 常驻系统提示浪费 token。
+>
+> 2026-09-05：新增 `gaf-architecture-review`（架构与代码评审 runbook），落在 `.workbuddy/skills/`（WorkBuddy IDE 层真实副本，非 `.skills/skills/` 权威源）——评审属用户显式触发的元任务，不走 gaf-orchestrator 决策树，故不入权威源白名单。
 
 ## GAF Core (5)
 
@@ -83,6 +88,12 @@ GAF 项目专属流程 skills。所有 AI 任务必须先走 `gaf-orchestrator` 
 | chinese-commit-conventions | 中文 commit 与 changelog 配置参考。仅在用户显式 /chinese-commit-conventions 时调用 | `.skills/skills/chinese-commit-conventions/SKILL.md` |
 | chinese-git-workflow | 国内 Git 平台配置参考。仅在用户显式 /chinese-git-workflow 时调用 | `.skills/skills/chinese-git-workflow/SKILL.md` |
 
+## Review & Audit (1)
+
+| Skill | 触发条件 | 路径 |
+|-------|---------|------|
+| gaf-architecture-review | 用户要求对 GAF 做评审/体检/架构梳理/上线前检查，或询问"项目还有什么问题"时使用。含实测验证命令、健康基线（2026-09-05 修复后刷新）与已知误报清单 | `.workbuddy/skills/gaf-architecture-review/SKILL.md`（WorkBuddy 层） |
+
 ## External Tools (1)
 
 | Skill | 触发条件 | 路径 |
@@ -102,3 +113,4 @@ GAF 项目专属流程 skills。所有 AI 任务必须先走 `gaf-orchestrator` 
 2. **superpowers 作为方法论参考**：在 gaf-orchestrator 决策树中按需引用（白名单: test-driven-development / systematic-debugging / writing-plans / verification-before-completion / pipeline-task-diagnosis / dispatching-parallel-agents），不能作为 AI 任务入口
 3. **引用约定**：gaf-* SKILL.md 引用 superpowers 方法论 skill 时统一格式 `调用 Skill(name='<skill-name>') (方法论参考)`，由 gaf-orchestrator 决策树各分支调用（见 `skills/gaf-orchestrator/SKILL.md`）
 4. **内置全局 skills**：web-dev / skills-overview / playwright-best-practices 由 Trae IDE 提供，不在项目 `.skills/skills/` 目录中
+5. **评审类元任务**：gaf-architecture-review 由用户显式触发（评审/体检），不经 gaf-orchestrator 决策树；评审全程只读，唯一产出为 `docs/analysis/` 报告文件。若未来需要跨 IDE 共享，先迁入 `.skills/skills/` 权威源再向各层派生
