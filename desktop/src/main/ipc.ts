@@ -67,12 +67,37 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   });
 
   ipcMain.handle('open-external', (_event, url: string) => {
+    // S9/P1: only allow http(s) URLs — prevents pulling up non-web schemes
+    // (file://, ms-msdt:, etc.) from an injected renderer.
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return;
+    } catch {
+      return;
+    }
     shell.openExternal(url);
   });
 
   ipcMain.handle('read-file', async (_event, filePath: string) => {
+    // S7/P1-7: deep-defense — the renderer is untrusted, so restrict reads to
+    // an explicit allowlist of root directories (env override supported via
+    // GAF_DESKTOP_READ_ROOTS, path.delimiter-separated). The renderer currently
+    // does not use readFile, so this cannot break existing flows.
     try {
-      const content = fs.readFileSync(filePath, 'utf-8');
+      const allowedRoots = (process.env.GAF_DESKTOP_READ_ROOTS || '')
+        .split(path.delimiter)
+        .map((root) => root.trim())
+        .filter(Boolean)
+        .map((root) => path.resolve(root));
+      allowedRoots.push(app.getPath('userData'));
+      const resolved = path.resolve(filePath);
+      const allowed = allowedRoots.some(
+        (root) => resolved === root || resolved.startsWith(root + path.sep)
+      );
+      if (!allowed) {
+        return { success: false, error: `路径不在允许的读取范围内: ${filePath}` };
+      }
+      const content = fs.readFileSync(resolved, 'utf-8');
       return { success: true, content };
     } catch (err: any) {
       return { success: false, error: err.message };
