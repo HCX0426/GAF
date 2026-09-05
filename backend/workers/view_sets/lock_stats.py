@@ -41,36 +41,46 @@ class DeviceLockView(APIView):
     )
     def post(self, request: Request, id: int):
         """锁定设备"""
-        from django.db import transaction
+        from django.db.models import Q
         from django.utils.timezone import now
 
         from accounts.models import User
 
         try:
-            with transaction.atomic():
-                device = Device.objects.select_for_update().select_related("locked_by").get(pk=id)
-
-                force = request.query_params.get("force") == "true"
-                current_user = cast(User, request.user)
-                is_admin = current_user.role == User.Role.ADMIN
-
-                if device.locked_by and device.locked_by != request.user:
-                    if is_admin and force:
-                        pass
-                    else:
-                        return Response(
-                            {
-                                "error": f"设备已被 {device.locked_by.username} 锁定",
-                                "locked_by": device.locked_by.username,
-                            },
-                            status=status.HTTP_403_FORBIDDEN,
-                        )
-
-                device.locked_by = current_user  # type: ignore[assignment]
-                device.locked_at = now()
-                device.save(update_fields=["locked_by", "locked_at", "updated_at"])
+            device = Device.objects.select_related("locked_by").get(pk=id)
         except Device.DoesNotExist:
             return Response({"error": "设备不存在"}, status=status.HTTP_404_NOT_FOUND)
+
+        force = request.query_params.get("force") == "true"
+        current_user = cast(User, request.user)
+        is_admin = current_user.role == User.Role.ADMIN
+
+        # SQLite-safe mutual exclusion: single-machine mode uses SQLite, where
+        # select_for_update() is a silent no-op under Django 5.2. Acquire via an
+        # atomic conditional UPDATE so two concurrent lock requests cannot both
+        # win (the UPDATE takes a WAL row write lock). Only a row that is
+        # currently free OR already owned by the caller is updated.
+        acquired = Device.objects.filter(pk=id).filter(
+            Q(locked_by__isnull=True) | Q(locked_by=current_user)
+        ).update(locked_by=current_user, locked_at=now(), updated_at=now())
+
+        if acquired == 0:
+            # Held by someone else: admin force-take overrides, otherwise 403.
+            device.refresh_from_db()
+            if is_admin and force:
+                Device.objects.filter(pk=id).update(
+                    locked_by=current_user, locked_at=now(), updated_at=now()
+                )
+            else:
+                return Response(
+                    {
+                        "error": f"设备已被 {device.locked_by.username} 锁定",
+                        "locked_by": device.locked_by.username,
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        device.refresh_from_db()
 
         self._broadcast_lock_change(device, "locked")
 
@@ -141,8 +151,10 @@ class DeviceUnlockView(APIView):
         from accounts.models import User
 
         try:
+            # Note: select_for_update() is a no-op on SQLite (single-machine
+            # default). Unlock is low-risk (only owner/admin may clear).
             with transaction.atomic():
-                device = Device.objects.select_for_update().select_related("locked_by").get(pk=id)
+                device = Device.objects.select_related("locked_by").get(pk=id)
 
                 is_admin = request.user.role == User.Role.ADMIN  # type: ignore[union-attr]
 
