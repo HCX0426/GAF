@@ -82,6 +82,16 @@ def _validate_manifest(manifest_data):
         return False, 'manifest 缺少 name 字段'
     if not manifest_data.get('version'):
         return False, 'manifest 缺少 version 字段'
+    # P0-5 (S1): reject unsafe entry_point at manifest level to block RCE.
+    # The entry point is later executed via subprocess.Popen, so it MUST stay
+    # inside the plugin package directory.
+    entry_point = manifest_data.get('entry_point')
+    if entry_point is not None:
+        if not isinstance(entry_point, str) or not entry_point:
+            return False, 'entry_point 必须为非空字符串'
+        normalized = entry_point.replace('\\', '/')
+        if os.path.isabs(normalized) or '..' in normalized.split('/'):
+            return False, 'entry_point 必须为包内相对路径，且不含 ".." 或绝对路径'
     return True, None
 
 
@@ -456,6 +466,17 @@ class PluginSandboxExecView(APIView):
 
         entry_point = pkg.manifest.get('entry_point', 'main.py')
         entry_path = os.path.join(extract_dir, entry_point)
+
+        # P0-5 (S1): defense-in-depth — even if a malformed manifest slipped
+        # past _validate_manifest, refuse to execute anything that resolves
+        # outside the plugin's extract directory (path traversal → RCE).
+        resolved_entry = os.path.realpath(entry_path)
+        resolved_dir = os.path.realpath(extract_dir)
+        if resolved_entry != resolved_dir and not resolved_entry.startswith(resolved_dir + os.sep):
+            return Response(
+                {'error': f'entry_point 解析越界，拒绝执行: {entry_point}'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         if not os.path.exists(entry_path):
             return Response({'error': f'入口文件不存在: {entry_point}'}, status=status.HTTP_400_BAD_REQUEST)
