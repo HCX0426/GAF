@@ -100,6 +100,7 @@ last_manual_edit: 2026-07-23
 | N218 | 工作台"运行任务"恒显全表数 (2026-08-29 用户反馈"一个任务都没跑却显示 90 多个") — DRF ViewSet 缺 filter_backends 静默忽略 query 参数 | DRF ViewSet 统计/过滤端点必配 filter_backends + filterset_fields(仅 model 真实字段), 否则 query 参数被静默忽略无报错; 统计类卡片必须核对 API 带/不带参数实际行为 + 对呈现数字做合理性断言; 详见 lesson N218 | `lessons/backend_2026-08-29_n218-dashboard-running-tasks-filter-backends.md` | 1 | 2026-08-29 |
 | N219 | 今日日程把"计划排期"显示成"待执行" + 空账户渲染空段箭头 (2026-08-29 用户追问"今日日程那没问题吗?") | 计划型展示状态语义要与执行型区分 — 未触发计划用 planned(计划中) 而非 pending(待执行); 前端拼接 device→account→chain 对空字段做条件渲染, 禁止无条件 `a → b → c`; 详见 lesson N219 | `lessons/workflow_2026-08-29_n219-today-schedule-planned-vs-pending.md` | 1 | 2026-08-29 |
 | N220 | 命名归一化批量重命名 + 行尾符伪影 (2026-08-30 naming 系列 A→B→C→G→D/E/F→OQ-9 全量收口) — 3-pass 字节级批量替换把 CRLF→LF, 55 文件 git status 显示 M 但 git diff 内容为空; OpenAPI 重生成暴露存量前端 drift 11 条 (TD-422) | 命名归一化按"评估稿 spec 级顺序 (A→B→C→G→D/E/F→OQ-9) → 5 层 sweep (符号→目录 git mv→线协议→DB 字段/迁移→前端类型重生成) → 文档"执行; 词边界正则保护标识符/契约键; 真值重生成暴露 drift 当场登记 TD (TD-422 归各 naming-c 前端阶段); 判断真实改动看 `git diff --stat` 内容而非仅 status; 详见 lesson N220 | `lessons/cross-layer-sync_2026-08-30_n220-batch-naming-normalization-line-ending-artifact.md` | 0 | 2026-08-30 |
+| N221 | daemon 健康监控把执行中(busy)的 agent 判为不健康 → 重启中断执行 (2026-09-05 e2e 验证入口发现 exec 372 "Agent 断开连接") — WORKER_HEALTHY_STATUSES 漏 busy, 心跳正常(1.5s)也被判失败 | "忙碌"≠"不健康": 服务健康 status 白名单必须含执行中状态; 假死由心跳新鲜度(fresh)兜底而非"是否空闲"; busy+心跳陈旧才判不健康; 详见 lesson N221 | `lessons/workflow_2026-09-05_n221-daemon-busy-health-kills-running-task.md` | 0 | 2026-09-05 |
 
 
 ### Archived-Early N## 索引（低触发归档）

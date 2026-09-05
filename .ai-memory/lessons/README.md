@@ -12,16 +12,16 @@ related_files:
 created_by: AI
 priority: high
 # lessons_count: counts all lesson files in lessons/ root (excludes README.md + archived-early/; includes archived N30 in root); synced by sync_ai_memory.py
-lessons_count: 75
-active_n_count: 40
+lessons_count: 76
+active_n_count: 41
 # retired_n_count: M0.M 闭环 N## (硬约束沉淀到 rules/skills, 在 failure-modes.md §Retired; 2026-08-28 校准: 实测 §Retired 索引行 26 条, 旧注释值 43 计错(含家族子条目数误加)已修正)
 retired_n_count: 26
 # archived_n_count: only true archived N## (N30); dormant markers + P2 auto-archived are in archived-lessons.md
 archived_n_count: 3
 # dormant_n_count: family-merged sub-entries in failure-modes.md §Dormant (15 N## across 10 family-merged rows; TD-315 2026-07-21)
 dormant_n_count: 15
-# next_n_id: 下一个可用的 N 编号 (spec §6.2 P1-8 新增; AI 写新 lesson 时原子递增 + 文件锁; 2026-08-28 校准: N209-N216 均已分配, 新 lesson 从 N217 起; 2026-08-29: N217/N218/N219 已分配; 2026-08-30: N220 已分配; 2026-09-01: N217-219 补登记 Active + N195 出清, Active=40)
-next_n_id: 221
+# next_n_id: 下一个可用的 N 编号 (spec §6.2 P1-8 新增; AI 写新 lesson 时原子递增 + 文件锁; 2026-08-28 校准: N209-N216 均已分配, 新 lesson 从 N217 起; 2026-08-29: N217/N218/N219 已分配; 2026-08-30: N220 已分配; 2026-09-01: N217-219 补登记 Active + N195 出清, Active=40; 2026-09-05: N221 已分配)
+next_n_id: 222
 ---
 
 # AI Lessons — Topic 分类索引（N132 文档治理）
