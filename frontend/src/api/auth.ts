@@ -44,11 +44,12 @@ export async function login(data: LoginRequest): Promise<LoginResponse> {
     _skipAuthRefresh: true,
   });
 
-  // P0-4: setRememberMe MUST be called BEFORE setRefreshToken — setRefreshToken
-  // reads getRememberMe() to decide storage location (localStorage for 30-day
-  // persistence vs sessionStorage for session-only). Wrong order causes refresh
-  // token to land in sessionStorage even when remember_me=true, breaking the
-  // "30-day remember me" feature (token lost on browser close).
+  // P0-4: setRememberMe MUST be called BEFORE setRefreshToken — historically
+  // setRefreshToken read getRememberMe() to pick the storage location.
+  // S6 (2026-09-05): the refresh token now ALWAYS goes to sessionStorage
+  // (never localStorage), and remember_me only controls username prefill +
+  // the checkbox default. The ordering is kept as-is so the flag is stored
+  // before any dependent UI reads it.
   // 2026-08-29: unconditionally persist the flag (including explicit uncheck)
   // so a remembered session is properly revoked when the user unchecks.
   setRememberMe(data.remember_me ?? false);

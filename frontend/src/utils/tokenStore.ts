@@ -2,11 +2,17 @@
  * Token & Multi-Account Storage Utilities
  *
  * Access Token in memory + sessionStorage backup (survives page refresh, cleared on tab close).
- * Refresh Token in localStorage (remember_me=true) or sessionStorage (remember_me=false).
- * Multi-account credentials stored in localStorage for quick switching.
+ * Refresh Token in sessionStorage ONLY (S6: never persisted to localStorage —
+ *   survives page refresh but dies with the browser session, closing the
+ *   30-day XSS-theft window that localStorage posed). "remember_me" now only
+ *   controls username prefill + the checkbox default.
+ * Multi-account credentials stored in sessionStorage (S6: same rationale —
+ *   switching survives page refresh, not browser restarts).
  *
  * P1-5/P1-6: access token persisted to sessionStorage to reduce refresh calls on page reload.
- * P1-4: cross-tab sync via 'storage' event listener.
+ * P1-4: cross-tab sync via 'storage' event listener (legacy localStorage entries only).
+ * S6 (2026-09-05): refresh token + saved accounts migrated off localStorage,
+ *   with one-time cleanup of legacy entries in initCrossTabSync().
  */
 
 let inMemoryAccessToken: string | null = null;
@@ -74,12 +80,15 @@ export function setAccessToken(token: string | null): void {
   }
 }
 
-/** Get the Refresh Token — checks localStorage (remember_me=true) then sessionStorage */
+/** Get the Refresh Token — sessionStorage only (S6). Opportunistically drops legacy localStorage entries. */
 export function getRefreshToken(): string | null {
   try {
-    const local = localStorage.getItem(REFRESH_TOKEN_KEY);
-    if (local) return local;
     const session = sessionStorage.getItem(REFRESH_TOKEN_KEY);
+    // S6 one-time migration: purge any pre-fix localStorage copy so an old
+    // 30-day token can't linger on disk-backed storage.
+    if (localStorage.getItem(REFRESH_TOKEN_KEY) !== null) {
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+    }
     if (session) return session;
   } catch {
     // storage unavailable
@@ -87,20 +96,20 @@ export function getRefreshToken(): string | null {
   return null;
 }
 
-/** Write the Refresh Token — stores in localStorage (remember_me=true) or sessionStorage (remember_me=false) */
+/**
+ * Write the Refresh Token — sessionStorage only (S6).
+ * "remember_me" no longer changes the storage location; it only controls
+ * username prefill / the checkbox default (see getRememberMeDefault).
+ */
 export function setRefreshToken(token: string | null): void {
-  const useLocalStorage = getRememberMe();
   try {
     if (token) {
-      const storage = useLocalStorage ? localStorage : sessionStorage;
-      const otherStorage = useLocalStorage ? sessionStorage : localStorage;
-      storage.setItem(REFRESH_TOKEN_KEY, token);
-      // Clear from the other storage to avoid stale tokens
-      otherStorage.removeItem(REFRESH_TOKEN_KEY);
+      sessionStorage.setItem(REFRESH_TOKEN_KEY, token);
     } else {
-      localStorage.removeItem(REFRESH_TOKEN_KEY);
       sessionStorage.removeItem(REFRESH_TOKEN_KEY);
     }
+    // Defensive: never leave a copy in localStorage (S6).
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
   } catch {
     // storage unavailable
   }
@@ -180,6 +189,8 @@ export function clearTokens(): void {
 /**
  * Save account credentials for multi-account switching.
  * Updates existing entry if username already exists.
+ * S6: stored in sessionStorage (not localStorage) — account switching survives
+ * page refresh, not browser restarts.
  * @param username - Account username
  * @param refreshToken - Refresh token for this account
  */
@@ -197,19 +208,21 @@ export function saveAccount(username: string, refreshToken: string): void {
     } else {
       accounts.push(account);
     }
-    localStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(accounts));
+    sessionStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(accounts));
+    // S6 one-time migration: purge the legacy localStorage copy.
+    localStorage.removeItem(SAVED_ACCOUNTS_KEY);
   } catch {
-    // localStorage unavailable
+    // sessionStorage unavailable
   }
 }
 
 /**
- * Get all saved accounts from localStorage.
+ * Get all saved accounts from sessionStorage.
  * @returns Array of saved accounts (empty array if none or error)
  */
 export function getSavedAccounts(): SavedAccount[] {
   try {
-    const raw = localStorage.getItem(SAVED_ACCOUNTS_KEY);
+    const raw = sessionStorage.getItem(SAVED_ACCOUNTS_KEY);
     if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -227,9 +240,9 @@ export function removeAccount(username: string): void {
   try {
     const accounts = getSavedAccounts();
     const filtered = accounts.filter((a) => a.username !== username);
-    localStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(filtered));
+    sessionStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(filtered));
   } catch {
-    // localStorage unavailable
+    // sessionStorage unavailable
   }
 }
 
@@ -256,9 +269,11 @@ export function isTokenExpiringSoon(token: string | null, thresholdSeconds = 60)
 
 /**
  * P1-4: Cross-tab synchronization via 'storage' event.
- * When another tab updates/clears the refresh token in localStorage, sync this tab.
- * - If token cleared (logout in another tab): clear local access token, trigger re-render.
- * - If token updated (refresh in another tab): no action needed — our access token stays valid until expiry.
+ * S6 (2026-09-05): the refresh token now lives in sessionStorage only, and
+ * sessionStorage does not fire cross-tab 'storage' events — so logout in one
+ * tab no longer propagates to other tabs. The listener below is kept solely
+ * to react to legacy pre-S6 localStorage writes; initCrossTabSync() also
+ * performs a one-time purge of legacy localStorage token/account entries.
  *
  * Call initCrossTabSync() once at app startup (main.tsx).
  */
@@ -268,22 +283,31 @@ export function initCrossTabSync(): void {
   if (crossTabSyncInitialized || typeof window === 'undefined') return;
   crossTabSyncInitialized = true;
 
+  // S6 one-time migration: drop pre-fix localStorage copies of the refresh
+  // token and saved accounts (even before any getRefreshToken() call).
+  try {
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(SAVED_ACCOUNTS_KEY);
+  } catch {
+    // localStorage unavailable
+  }
+
   window.addEventListener('storage', (e: StorageEvent) => {
     if (e.key !== REFRESH_TOKEN_KEY || e.storageArea !== localStorage) return;
 
     if (e.newValue === null) {
-      // Another tab logged out — clear this tab's tokens too
+      // Another tab logged out (legacy pre-S6 flow) — clear this tab too
       inMemoryAccessToken = null;
       try {
         sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+        sessionStorage.removeItem(REFRESH_TOKEN_KEY);
       } catch {
         // sessionStorage unavailable
       }
       // Dispatch a custom event so React components can react (e.g. redirect to /login)
       window.dispatchEvent(new CustomEvent('gaf:auth-logout'));
     }
-    // If e.newValue is a new token, another tab refreshed. Our access token is still
-    // valid until it expires, so no immediate action needed. When it expires, our
-    // refresh will use the new token from localStorage.
+    // If e.newValue is a new token (legacy flow), no action needed — our
+    // access token stays valid until expiry.
   });
 }
