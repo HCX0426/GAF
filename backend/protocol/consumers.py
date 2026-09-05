@@ -298,7 +298,7 @@ class WorkerConsumer(AsyncWebsocketConsumer):
                         {"msg_type": msg_type},
                     )
             except Exception:
-                pass  # Best-effort: never block message processing for perf.
+                logger.debug("perf monitor 记录失败 (非关键)", exc_info=True)
 
         handler = self._get_handler(msg_type)
 

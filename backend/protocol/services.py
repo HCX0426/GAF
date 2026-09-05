@@ -760,7 +760,9 @@ def upsert_execution_step(payload):
                 default=error_msg or "",
             )
         except Exception:
-            pass  # Best-effort: never block step persistence
+            # Best-effort: never block step persistence, but surface the failure
+            # instead of swallowing it silently (E1).
+            logger.warning("get_user_message 失败 (error_code=%s)", error_code, exc_info=True)
     if isinstance(elapsed_time, (int, float)) and elapsed_time >= 0:
         defaults["duration"] = float(elapsed_time)
         defaults["duration_ms"] = int(elapsed_time * 1000)
@@ -871,7 +873,7 @@ def update_task_execution_result(*, execution_id, success, elapsed_time, error_m
             snap["user_message"] = user_msg
             execution.execution_snapshot = snap
         except Exception:
-            pass  # Best-effort: never block result persistence
+            logger.warning("任务结果 user_message 映射失败 (error_code=%s)", error_code, exc_info=True)
 
     # Backfill started_at if backend never set it (e.g. pipeline.execute path
     # only creates the record without setting started_at).
