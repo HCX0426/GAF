@@ -802,3 +802,62 @@ class TestConstructorParameters:
         assert device._nemu_ipc_connect_id == 0
         assert device._nemu_ipc_width == 0
         assert device._nemu_ipc_height == 0
+
+
+class TestAdbNetworkSerialConnect:
+    """host:port 网络 serial 先 adb connect 注册 (2026-09-05).
+
+    模拟器 adb 端口 (127.0.0.1:5555) 需 adb connect 后 adbutils adb.device()
+    才能找到, 否则按键/点击全挂 "device not found".
+    """
+
+    def test_is_network_serial(self):
+        from devices.adb.adb_lifecycle import ADBLifecycleMixin
+
+        assert ADBLifecycleMixin._is_network_serial("127.0.0.1:5555") is True
+        assert ADBLifecycleMixin._is_network_serial("emulator-5554") is False
+        assert ADBLifecycleMixin._is_network_serial("localhost:62001") is True
+        assert ADBLifecycleMixin._is_network_serial("") is False
+
+    @patch("devices.adb.adb_lifecycle.subprocess.run")
+    @patch("devices.emulator_discovery.EmulatorDiscovery._discover_adb_path", return_value="D:/adb.exe")
+    def test_adb_connect_registers_serial(self, mock_discover, mock_run):
+        from devices.adb.adb_lifecycle import ADBLifecycleMixin
+
+        mock_run.return_value.stdout = "connected to 127.0.0.1:5555"
+        ADBLifecycleMixin._adb_connect("127.0.0.1:5555")
+        mock_run.assert_called_once()
+        args = mock_run.call_args.args[0]
+        assert args[:3] == ["D:/adb.exe", "connect", "127.0.0.1:5555"]
+
+    @patch("devices.adb.adb_lifecycle.ADBLifecycleMixin._adb_connect")
+    @patch("devices.adb.adb_lifecycle.get_adb_pool")
+    def test_connect_registers_network_serial_first(self, mock_pool, mock_connect):
+        mock_pool.return_value.get.return_value = MagicMock()
+        device = ADBDevice.__new__(ADBDevice)
+        device._serial = "127.0.0.1:5555"
+        device._device = None
+        device._status = None
+        device._nemu_keepalive = None
+        device.connect()
+        mock_connect.assert_called_once_with("127.0.0.1:5555")
+
+    @patch("devices.adb.adb_lifecycle.ADBLifecycleMixin._adb_connect")
+    @patch("devices.adb.adb_lifecycle.get_adb_pool")
+    def test_connect_skips_local_alias(self, mock_pool, mock_connect):
+        mock_pool.return_value.get.return_value = MagicMock()
+        device = ADBDevice.__new__(ADBDevice)
+        device._serial = "emulator-5554"
+        device._device = None
+        device._status = None
+        device._nemu_keepalive = None
+        device.connect()
+        mock_connect.assert_not_called()
+
+    def test_maatouch_key_press_falls_back(self):
+        """MaaTouch 无按键能力 → NotImplementedError (降级链到 adb)."""
+        from devices.adb.device import ADBDevice
+
+        device = ADBDevice()
+        with pytest.raises(NotImplementedError):
+            device._input_maatouch_key_press("home")

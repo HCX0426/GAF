@@ -224,6 +224,15 @@ class ADBInputMixin(BaseDevice):
             raise RuntimeError(f"MaaTouch 点击失败: {exc}") from exc
 
     @retry_input()
+    def _input_maatouch_key_press(self, key: str) -> None:
+        """MaaTouch 无按键能力 — 显式降级到下一方法 (2026-09-05).
+
+        此前 _key_press_by_method 引用不存在的 _input_maatouch_key_press,
+        抛 AttributeError 被当作普通失败, 掩盖了真正的降级链语义.
+        """
+        raise NotImplementedError("MaaTouch 不支持按键，降级到 u2/adb input")
+
+    @retry_input()
     def _input_maatouch_swipe(self, x1: int, y1: int, x2: int, y2: int, duration: int = 300) -> None:
         """使用 MaaTouch 执行滑动
 

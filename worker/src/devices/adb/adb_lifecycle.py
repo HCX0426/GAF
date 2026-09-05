@@ -1,6 +1,8 @@
 import contextlib
 import logging
+import os
 import socket
+import subprocess
 from typing import Any
 
 from core.exceptions import DeviceError
@@ -72,6 +74,12 @@ class ADBLifecycleMixin(BaseDevice):
         """连接 ADB 设备（通过连接池复用）"""
         try:
             if self._serial:
+                # 对 host:port 形式的 serial (如 127.0.0.1:5555) 先 adb connect
+                # 注册 — 模拟器 adb 端口需 connect 后 adb devices 才会出现该
+                # serial, 否则 adbutils adb.device() 抛 "device not found"
+                # (2026-09-05 模拟器 task 按键失败根因).
+                if self._is_network_serial(self._serial):
+                    self._adb_connect(self._serial)
                 device = get_adb_pool().get(self._serial)
                 if device is None:
                     raise DeviceError(f"无法获取 ADB 设备: {self._serial}")
@@ -91,6 +99,31 @@ class ADBLifecycleMixin(BaseDevice):
         except Exception as exc:
             self._status = DeviceStatus.ERROR
             raise DeviceError(f"ADB 设备连接失败: {exc}") from exc
+
+    @staticmethod
+    def _is_network_serial(serial: str) -> bool:
+        """host:port 形式的网络 serial (非 emulator-N 本地别名)."""
+        return ":" in serial and not serial.startswith("emulator-")
+
+    @staticmethod
+    def _adb_connect(serial: str) -> None:
+        """adb connect <host:port> 注册 serial (幂等, 已连接则无副作用).
+
+        用 emulator_discovery 发现的 adb 路径 (PATH 或模拟器安装目录), 确保
+        adbutils adb.device() 能在 adb devices 列表里找到该网络 serial.
+        """
+        try:
+            from devices.emulator_discovery import EmulatorDiscovery
+
+            adb_path = EmulatorDiscovery._discover_adb_path() or "adb"
+            result = subprocess.run(
+                [adb_path, "connect", serial],
+                capture_output=True, text=True, timeout=10,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+            )
+            logger.info("adb connect %s -> %s", serial, (result.stdout or result.stderr or "").strip()[:80])
+        except Exception as exc:
+            logger.warning("adb connect %s 失败(忽略, 继续尝试连接池): %s", serial, exc)
 
     def disconnect(self) -> None:
         """断开 ADB 设备连接"""

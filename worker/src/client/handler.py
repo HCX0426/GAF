@@ -607,11 +607,16 @@ class MessageHandler:
             logger.warning("emulator 设备缺少 adb_serial, 使用当前活跃设备")
             return device_manager.get_active_device()
 
+        target = self._normalize_serial(adb_serial)
         for dev in device_manager._devices.values():
-            if not hasattr(dev, "_adb_serial"):
+            dev_serial = self._device_serial(dev)
+            if not dev_serial:
                 continue
-            if dev._adb_serial == adb_serial:
-                logger.info("命中已有 emulator 设备: id=%s, serial=%s", dev.device_id, adb_serial)
+            if self._normalize_serial(dev_serial) == target:
+                logger.info(
+                    "命中已有 emulator 设备: id=%s, serial=%s (backend=%s)",
+                    dev.device_id, dev_serial, adb_serial,
+                )
                 self._ensure_device_connected(dev)
                 # P3: do NOT call set_active_device here. execute_pipeline
                 # resolves the device by device_id directly.
@@ -622,6 +627,36 @@ class MessageHandler:
         # and better left to the discovery flow).
         logger.warning("未找到 adb_serial=%s 的设备, 使用当前活跃设备", adb_serial)
         return device_manager.get_active_device()
+
+    @staticmethod
+    def _device_serial(dev: Any) -> str:
+        """Read a device's adb serial from ``_serial`` (ADBDevice) or
+        ``_adb_serial`` (legacy alias). Returns "" when unavailable."""
+        return (
+            getattr(dev, "_serial", None)
+            or getattr(dev, "_adb_serial", None)
+            or ""
+        )
+
+    @staticmethod
+    def _normalize_serial(serial: str) -> str:
+        """Normalize adb serial aliases to the adb-view form (127.0.0.1:port).
+
+        An Android emulator instance has two aliases for the same device:
+        - ``emulator-5554`` (ldconsole / AVD view; console port 5554)
+        - ``127.0.0.1:5555`` (adb view; adb port = console port + 1)
+
+        backend DB may store either form while the agent's discovered
+        ADBDevice always uses the adb view — exact string compare misses
+        (2026-09-05: task 22 dispatch fell back to active device with
+        "未找到 adb_serial=emulator-5554 的设备").
+        """
+        s = (serial or "").strip().lower()
+        if s.startswith("emulator-"):
+            port = s.rsplit("-", 1)[1]
+            if port.isdigit():
+                return f"127.0.0.1:{int(port) + 1}"
+        return s
 
     @staticmethod
     def _ensure_device_connected(device: Any) -> None:

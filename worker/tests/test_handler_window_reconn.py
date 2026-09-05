@@ -263,3 +263,74 @@ class TestWindowsDeviceConnectBindsHwndHint:
         mock_find.assert_called_once_with(title="about:blank - Google Chrome")
         mock_bind.assert_called_once_with(0x123)
         assert dev.status == DeviceStatus.CONNECTED
+
+
+class TestResolveEmulatorSerialAlias:
+    """模拟器 adb_serial 别名匹配 (2026-09-05).
+
+    backend DB 存 ldconsole 视角 (emulator-5554), agent ADBDevice 用 adb 视角
+    (127.0.0.1:5555) 且属性是 _serial (旧代码查 _adb_serial 永不命中) —
+    修复后按 adb 视角归一化匹配, 不再 fallback 到未连接的活跃设备.
+    """
+
+    def test_normalize_emulator_view_to_adb_view(self):
+        from client.handler import MessageHandler
+
+        assert MessageHandler._normalize_serial("emulator-5554") == "127.0.0.1:5555"
+        assert MessageHandler._normalize_serial("127.0.0.1:5555") == "127.0.0.1:5555"
+        assert MessageHandler._normalize_serial("emulator-5554-extra") == "emulator-5554-extra"
+        assert MessageHandler._normalize_serial("") == ""
+
+    def test_device_serial_reads_serial_or_adb_serial(self):
+        from client.handler import MessageHandler
+
+        d1 = MagicMock()
+        d1._serial = "127.0.0.1:5555"
+        assert MessageHandler._device_serial(d1) == "127.0.0.1:5555"
+
+        d2 = MagicMock()
+        d2._serial = None
+        d2._adb_serial = "legacy-serial"
+        assert MessageHandler._device_serial(d2) == "legacy-serial"
+
+        d3 = MagicMock()
+        d3._serial = None
+        d3._adb_serial = None
+        assert MessageHandler._device_serial(d3) == ""
+
+    def test_resolve_emulator_device_matches_alias(self):
+        from client.handler import MessageHandler
+
+        handler = MessageHandler(MagicMock())
+        handler._orchestrator = MagicMock()
+        mgr = MagicMock()
+        handler._orchestrator._device_manager = mgr
+        dev = MagicMock()
+        dev._serial = "127.0.0.1:5555"
+        dev.device_id = "adb-ldplayer-1"
+        mgr._devices = {"adb-ldplayer-1": dev}
+
+        device_info = {"device_type": "emulator", "adb_serial": "emulator-5554"}
+        with patch("client.handler.MessageHandler._ensure_device_connected") as mock_ensure:
+            resolved = handler._resolve_target_device(device_info)
+
+        assert resolved is dev
+        mock_ensure.assert_called_once_with(dev)
+
+    def test_resolve_emulator_device_no_match_falls_back(self):
+        from client.handler import MessageHandler
+
+        handler = MessageHandler(MagicMock())
+        handler._orchestrator = MagicMock()
+        mgr = MagicMock()
+        handler._orchestrator._device_manager = mgr
+        active = MagicMock()
+        mgr.get_active_device.return_value = active
+        mgr._devices = {}  # no emulator devices
+
+        device_info = {"device_type": "emulator", "adb_serial": "emulator-5554"}
+        with patch("client.handler.MessageHandler._ensure_device_connected") as mock_ensure:
+            resolved = handler._resolve_target_device(device_info)
+
+        assert resolved is active
+        mock_ensure.assert_not_called()
