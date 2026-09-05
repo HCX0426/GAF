@@ -202,6 +202,30 @@ sudo bash /opt/gaf/deploy/deploy.sh update
 - preload_app = true (降低内存占用)
 - 通过环境变量 `GUNICORN_*` 覆盖
 
+## 生产部署前置检查 (必读) — P3 评审 2026-09-05
+
+D1 已将后端由 gunicorn WSGI 切换为 **daphne ASGI** (HTTP + WebSocket 同一进程/端口),
+prod.py 启用 whitenoise `CompressedManifestStaticFilesStorage`。下次生产部署前必须满足:
+
+1. **`collectstatic` 必须成功执行 (强制)** — 否则生产静态资源 500。
+   whitenoise 的 manifest 静态存储依赖 `staticfiles/staticfiles.json` 清单文件; 漏跑或失败会导致
+   所有 `/static/*` 请求 500。
+   - `deploy.sh install` / `update` 已在 `migrate` 之后、启动服务之前执行 `django_collectstatic`
+   - Docker 方案 `command` 中已先 `collectstatic --noinput` 再启动 daphne
+   - 验证: `curl -I http://localhost/static/admin/css/base.css` 应返回 200; 缺失则重跑 collectstatic
+
+2. **daphne 必须监听, 且 nginx `/ws/` 反代到 daphne 端口** — 否则 WebSocket 无法连通。
+   - 确认 `gaf-backend.service` 的 `ExecStart` 为 daphne (非 gunicorn)
+   - nginx `/ws/` 需透传 `Upgrade` / `Connection: upgrade` 头 (`gaf.conf` 已配置)
+   - 验证 WS 连通 (应看到 `101 Switching Protocols` 而非 502):
+     ```bash
+     curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" \
+          -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" \
+          http://localhost/ws/
+     ```
+
+3. **不要直接暴露 daphne 端口** — 仅 bind `127.0.0.1`, 由 nginx 反代对外 (D3)。
+
 ## 健康检查
 
 部署后验证：
@@ -226,7 +250,7 @@ sudo systemctl is-active gaf-backend gaf-celery-worker gaf-celery-beat nginx
 
 | 症状 | 排查 |
 |------|------|
-| 502 Bad Gateway | gunicorn 未启动 → `systemctl status gaf-backend` |
+| 502 Bad Gateway | daphne 未启动 → `systemctl status gaf-backend` |
 | 静态资源 404 | collectstatic 未执行 → `deploy.sh update` |
 | WebSocket 连不上 | nginx `/ws/` 配置缺失或 `Upgrade` 头未透传 |
 | Celery 任务不执行 | `systemctl status gaf-celery-worker` + Redis 连通性 |

@@ -2,9 +2,9 @@ name: GAF CI
 
 on:
   push:
-    branches: [develop]
+    branches: [main, develop]
   pull_request:
-    branches: [develop]
+    branches: [main, develop]
   # TD-327 spec-92: weekly e2e regression (每周一 03:00 UTC = 周一 11:00 北京时间)
   schedule:
     - cron: '0 3 * * 1'
