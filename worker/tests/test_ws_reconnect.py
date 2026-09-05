@@ -776,3 +776,49 @@ class TestStateTransitions:
 
         assert connection.connected is True
         assert connection._reconnect_delay == 1.0
+
+
+class TestRegisterCapabilities:
+    """_send_register capabilities 声明 (2026-09-05).
+
+    Windows agent 机器上检测到 ADB (模拟器) 也必须声明 adb 能力, 否则需要
+    adb 的任务永远匹配不到本 agent (实测 task 22 报"无具备所需能力 (adb)").
+    """
+
+    @staticmethod
+    def _make_conn(device_type):
+        conn = WorkerConnection.__new__(WorkerConnection)
+        conn._config = MagicMock()
+        conn._config.device_type = device_type
+        conn.send_message = AsyncMock()
+        return conn
+
+    def test_windows_agent_with_adb_declares_adb(self):
+        conn = self._make_conn("windows")
+        with patch.object(WorkerConnection, "_adb_available", return_value=True):
+            asyncio.run(conn._send_register())
+        payload = conn.send_message.await_args.args[1]
+        assert payload["capabilities"]["adb"] is True
+        assert payload["capabilities"]["windows"] is True
+
+    def test_windows_agent_without_adb_no_adb_cap(self):
+        conn = self._make_conn("windows")
+        with patch.object(WorkerConnection, "_adb_available", return_value=False):
+            asyncio.run(conn._send_register())
+        payload = conn.send_message.await_args.args[1]
+        assert "adb" not in payload["capabilities"]
+        assert payload["capabilities"]["windows"] is True
+
+    def test_emulator_agent_declares_adb(self):
+        conn = self._make_conn("emulator")
+        asyncio.run(conn._send_register())
+        payload = conn.send_message.await_args.args[1]
+        assert payload["capabilities"]["adb"] is True
+
+    def test_adb_available_true_when_path_found(self):
+        with patch("devices.emulator_discovery.EmulatorDiscovery._discover_adb_path", return_value="D:/adb.exe"):
+            assert WorkerConnection._adb_available() is True
+
+    def test_adb_available_false_when_not_found(self):
+        with patch("devices.emulator_discovery.EmulatorDiscovery._discover_adb_path", return_value=None):
+            assert WorkerConnection._adb_available() is False

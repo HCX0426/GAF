@@ -668,6 +668,22 @@ class WorkerConnection:
 
         return context
 
+    @staticmethod
+    def _adb_available() -> bool:
+        """Check whether an ADB executable is reachable on this machine.
+
+        Reuses EmulatorDiscovery's path discovery (PATH + common emulator
+        install paths). Fast when adb is not on PATH (pure file existence
+        check); may spend up to 5s on ``adb version`` when adb is on PATH —
+        only happens once at register time.
+        """
+        try:
+            from devices.emulator_discovery import EmulatorDiscovery
+
+            return EmulatorDiscovery._discover_adb_path() is not None
+        except Exception:
+            return False
+
     async def _send_register(self) -> None:
         """Send agent registration message to the server with capabilities declared.
 
@@ -693,6 +709,12 @@ class WorkerConnection:
         if is_windows:
             capabilities["windows"] = True
         if is_emulator:
+            capabilities["adb"] = True
+        # 2026-09-05: Windows 机器上若检测到 ADB (模拟器), 也声明 adb 能力 —
+        # 否则需要 adb 的任务 (模拟器自动化) 永远匹配不到本 agent, 即使机器
+        # 上实际有 LDPlayer/雷电等模拟器 (实测: task 22 报"无具备所需能力
+        # (adb) 的 Agent", 因 capabilities 仅含 windows).
+        if not is_emulator and self._adb_available():
             capabilities["adb"] = True
         # If device_type is unknown, declare both to maximize matching chances
         if not is_windows and not is_emulator:
