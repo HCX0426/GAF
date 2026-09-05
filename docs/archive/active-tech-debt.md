@@ -11,7 +11,7 @@ last_updated: "2026-09-05 (TD-425 登记: 链执行卡死无超时清理)"
 > 本文件只包含真正活跃的技术债务（🔧 待修/待办/待决 和 🚧 进行中）。
 > 已关闭条目（✅ FIXED / ❌ WONTFIX / ❌ INVALIDATED / ❌ EVALUATED）已迁移到 `fixed.md` 或 `wontfix.md`。
 >
-> **状态**: 🔧 2 项待修 (TD-424 2026-09-01, TD-425 2026-09-05)
+> **状态**: 🔧 1 项待修 (TD-424, 2026-09-01 登记)
 
 ## TD 处理顺序 (2026-07-18 spec-26 强化)
 
@@ -60,21 +60,6 @@ last_updated: "2026-09-05 (TD-425 登记: 链执行卡死无超时清理)"
 - **修复方案**: 已实现 `accounts.APIKeyAuthentication`（[authentication.py](backend/accounts/authentication.py)）— sha256 key_hash 校验 + is_active + 过期 + IP 白名单 + call_count 递增，8 项测试通过；按"暂不对外开放"决策，**尚未接入任何公开端点**
 - **验证标准**: 接入端点后，用创建的 API key 能调用受保护接口且 call_count 递增; 当前鉴权后端单测 8 项通过
 - **何时修**: 对外 API 有开放需求时，把 `APIKeyAuthentication` 加入目标视图的 `authentication_classes`（2026-09-01 已实现功能代码）
-
----
-
-## TD-425: TaskChainExecution 卡 running 无超时清理，device_busy 永久阻塞后续派发 (🔧 待修)
-
-- **状态**: 🔧 待修
-- **优先级**: P2
-- **登记时间**: 2026-09-05
-- **来源**: e2e 验证 7 个执行入口时发现——device 2 上 chain_exec 50/53 自 2026-09-03 卡 running（无 error、无 completed_at），导致无人值守 start dispatched=0（device_busy 跳过）；手动清理后恢复正常
-- **症状**: `TaskChainExecution` 卡在 `running`（agent 中断/钩子未触发时），`unattended_start_view` / 任务链派发的 `device_busy` 检查永久跳过该设备；beat 仅有 TaskExecution 级 `check_dispatch_acks`（10s），**无链级卡死检测**
-- **根因**: 链执行完成依赖 `on_chain_execution_completed` 信号/advance 钩子；agent 中断或信号丢失时链状态永不迁移，且无超时兜底
-- **影响**: 任一设备的历史卡死 chain 会无限阻塞该设备所有后续任务派发（无人值守 / DAG / dispatch_routine 的 device_busy），属"到执行成功"的隐性障碍
-- **修复方案**: 仿照 `check_dispatch_acks` 加链级卡死扫描 beat——`TaskChainExecution` 卡 running 超过阈值（如 30min）且关联无活跃 TaskExecution 时，置 failed + 完成钩子；或复用现有 10s dispatch-ack 扫描扩展到链级
-- **验证标准**: 人为构造卡 running 的 chain_exec（无活跃执行）→ beat 阈值后自动置 failed → device_busy 解除 → 后续派发成功
-- **何时修**: 下一 spec（执行入口可靠性收尾）立即接修
 
 ---
 

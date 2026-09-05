@@ -1,7 +1,7 @@
 ---
 summary: 已修复技术债务清单 — ✅ FIXED 条目 (完整详情)
 applies_to: [project]
-last_updated: "2026-09-01 (TD-423 闭环: AI 页签改造全 3 Phase 完成)"
+last_updated: "2026-09-05 (TD-425 闭环: 链级卡死清理 beat)"
 ---
 
 # Fixed Tech Debts
@@ -25,6 +25,7 @@ last_updated: "2026-09-01 (TD-423 闭环: AI 页签改造全 3 Phase 完成)"
 | [TD-420](#L) | MonitorRule 模型被游戏 UI 规则占用 (✅ FIXED 于 2026-08-29, rule_kind 字段拆分 monitor/game_ui + 数据迁移 + 4 测试) |
 | [TD-422](#L) | 前端类型漂移 11 条 — OpenAPI 重生成后 tsc 仍红 (✅ FIXED 于 2026-08-30, naming-c-* 前端字段落地 + tsc -b 0 errors) |
 | [TD-423](#L) | LLM 多服务商 Provider 配置缺失 + AI 页签分组混乱 (✅ FIXED 于 2026-09-01, AI 页签改造 3 Phase 完成: 多 provider 唯一激活 + 4 分组 + 手写 LangGraph/MCP + RAG rerank/Agent 评测) |
+| [TD-425](#L) | TaskChainExecution 卡 running 无超时清理，device_busy 永久阻塞后续派发 (✅ FIXED 于 2026-09-05, check_stuck_chains beat 60s 卡死链置 FAILED + 4 单测 + E2E chain 59 自动清理) |
 | [TD-421](#L) | 通知中心输入侧缺口 dev 无新事件 (✅ FIXED 于 2026-08-29, 执行失败/event.alert 打点 + chain-health 接口 + 8 测试) |
 | [TD-413](#L) | gaf-orchestrator SKILL.md 27.6KB 瘦身 (✅ FIXED 于 2026-08-28, 27,655B→18,260B, 9 处冗余外迁, sync_skills 通过) |
 | [TD-414](#L) | N209/N210/N211 补 yn-matrices 条目 (✅ FIXED 于 2026-08-28, _testing.md 2 段 + _misc.md 1 段 + 索引同步, doc_health 0) |
@@ -181,6 +182,14 @@ last_updated: "2026-09-01 (TD-423 闭环: AI 页签改造全 3 Phase 完成)"
 - 验证: `test_llm_provider.py` 6 + `test_langgraph_graph.py` 20 + `test_rag_rerank.py` 11 + `test_rag_eval.py` 3 + `test_agent_evaluation.py` 5 + `AiConfigPage.test.tsx` 7 + tsc 0 + ruff 0
 - evidence: spec `docs/specs/active/2026-08-31-ai-tab-agent-learning-spec.md` + completed-features C-121
 - commit: `4777135`/`7511ee5`/`338ed1f`/`63aee11`/`170627d`/`a84883f`
+
+## TD-425: TaskChainExecution 卡 running 无超时清理，device_busy 永久阻塞后续派发 (✅ FIXED — 2026-09-05)
+
+- 症状: chain_exec 50/53 卡 running 2 天（无 error/无 completed_at）→ `device_busy` 检查永久跳过该设备 → 无人值守 dispatched=0 / DAG 无法派发
+- 根因: 链完成依赖 `advance_chain_execution`（从最后完成的节点执行推进）；节点执行从未到达终态或 advance 未被触发时链永久 running，且无链级超时兜底（beat 仅有 TaskExecution 级 `check_dispatch_acks`）
+- 修复: `tasks/heartbeat.check_stuck_chains` beat（60s）— 卡 running 超 30min 且无活跃(PENDING/RUNNING)节点执行 → 复用 `_fail_chain` 置 FAILED（post_save signal 自动触发 `on_chain_execution_completed` 更新无人值守 session）；`config/celery.py` beat 注册
+- 验证: 单测 4 例（卡死无活跃→FAILED / 有活跃→跳过 / 未超阈值→跳过 / SUCCESS→不动）；E2E 构造卡死链 59（running 回退 2h）→ beat 60s 内自动 FAILED（日志 `check_stuck_chains: chain 59 卡死已清理`）
+- commit: `1756152`
 
 ## TD-402: 无人值守链执行器可靠性缺口（帧丢卡死/并发双派/归还竞态） (✅ FIXED — 2026-08-27)
 
