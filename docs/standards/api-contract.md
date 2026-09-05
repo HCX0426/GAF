@@ -5,7 +5,7 @@ last_updated: 2026-08-30 (§18.5 服务重启控制新增; §18.1/§19.1 服务�
 key_decisions:
   - URL 用复数名词 + kebab-case：/api/v2/devices/, /api/v2/agent-instances/
   - 路径以 / 结尾（DRF 默认行为）
-  - 当前响应格式：DRF 默认分页 { count, next, previous, results }（统一 { code, message, data } 已实现，通过 GAF_UNIFIED_RESPONSE_ENABLED 开启，默认 False 兼容旧客户端）
+  - 当前响应格式：统一 { code, message, data } 已实现，通过 GAF_UNIFIED_RESPONSE_ENABLED 开关控制（默认 True 开启；设为 False 仅用于兼容旧客户端）。DRF 默认分页格式 { count, next, previous, results } 作为 data 字段内的分页体保留
   - 错误码 4 位：1xxx 通用 / 2xxx 认证 / 3xxx 业务 / 4xxx 限流（已实现 gaf_core/error_codes.py，统一异常处理器接管 DRF 异常）
   - TypeScript 类型优先使用 OpenAPI 自动生成（frontend/src/types/api.generated.ts），通过 npm run generate:api-types 同步；手写类型在 types/models/ 仅作遗留兼容
   - 列表分页用 page+page_size（不用 offset/limit），默认 page_size=20
@@ -64,7 +64,7 @@ GET  /api/v2/agents/device_list   # snake_case
 
 ## 3. 响应格式
 
-> **现状**：默认仍使用 DRF 默认分页格式 `{ count, next, previous, results }`。统一响应格式已实现并通过 `GAF_UNIFIED_RESPONSE_ENABLED` 开关控制（默认 `False` 以保持旧客户端兼容）。开启后所有 JSON 响应包装为 `{ code, message, data }`。
+> **现状**：统一响应格式已实现并通过 `GAF_UNIFIED_RESPONSE_ENABLED` 开关控制（**默认 `True` 开启**），所有 JSON 响应包装为 `{ code, message, data }`；设为 `False` 仅用于兼容旧客户端。分页体 `{ count, next, previous, results }` 位于 `data` 字段内。
 
 ### 3.1 当前成功响应（DRF 默认，未开启统一格式时）
 
@@ -112,7 +112,7 @@ GET  /api/v2/agents/device_list   # snake_case
 **分页规则**（已实现）：
 - 用 `?page=N&page_size=M` 不用 `offset/limit`
 - 默认 `page=1`, `page_size=20`
-- 最大 `page_size=100`（超出返回 400）
+- `page_size` **未设全局硬上限**（DRF 默认不限制）；gaf_core 自定义分页实现上限为 `500`（见 `backend/gaf_core/views.py`）
 
 ## 4. 请求 / 响应头
 
@@ -337,7 +337,7 @@ POST /api/v2/devices/batch_update/
 
 > **现状**：已配置基础限流（`backend/config/settings/base.py:166-174`）：
 > - `AnonRateThrottle`: anon = `60/min`
-> - `UserRateThrottle`: user = `300/min`
+> - `UserRateThrottle`: user = `600/min`
 > - `login` scope = `5/min`（登录端点防爆破）
 >
 > 以下为未来调整目标（🔧 规划中），当前未启用。

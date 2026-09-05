@@ -263,6 +263,11 @@ def load_config() -> dict:
 
     backend_port = int(_read_env("BACKEND_PORT", str(DEFAULT_BACKEND_PORT)))
     frontend_port = int(_read_env("FRONTEND_PORT", str(DEFAULT_FRONTEND_PORT)))
+    # 调度模式说明 (P1-6/C-评审):
+    #   eager (默认) — Celery 任务在请求/进程内同步执行, 不启动 celery_beat,
+    #     无人值守定时调度 (scheduler tick) 不会自动触发;
+    #   celery — 额外启动 celery_worker + celery_beat, 定时/无人值守调度可用.
+    # 需要定时自动化时请设 GAF_CELERY_MODE=celery.
     celery_mode = _read_env("GAF_CELERY_MODE", "eager").lower()
 
     return {

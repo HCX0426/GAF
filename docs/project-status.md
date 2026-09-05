@@ -1,7 +1,7 @@
 ---
 summary: GAF 项目状态统一追踪 — 活跃待办/已完成功能/技术债务 (唯一入口)
 applies_to: [backend, frontend, agent, project]
-last_updated: 2026-08-28
+last_updated: 2026-09-05
 ---
 
 # GAF 项目状态仪表板 (Project Status Dashboard)
@@ -17,11 +17,11 @@ last_updated: 2026-08-28
 
 | 分类 | 数量 | 详情 |
 |:---|:---:|:---|
-| 🔧 **活跃待办** | 0 | 无 |
+| 🔧 **活跃待办** | 3 | TD-424 / TD-426 / TD-427 → [active-tech-debt.md](archive/active-tech-debt.md) |
 | ✅ **已完成项目** | 114 | [查看详情](#已完成项目) |
 | ✅ **已修复技术债务** | 147+（截至 TD-414） | [查看详情](#技术债务) |
 | ❌ **WONTFIX/INVALIDATED** | 34 | [查看详情](#技术债务) |
-| 📋 **活跃 Spec / Plan** | 0 | 无 |
+| 📋 **活跃 Spec / Plan** | 1 | `docs/specs/active/2026-08-31-ai-tab-agent-learning-spec.md`（Phase 2/3 待实施） |
 | 🗂️ **归档 Spec** | 57 | `docs/specs/archived/` |
 | 📊 **月度健康报告** | 2 | [2026-07](archive/2026-07-health-report.md) / [2026-08 (模板)](archive/2026-08-health-report.md) |
 
@@ -36,7 +36,7 @@ last_updated: 2026-08-28
 > - 技术债务 (TD-NNN) 登记到下方「技术债务」段
 > - 完成后迁入「已完成项目」段
 
-**当前状态**: 🎉 暂无活跃待办
+**当前状态**: 🔧 3 项活跃技术债务 (TD-424 / TD-426 / TD-427)，完整清单见 [active-tech-debt.md](archive/active-tech-debt.md)
 
 ---
 
