@@ -34,6 +34,12 @@ app.conf.beat_schedule = {
         'task': 'tasks.heartbeat.check_stuck_chains',
         'schedule': 60.0,
     },
+    # TD-425 邻域 (2026-09-05): DB ScheduledTask 启用/禁用/删除与 APScheduler
+    # 同步 — 否则前端禁用定时任务后 APScheduler job 仍触发 (实测 exec 460-475).
+    'sync-db-scheduled-tasks': {
+        'task': 'config.scheduler.sync_db_scheduled_tasks',
+        'schedule': 60.0,
+    },
     # S2 (2026-08-16): 应用级卡死检测 — RUNNING ExecutionStep 超
     # freezeTimeoutSeconds 触发 handle_app_freeze (restart_app 等).
     # scheduler/tasks.py 是标准 tasks.py 命名, autodiscover_tasks()

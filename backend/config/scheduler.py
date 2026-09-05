@@ -193,6 +193,58 @@ def _register_db_scheduled_tasks(scheduler: BackgroundScheduler) -> int:
     return registered
 
 
+def sync_db_scheduled_tasks() -> None:
+    """将 DB ScheduledTask 的启用/禁用/删除同步到 APScheduler (60s beat).
+
+    背景: ``_register_db_scheduled_tasks`` 只在 ``start_scheduler`` 时执行一次。
+    前端禁用/删除 ScheduledTask 后, APScheduler 已注册的 job 仍会持续触发
+    (实测 2026-09-05: DB 禁用 scheduled_task_1 后, APScheduler 继续每分钟
+    触发 task 20 直到服务重启, 产生 exec 460-475 一连串 dev=None 失败)。
+
+    实现 (幂等 reconcile, 注册为 config.celery ``sync-db-scheduled-tasks``):
+    - 移除 APScheduler 中 DB 已禁用/删除的 ``scheduled_task_*`` job
+    - 重新注册 DB enabled 任务 (``replace_existing`` 幂等, 顺带覆盖 cron 变更)
+    """
+    global _scheduler
+    if _scheduler is None:
+        return
+    from tasks.models import ScheduledTask
+
+    try:
+        enabled_job_ids = {
+            f"scheduled_task_{st.id}"
+            for st in ScheduledTask.objects.filter(is_enabled=True)
+        }
+    except Exception as exc:
+        logger.warning("sync_db_scheduled_tasks: 查询 ScheduledTask 失败: %s", exc)
+        return
+
+    try:
+        existing = {job.id for job in _scheduler.get_jobs()}
+    except Exception as exc:
+        logger.warning("sync_db_scheduled_tasks: get_jobs 失败: %s", exc)
+        return
+
+    removed = 0
+    for jid in existing:
+        if not jid.startswith("scheduled_task_"):
+            continue
+        if jid in enabled_job_ids:
+            continue
+        try:
+            _scheduler.remove_job(jid)
+            removed += 1
+        except Exception as exc:
+            logger.warning("sync_db_scheduled_tasks: 移除 %s 失败: %s", jid, exc)
+
+    added = _register_db_scheduled_tasks(_scheduler)
+    if added or removed:
+        logger.info(
+            "sync_db_scheduled_tasks: enabled=%d, added=%d, removed=%d",
+            len(enabled_job_ids), added, removed,
+        )
+
+
 def start_scheduler() -> BackgroundScheduler | None:
     """Start the APScheduler background scheduler.
 
