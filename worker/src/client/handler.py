@@ -28,6 +28,23 @@ from devices.screenshot_cache import compute_frame_hash, get_default_cache
 logger = logging.getLogger(__name__)
 
 
+def _parse_hwnd(raw: str | int | None) -> int | None:
+    """Parse a hwnd value that may be decimal ("4785844"), hex ("0x490b4"),
+    an int, or empty. Returns None when the value is missing/invalid."""
+    if raw is None:
+        return None
+    if isinstance(raw, int):
+        return raw if raw else None
+    text = str(raw).strip()
+    if not text:
+        return None
+    try:
+        value = int(text, 0)
+    except (TypeError, ValueError):
+        return None
+    return value if value else None
+
+
 class MessageHandler:
     """处理 Server 发来的各类消息，通过 send_callback 将结果回传给 Server"""
 
@@ -496,10 +513,14 @@ class MessageHandler:
                 matched_by = f"window_title={window_title}"
             elif device_name and getattr(dev, "name", "") == device_name:
                 matched_by = f"name={device_name}"
-            elif window_handle and hasattr(dev, "_window_mgr"):
-                bound_hwnd = getattr(dev._window_mgr, "hwnd", None)
-                if bound_hwnd is not None and hex(bound_hwnd) == window_handle:
-                    matched_by = f"hwnd={window_handle}"
+            elif window_handle:
+                # Compare by int value so both decimal ("4785844") and hex
+                # ("0x490b4") hwnd strings match the device's bound handle.
+                hint_hwnd = _parse_hwnd(window_handle)
+                if hint_hwnd:
+                    bound_hwnd = getattr(getattr(dev, "_window_mgr", None), "hwnd", None)
+                    if bound_hwnd is not None and int(bound_hwnd) == hint_hwnd:
+                        matched_by = f"hwnd={window_handle}"
             if matched_by:
                 logger.info("命中已有 Windows 设备: id=%s, by=%s", dev.device_id, matched_by)
                 # Browser windows change title per page (user 2026-08-27):
@@ -554,6 +575,10 @@ class MessageHandler:
                 device_id=device_id,
                 name=device_name,
                 window_title=bind_title,
+                # Known-valid hwnd hint: connect() binds it directly when still
+                # valid, so a drifted window title (browser page navigation) no
+                # longer leaves the device unbound and UIA nodes fail.
+                window_handle=_parse_hwnd(window_handle),
                 screenshot_method=screenshot_method,
                 input_method=input_method,
                 control_mode=control_mode,

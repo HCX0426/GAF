@@ -36,6 +36,7 @@ class WindowsDevice(BaseDevice):
         device_id: str = "windows-0",
         name: str = "Windows Device",
         window_title: str | None = None,
+        window_handle: int | None = None,
         screenshot_method: str = "auto",
         input_method: str = "SendInput",
         control_mode: str = "pseudo_background",
@@ -48,6 +49,10 @@ class WindowsDevice(BaseDevice):
             device_id: Unique device identifier
             name: Human-readable device name
             window_title: Target window title to find and bind (None for desktop)
+            window_handle: Known-valid hwnd hint (from backend device_info).
+                When set and still valid (``is_window``), connect() binds it
+                directly instead of searching by title — this survives window
+                title drift (browser page navigation) that breaks title search.
             screenshot_method: Screenshot strategy — "auto"/"wgc"/"dxgi"/"gdi"/"printwindow"
             input_method: Concrete input method — "SendInput"/"PostMessage"/"PseudoBackground"
             control_mode: High-level control mode — "foreground"/"background"/"pseudo_background".
@@ -85,6 +90,7 @@ class WindowsDevice(BaseDevice):
         self._input_handler = WindowsInputHandler(method=final_input_method)
 
         self._window_title = window_title
+        self._window_handle = window_handle
         self._screenshot_method = derived_screenshot
         self._input_method = final_input_method
         self._control_mode = control_mode
@@ -134,12 +140,31 @@ class WindowsDevice(BaseDevice):
         Finds target window by title, binds hwnd to screenshot/input managers,
         and pre-initializes optional components (DC cache, PostMessage input).
 
+        When a backend-provided ``window_handle`` hint is present and still
+        valid (``is_window``), it is bound directly — browser window titles
+        drift per page (e.g. ``about:blank`` → ``新标签页 - Google Chrome``),
+        so title search can fail even though the hwnd is unchanged and usable.
+        Title search is only attempted when there is no valid hwnd hint.
+
         When input_method was originally "auto", re-resolves the input
         method based on the bound window's class (some game windows block
         PostMessage/SendMessage — see input_variants.INPUT_COMPATIBILITY_TABLE).
         """
         try:
-            if self._window_title:
+            bound = False
+            if self._window_handle:
+                from platforms.windows.window import is_window
+
+                if is_window(self._window_handle):
+                    self._window_mgr.set_hwnd(self._window_handle)
+                    self._bind_hwnd(self._window_handle)
+                    bound = True
+                else:
+                    logger.warning(
+                        "backend 提供的窗口句柄已失效 (hwnd=%s), 回退到标题搜索",
+                        hex(self._window_handle),
+                    )
+            if not bound and self._window_title:
                 hwnd = self._window_mgr.find_window(title=self._window_title)
                 if hwnd is None:
                     logger.warning("Window not found: %s, falling back to desktop", self._window_title)

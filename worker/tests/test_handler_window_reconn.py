@@ -106,3 +106,160 @@ class TestResolveTargetDeviceTitleRefresh:
         assert resolved is not None
         assert dev._window_title == "搜索 - Microsoft 必应 - Google Chrome"
         mock_ensure.assert_called_once_with(dev)
+
+
+class TestParseHwnd:
+    """_parse_hwnd handles decimal / hex / int / invalid inputs."""
+
+    def test_decimal_string(self):
+        from client.handler import _parse_hwnd
+
+        assert _parse_hwnd("4785844") == 4785844
+
+    def test_hex_string(self):
+        from client.handler import _parse_hwnd
+
+        assert _parse_hwnd("0x490b4") == 0x490B4
+
+    def test_int_passthrough(self):
+        from client.handler import _parse_hwnd
+
+        assert _parse_hwnd(0x490B4) == 0x490B4
+
+    def test_empty_and_invalid(self):
+        from client.handler import _parse_hwnd
+
+        assert _parse_hwnd("") is None
+        assert _parse_hwnd(None) is None
+        assert _parse_hwnd("abc") is None
+        assert _parse_hwnd("0") is None
+
+
+class TestResolveNewDeviceBindsHwndHint:
+    """A freshly created WindowsDevice receives the backend hwnd hint so
+    connect() can bind it directly instead of searching a drifted title."""
+
+    @staticmethod
+    def _handler_with_empty_mgr():
+        handler = MessageHandler(MagicMock())
+        handler._orchestrator = MagicMock()
+        mgr = MagicMock()
+        mgr._devices = {}
+        handler._orchestrator._device_manager = mgr
+        return handler, mgr
+
+    def test_new_device_receives_parsed_window_handle(self):
+        handler, mgr = self._handler_with_empty_mgr()
+        device_info = {
+            "device_type": "windows",
+            "name": "Chrome-Browser",
+            "window_title": "about:blank - Google Chrome",
+            "window_handle": "4785844",
+            "screenshot_method": "auto",
+            "input_method": "auto",
+            "control_mode": "pseudo_background",
+        }
+        with patch("client.handler.MessageHandler._ensure_device_connected") as mock_ensure, \
+                patch("platforms.windows.device.WindowsDevice") as mock_cls:
+            handler._resolve_target_device(device_info)
+
+        kwargs = mock_cls.call_args.kwargs
+        assert kwargs["window_handle"] == 4785844
+        assert mock_ensure.called
+
+    def test_new_device_hex_handle_normalized(self):
+        handler, mgr = self._handler_with_empty_mgr()
+        device_info = {
+            "device_type": "windows",
+            "name": "Chrome-Browser",
+            "window_title": "about:blank - Google Chrome",
+            "window_handle": "0x490b4",
+            "screenshot_method": "auto",
+            "input_method": "auto",
+            "control_mode": "pseudo_background",
+        }
+        with patch("client.handler.MessageHandler._ensure_device_connected"), \
+                patch("platforms.windows.device.WindowsDevice") as mock_cls:
+            handler._resolve_target_device(device_info)
+
+        assert mock_cls.call_args.kwargs["window_handle"] == 0x490B4
+
+    def test_existing_device_matched_by_decimal_hwnd(self):
+        """hex-bound device matches a backend decimal hwnd string (format drift)."""
+        handler, mgr = self._handler_with_empty_mgr()
+        dev = MagicMock()
+        dev._window_title = "some other title"  # title mismatch on purpose
+        dev.name = "Chrome-Browser"
+        dev._window_mgr = MagicMock()
+        dev._window_mgr.hwnd = 0x4906B4  # 4785844 in hex (matches the log id)
+        mgr._devices = {"windows-hwnd-x": dev}
+
+        device_info = {
+            "device_type": "windows",
+            "name": "Not-Matching",
+            "window_title": "another title",
+            "window_handle": "4785844",
+            "screenshot_method": "auto",
+            "input_method": "auto",
+            "control_mode": "pseudo_background",
+        }
+        with patch("client.handler.MessageHandler._ensure_device_connected") as mock_ensure:
+            resolved = handler._resolve_target_device(device_info)
+
+        assert resolved is dev
+        mock_ensure.assert_called_once_with(dev)
+
+
+class TestWindowsDeviceConnectBindsHwndHint:
+    """WindowsDevice.connect() binds a valid backend hwnd hint directly,
+    surviving window title drift (browser page navigation) that breaks title
+    search and leaves the device unbound (uia: no window handle)."""
+
+    @staticmethod
+    def _make_device(window_handle=None, window_title="about:blank - Google Chrome"):
+        from platforms.windows.device import WindowsDevice
+
+        return WindowsDevice(
+            device_id="windows-hwnd-test",
+            name="Chrome-Browser",
+            window_title=window_title,
+            window_handle=window_handle,
+        )
+
+    def test_valid_hwnd_binds_directly_no_title_search(self):
+        from devices.base import DeviceStatus
+
+        dev = self._make_device(window_handle=0x490B4)
+        with patch("platforms.windows.window.is_window", return_value=True) as mock_valid, \
+                patch.object(dev, "_bind_hwnd") as mock_bind:
+            dev.connect()
+
+        mock_valid.assert_called_once_with(0x490B4)
+        mock_bind.assert_called_once_with(0x490B4)
+        # Real set_hwnd ran: the WindowManager is bound to the hint.
+        assert dev._window_mgr.hwnd == 0x490B4
+        assert dev.status == DeviceStatus.CONNECTED
+
+    def test_invalid_hwnd_falls_back_to_title_search(self):
+        from devices.base import DeviceStatus
+
+        dev = self._make_device(window_handle=0x490B4)
+        with patch("platforms.windows.window.is_window", return_value=False) as mock_valid, \
+                patch.object(dev._window_mgr, "find_window", return_value=0x123) as mock_find:
+            dev.connect()
+
+        mock_valid.assert_called_once_with(0x490B4)
+        mock_find.assert_called_once_with(title="about:blank - Google Chrome")
+        assert dev.status == DeviceStatus.CONNECTED
+
+    def test_no_hint_uses_title_search(self):
+        from devices.base import DeviceStatus
+
+        dev = self._make_device(window_handle=None)
+        with patch.object(dev._window_mgr, "find_window", return_value=0x123) as mock_find, \
+                patch.object(dev, "_bind_hwnd") as mock_bind:
+            dev.connect()
+
+        mock_find.assert_called_once_with(title="about:blank - Google Chrome")
+        mock_bind.assert_called_once_with(0x123)
+        assert dev.status == DeviceStatus.CONNECTED

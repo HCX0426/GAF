@@ -113,6 +113,23 @@ class WindowManager:
 
         return found_hwnd
 
+    def set_hwnd(self, hwnd: int) -> None:
+        """绑定一个已知有效的窗口句柄并刷新标题/类名。
+
+        Used when the caller already holds a validated hwnd (e.g. from the
+        backend's device_info) instead of searching by title. Browser window
+        titles drift per page (e.g. ``about:blank`` → ``新标签页 - Google Chrome``),
+        so a validated hwnd is more reliable than a title search.
+        """
+        self._hwnd = hwnd
+        buf = ctypes.create_unicode_buffer(256)
+        user32.GetWindowTextW(hwnd, buf, 256)
+        self._window_title = buf.value
+        cls_buf = ctypes.create_unicode_buffer(256)
+        user32.GetClassNameW(hwnd, cls_buf, 256)
+        self._window_class = cls_buf.value
+        logger.info("绑定窗口句柄: hwnd=%s, title=%s, class=%s", hwnd, self._window_title, self._window_class)
+
     def activate(self) -> bool:
         """激活窗口到前台"""
         if not self._hwnd:
