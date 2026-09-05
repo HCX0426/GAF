@@ -15,7 +15,7 @@
 │   └── README.md             本索引（opencode 始终注入）
 ├── .trae/                    skills|rules → junction → .skills/（Trae 自动扫描）
 ├── .opencode/                skills|rules → junction → .skills/（opencode 自动扫描）
-└── .workbuddy/               skills → 真实副本（WorkBuddy 自动扫描；junction 受阻，仅 cp -r 同步）
+└── .workbuddy/               skills → 真实副本（WorkBuddy 自动扫描；junction 受阻，仅 cp -r 镜像）
 ```
 
 | 入口 | 技能发现方式 | 规则加载方式 |
@@ -37,10 +37,10 @@
 | Testing & Quality | 4 | TDD、调试、验证、节点诊断 |
 | Documentation | 2 | 中文文档与审查（显式 /command 触发） |
 | Git & CI | 2 | 中文 commit 规范、国内 Git 平台（显式 /command 触发） |
-| Review & Audit | 1 | GAF 架构评审 runbook（WorkBuddy 层真实副本，显式触发） |
+| Review & Audit | 1 | GAF 架构评审 runbook（WorkBuddy 层专属，显式触发） |
 | External Tools | 1 | 内置全局 playwright-best-practices（Trae 提供） |
 | Web & UI | 2 | 内置全局 web-dev / skills-overview（Trae 提供） |
-| 合计 | 19 | 15 个位于 `.skills/skills/`，3 个为 Trae 内置全局，1 个为 WorkBuddy 层副本 |
+| 合计 | 19 | 15 个位于 `.skills/skills/`，3 个为 Trae 内置全局；`.workbuddy/skills/` 为 WorkBuddy 层实体副本（15 个镜像 + 1 个专属，2026-09-05 全量落盘） |
 
 > 2026-08-20 治理评估（TD-375）：11 个 0 引用 skill（brainstorming / executing-plans / finishing-a-development-branch / subagent-driven-development / using-git-worktrees / using-superpowers / requesting-code-review / receiving-code-review / mcp-builder / workflow-runner / writing-skills）移出，git 历史可追溯。原因：边界规则"必须先走 gaf-orchestrator" + 决策树白名单只 load gaf-* + 6 方法论，这些 skill 永远无法被加载，但 description 常驻系统提示浪费 token。
 >

@@ -95,6 +95,9 @@ celerybeat.pid
 # Redis dump
 dump.rdb
 
+# WorkBuddy 本地层 (技能实体副本 + AI memory, 由 sync_workbuddy_skills.py 维护)
+.workbuddy/
+
 # Docker
 docker-compose.override.yml
 
